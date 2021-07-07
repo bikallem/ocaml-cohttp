@@ -184,6 +184,21 @@ Fatal error: exception (Failure "Timeout expired")
 
 Similarly, in the case of `cohttp-async` you can directly use Async's
 [`with_timeout`](https://ocaml.janestreet.com/ocaml-core/latest/doc/async_unix/Async_unix/Clock/index.html#val-with_timeout) function.
+For example,
+
+```ocaml
+let get_body ~uri ~timeout =
+    let%bind _, body = Cohttp_async.Client.get ~interrupt:(after (sec timeout)) uri in
+    Body.to_string body    
+
+let body =
+  let uri = Uri.of_string "https://www.reddit.com/" in
+  let timeout = 0.1 in
+  Clock.with_timeout (sec timeout) (get_body ~uri ~timeout)
+  >>| function
+  | `Result body -> Log.debug logger "body: %s" body
+  | `Timeout  -> Log.debug logger "Timeout with url:%s" url
+```
 
 ## Managing sessions
 
@@ -195,8 +210,9 @@ which is compatible with `cohttp`.
 ## Multipart form data
 
 Multipart form data is not supported out of the box but is provided by external libraries:
-- [`multipart_form`](https://github.com/dinosaure/multipart_form)
-- [`multipart-form-data`](https://github.com/cryptosense/multipart-form-data).
+- [`multipart_form`](https://github.com/dinosaure/multipart_form) which has bounded memory consumption even when transferring large amount of data
+- [`multipart-form-data`](https://github.com/cryptosense/multipart-form-data)
+- [`http-multipart-formdata`](https://github.com/lemaetech/http-multipart-formdata) which however does not support streaming
 
 ## Creating custom resolver: a Docker Socket Client example
 

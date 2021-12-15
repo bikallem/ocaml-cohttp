@@ -45,7 +45,7 @@ module type IO = sig
     ic -> f:(string -> pos:int -> len:int -> 'a * int) -> 'a
 
   val read_line : ic -> string option t
-  (** [read_line ic] will read a single line terminated by CR or CRLF from the
+  (** [read_line ic] will read a single line terminated by LF or CRLF from the
       input channel [ic]. It returns {!None} if EOF or other error condition is
       reached. *)
 

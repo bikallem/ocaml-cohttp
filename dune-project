@@ -203,6 +203,7 @@ This package contains essential type definitions used in Cohttp. It is designed
 to have no dependencies and make it easy for other packages to easily
 interoperate with Cohttp.")
  (depends
+<<<<<<< HEAD
   (ocaml (>= 4.08))
   (alcotest :with-test)
   (base_quickcheck :with-test)
@@ -230,3 +231,18 @@ online at https://hdrhistogram.github.io/HdrHistogram/plotFiles.html.")
   (http (= :version))
   (cohttp-lwt-unix (= :version))
   (cohttp-async (= :version))))
+
+(package
+ (name cohttp-eio)
+ (synopsis "CoHTTP implementation with eio backend")
+ (description "\
+This HTTP implementation uses the Cohttp portable implementation
+along with the eio threading library in order to provide a
+`Cohttp_eio.Server` module.")
+ (depends
+  (ocaml (>= 4.12.0+domains))
+  (fmt (>= 0.8.7))
+  cstruct
+  logs
+  eio
+  (cohttp (= :version))))

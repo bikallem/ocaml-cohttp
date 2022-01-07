@@ -203,7 +203,6 @@ This package contains essential type definitions used in Cohttp. It is designed
 to have no dependencies and make it easy for other packages to easily
 interoperate with Cohttp.")
  (depends
-<<<<<<< HEAD
   (ocaml (>= 4.08))
   (alcotest :with-test)
   (base_quickcheck :with-test)

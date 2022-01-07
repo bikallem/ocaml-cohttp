@@ -23,48 +23,33 @@ module In_channel = struct
 
   let[@inline] fill_buf t = t.fill_buf ()
   let[@inline] consume t n = t.consume n
-end
 
-module Cstruct = struct
-  include Cstruct
-
-  let index_from t c ~pos ~len : int =
-    assert (len <= Cstruct.length t);
+  let index_from cs c ~pos ~len : int =
+    assert (len <= Cstruct.length cs);
     let rec index_aux i =
       if i >= len then raise Not_found
-      else if Cstruct.get_char t i = c then i
+      else if Cstruct.get_char cs i = c then i
       else (index_aux [@tailcall]) (i + 1)
     in
     index_aux pos
-end
 
-module IO = struct
-  type 'a t = 'a
-  type ic = In_channel.t
-  type oc = Eio.Flow.write
-  type conn = Eio.Flow.two_way
-  type error = exn
-
-  let ( >>= ) = ( |> )
-  let return a = a
-
-  let read_line (ic : ic) : string option t =
+  let read_line t : string option =
     let nl = '\n' in
     let buf = Buffer.create 256 in
     let rec read_until_nl (cs, pos, len) =
       if len = 0 then ()
       else
-        match Cstruct.index_from cs nl ~pos ~len with
+        match index_from cs nl ~pos ~len with
         | j ->
             let str = Cstruct.(sub cs pos (j - pos) |> to_string) in
-            In_channel.consume ic (j - pos + 1);
+            consume t (j - pos + 1);
             Buffer.add_string buf str
         | exception Not_found ->
             Buffer.add_string buf (Cstruct.to_string cs);
-            In_channel.consume ic len;
-            (read_until_nl [@tailcall]) (In_channel.fill_buf ic)
+            consume t len;
+            (read_until_nl [@tailcall]) (fill_buf t)
     in
-    read_until_nl (In_channel.fill_buf ic);
+    read_until_nl (fill_buf t);
     let len = Buffer.length buf in
     if len = 0 then None
     else
@@ -74,7 +59,7 @@ module IO = struct
         if String.length line > 0 then Some line else None
       else Some line
 
-  let read (ic : ic) len : string t =
+  let read t len =
     let buf = Buffer.create 0 in
     let rec read_until total (cs, pos, len') =
       match len' with
@@ -86,12 +71,28 @@ module IO = struct
             Buffer.add_string buf text
           else (
             Buffer.add_string buf (Cstruct.to_string cs);
-            In_channel.consume ic len';
-            (read_until [@tailcall]) total (In_channel.fill_buf ic))
+            consume t len';
+            (read_until [@tailcall]) total (fill_buf t))
     in
-    read_until 0 (In_channel.fill_buf ic);
+    read_until 0 (fill_buf t);
     Buffer.contents buf
+end
 
+module Cstruct = struct
+  include Cstruct
+end
+
+module IO = struct
+  type 'a t = 'a
+  type ic = In_channel.t
+  type oc = Eio.Flow.write
+  type conn = Eio.Flow.two_way
+  type error = exn
+
+  let ( >>= ) = ( |> )
+  let return a = a
+  let read_line (ic : ic) : string option t = In_channel.read_line ic
+  let read (ic : ic) len = In_channel.read ic len
   let write oc s : unit t = Eio.Flow.copy_string s oc
   let flush (_ : oc) : unit t = ()
   let catch f = try Ok (f ()) with exn -> Error exn

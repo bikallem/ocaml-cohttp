@@ -1,11 +1,11 @@
-type +'a t
-type ic = In_channel.t
-type oc = Eio.Flow.write
-type conn = Eio.Flow.two_way
+module IO :
+  Cohttp.S.IO
+    with type 'a t = 'a
+     and type ic = In_channel.t
+     and type oc = Eio.Flow.write
 
-val ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t
-val return : 'a -> 'a t
-val read_line : ic -> string option t
-val read : ic -> int -> string t
-val write : oc -> string -> unit t
-val flush : oc -> unit t
+module Request :
+  Cohttp.S.Http_io with type t := Http.Request.t and module IO := IO
+
+module Response :
+  Cohttp.S.Http_io with type t := Http.Response.t and module IO := IO

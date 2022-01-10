@@ -14,7 +14,7 @@ type response = Cohttp.Response.t * Cohttp.Body.t [@@deriving sexp]
 
 let close t = ignore @@ Atomic.compare_and_set t.closed false true
 
-let cpu_count =
+let cpu_core_count =
   match Sys.os_type with
   | "Win32" -> int_of_string (Sys.getenv "NUMBER_OF_PROCESSORS")
   | _ -> (
@@ -67,7 +67,7 @@ let run_accept_loop (t : t) sw env =
           t.request_handler)
   done
 
-let create ?(backlog = 10_000) ?(domains = cpu_count) ~port ~error_handler
+let create ?(backlog = 10_000) ?(domains = cpu_core_count) ~port ~error_handler
     request_handler : t =
   {
     domains;

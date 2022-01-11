@@ -1,16 +1,28 @@
 open Eio.Std
 
+type response = Cohttp.Response.t * Cohttp.Body.t [@@deriving sexp]
+type response_action = [ `Response of response ]
+
+module Client_connection = struct
+  type t = {
+    flow : < Eio.Flow.two_way ; Eio.Flow.close >;
+    switch : Eio.Std.Switch.t;
+    addr : Eio.Net.Sockaddr.t;
+  }
+
+  let client_addr t = t.addr
+  let switch t = t.switch
+  let close t = Eio.Flow.close t.flow
+end
+
 type t = {
   domains : int;
   port : int;
   backlog : int;
   error_handler : Eio.Net.Sockaddr.t -> exn -> unit;
-  request_handler :
-    Eio.Std.Switch.t -> Eio.Net.Sockaddr.t -> Cohttp.Request.t -> unit;
+  request_handler : Client_connection.t -> Cohttp.Request.t -> response_action;
   closed : bool Atomic.t;
 }
-
-type response = Cohttp.Response.t * Cohttp.Body.t [@@deriving sexp]
 
 let close t = ignore @@ Atomic.compare_and_set t.closed false true
 
@@ -36,17 +48,43 @@ let cpu_core_count =
   | (exception Unix.Unix_error (_, _, _)) ->
       1
 
-let connection_handler sw (flow : < Eio.Flow.two_way ; Eio.Flow.close >)
-    client_addr on_error request_handler =
-  try
-    let ic = In_channel.of_flow flow in
+let handle_client (t : t) (client_conn : Client_connection.t) : unit =
+  let write_response req = function
+    | `Response (res, _res_body) ->
+        let keep_alive = Cohttp.Request.is_keep_alive req in
+        let flush = Cohttp.Response.flush res in
+        let res =
+          let headers =
+            Cohttp.Header.add_unless_exists
+              (Cohttp.Response.headers res)
+              "connection"
+              (if keep_alive then "keep-alive" else "close")
+          in
+          { res with Cohttp.Response.headers }
+        in
+        Io.Response.write ~flush
+          (fun _oc -> ())
+          res
+          (client_conn.flow :> Eio.Flow.write)
+  in
+  let ic = In_channel.of_flow client_conn.flow in
+  let continue = ref true in
+  while !continue do
     match Io.Request.read ic with
-    | `Eof -> ()
-    | `Invalid _err_msg -> ()
-    | `Ok req -> request_handler sw client_addr req
-  with exn -> on_error client_addr exn
+    | `Eof ->
+        Client_connection.close client_conn;
+        continue := false
+    | `Invalid err_msg ->
+        Printf.eprintf "Error while processing client request: %s" err_msg;
+        continue := false
+    | `Ok req ->
+        write_response req @@ t.request_handler client_conn req;
+        if not (Cohttp.Request.is_keep_alive req) then (
+          continue := false;
+          Client_connection.close client_conn)
+  done
 
-let run_accept_loop (t : t) sw env =
+let run_accept_thread (t : t) sw env =
   let domain_mgr = Eio.Stdenv.domain_mgr env in
   Fibre.fork ~sw @@ fun () ->
   Eio.Domain_manager.run domain_mgr @@ fun () ->
@@ -61,10 +99,9 @@ let run_accept_loop (t : t) sw env =
       (Printexc.to_string exn)
   in
   while not (Atomic.get t.closed) do
-    Eio.Net.accept_sub ~sw ssock ~on_error:on_accept_error
-      (fun ~sw socket client_addr ->
-        connection_handler sw socket client_addr t.error_handler
-          t.request_handler)
+    Eio.Net.accept_sub ~sw ssock ~on_error:on_accept_error (fun ~sw flow addr ->
+        let client_conn = Client_connection.{ flow; addr; switch = sw } in
+        handle_client t client_conn)
   done
 
 let create ?(backlog = 10_000) ?(domains = cpu_core_count) ~port ~error_handler
@@ -83,7 +120,7 @@ let run (t : t) =
   Eio_main.run @@ fun env ->
   Switch.run @@ fun sw ->
   (* Run accept loop on domain0 without creating a Domain.t *)
-  run_accept_loop t sw env;
+  run_accept_thread t sw env;
   for _ = 2 to t.domains do
-    run_accept_loop t sw env
+    run_accept_thread t sw env
   done

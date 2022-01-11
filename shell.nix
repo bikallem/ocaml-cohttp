@@ -24,6 +24,7 @@ pkgs.mkShell {
     bc
     httpie
     wrk2
+    openssl
   ];
 
   dontPatchShebangs = "1";

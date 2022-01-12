@@ -69,10 +69,11 @@ let rec handle_client (t : t) (client_conn : Client_connection.t) : unit =
             { res with Cohttp.Response.headers }
           in
           Io.Response.write ~flush
-            (fun _oc -> ())  (* TODO write body here. *)
+            (fun _oc -> ()) (* TODO write body here. *)
             res
             (client_conn.flow :> Eio.Flow.write);
-          if Cohttp.Request.is_keep_alive req then handle_client t client_conn
+          if Cohttp.Request.is_keep_alive req then
+            (handle_client [@tailcall]) t client_conn
           else Client_connection.close client_conn)
 
 let run_accept_thread (t : t) sw env =

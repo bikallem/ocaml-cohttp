@@ -48,41 +48,32 @@ let cpu_core_count =
   | (exception Unix.Unix_error (_, _, _)) ->
       1
 
-let handle_client (t : t) (client_conn : Client_connection.t) : unit =
-  let write_response req = function
-    | `Response (res, _res_body) ->
-        let keep_alive = Cohttp.Request.is_keep_alive req in
-        let flush = Cohttp.Response.flush res in
-        let res =
-          let headers =
-            Cohttp.Header.add_unless_exists
-              (Cohttp.Response.headers res)
-              "connection"
-              (if keep_alive then "keep-alive" else "close")
-          in
-          { res with Cohttp.Response.headers }
-        in
-        Io.Response.write ~flush
-          (fun _oc -> ())
-          res
-          (client_conn.flow :> Eio.Flow.write)
-  in
+let rec handle_client (t : t) (client_conn : Client_connection.t) : unit =
   let ic = In_channel.of_flow client_conn.flow in
-  let continue = ref true in
-  while !continue do
-    match Io.Request.read ic with
-    | `Eof ->
-        Client_connection.close client_conn;
-        continue := false
-    | `Invalid err_msg ->
-        Printf.eprintf "Error while processing client request: %s" err_msg;
-        continue := false
-    | `Ok req ->
-        write_response req @@ t.request_handler client_conn req;
-        if not (Cohttp.Request.is_keep_alive req) then (
-          continue := false;
-          Client_connection.close client_conn)
-  done
+  match Io.Request.read ic with
+  | `Eof -> ()
+  | `Invalid err_msg ->
+      Printf.eprintf "Error while processing client request: %s" err_msg
+  | `Ok req -> (
+      match t.request_handler client_conn req with
+      | `Response (res, _res_body) ->
+          let keep_alive = Cohttp.Request.is_keep_alive req in
+          let flush = Cohttp.Response.flush res in
+          let res =
+            let headers =
+              Cohttp.Header.add_unless_exists
+                (Cohttp.Response.headers res)
+                "connection"
+                (if keep_alive then "keep-alive" else "close")
+            in
+            { res with Cohttp.Response.headers }
+          in
+          Io.Response.write ~flush
+            (fun _oc -> ())  (* TODO write body here. *)
+            res
+            (client_conn.flow :> Eio.Flow.write);
+          if Cohttp.Request.is_keep_alive req then handle_client t client_conn
+          else Client_connection.close client_conn)
 
 let run_accept_thread (t : t) sw env =
   let domain_mgr = Eio.Stdenv.domain_mgr env in

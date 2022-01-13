@@ -72,7 +72,7 @@ let rec handle_client (t : t) (client_conn : Client_connection.t) : unit =
             (fun _oc -> ()) (* TODO write body here. *)
             res
             (client_conn.flow :> Eio.Flow.write);
-          if keep_alive req then (handle_client [@tailcall]) t client_conn
+          if keep_alive then (handle_client [@tailcall]) t client_conn
           else Client_connection.close client_conn)
 
 let run_accept_thread (t : t) sw env =

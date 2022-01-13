@@ -10,8 +10,6 @@ module Client_connection : sig
   val close : t -> unit
 end
 
-val close : t -> unit
-
 val create :
   ?backlog:int ->
   ?domains:int ->
@@ -22,3 +20,4 @@ val create :
   t
 
 val run : t -> unit
+val close : t -> unit

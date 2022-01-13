@@ -16,11 +16,13 @@ module Client_connection = struct
 end
 
 type t = {
-  domains : int;
-  port : int;
   backlog : int;
+  domains : int;
+  chunkstream_backlog : int;
+  port : int;
   error_handler : Eio.Net.Sockaddr.t -> exn -> unit;
-  request_handler : Client_connection.t -> Cohttp.Request.t -> response_action;
+  request_handler :
+    Client_connection.t -> Cohttp.Request.t * Body.t -> response_action;
   closed : bool Atomic.t;
 }
 
@@ -48,6 +50,26 @@ let cpu_core_count =
   | (exception Unix.Unix_error (_, _, _)) ->
       1
 
+let read_body (t : t) (client_conn : Client_connection.t) ic req =
+  let create_stream f rdr =
+    let stream = Eio.Stream.create t.chunkstream_backlog in
+    Eio.Std.Fibre.fork ~sw:client_conn.switch (fun () ->
+        let fin = ref false in
+        while !fin do
+          match f rdr with
+          | Cohttp.Transfer.Done -> fin := true
+          | Cohttp.Transfer.Chunk c | Cohttp.Transfer.Final_chunk c ->
+              Eio.Stream.add stream c
+        done);
+    stream
+  in
+  match Io.Request.has_body req with
+  | `No | `Unknown -> `Empty
+  | `Yes ->
+      let reader = Io.Request.make_body_reader req ic in
+      let stream = create_stream Io.Request.read_body_chunk reader in
+      Body.of_stream stream
+
 let rec handle_client (t : t) (client_conn : Client_connection.t) : unit =
   let ic = In_channel.of_flow client_conn.flow in
   match Io.Request.read ic with
@@ -55,7 +77,8 @@ let rec handle_client (t : t) (client_conn : Client_connection.t) : unit =
   | `Invalid err_msg ->
       Printf.eprintf "Error while processing client request: %s" err_msg
   | `Ok req -> (
-      match t.request_handler client_conn req with
+      let body = read_body t client_conn ic req in
+      match t.request_handler client_conn (req, body) with
       | `Response (res, _res_body) ->
           let keep_alive = Cohttp.Request.is_keep_alive req in
           let flush = Cohttp.Response.flush res in
@@ -95,12 +118,13 @@ let run_accept_thread (t : t) sw env =
         handle_client t client_conn)
   done
 
-let create ?(backlog = 10_000) ?(domains = cpu_core_count) ~port ~error_handler
-    request_handler : t =
+let create ?(backlog = 10_000) ?(domains = cpu_core_count)
+    ?(chunkstream_backlog = 5) ~port ~error_handler request_handler : t =
   {
-    domains;
-    port;
     backlog;
+    domains;
+    chunkstream_backlog;
+    port;
     error_handler;
     request_handler;
     closed = Atomic.make false;

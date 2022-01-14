@@ -1,7 +1,8 @@
 open Eio.Std
 
-type response = Cohttp.Response.t * Cohttp.Body.t [@@deriving sexp]
-type response_action = [ `Response of response ]
+type response =
+  [ `Response of Cohttp.Response.t * Cohttp.Body.t
+  | `Expert of Cohttp.Response.t * (In_channel.t -> Eio.Flow.write -> unit) ]
 
 module Client_connection = struct
   type t = {
@@ -22,7 +23,7 @@ type t = {
   port : int;
   error_handler : Eio.Net.Sockaddr.t -> exn -> unit;
   request_handler :
-    Client_connection.t -> Cohttp.Request.t * Body.t -> response_action;
+    Client_connection.t -> Cohttp.Request.t * Body.t -> response;
   closed : bool Atomic.t;
 }
 
@@ -70,8 +71,21 @@ let read_body (t : t) (client_conn : Client_connection.t) ic req =
       let stream = create_stream Io.Request.read_body_chunk reader in
       Body.of_stream stream
 
+let _write_body (f : string -> unit) (client_conn : Client_connection.t) body =
+  match body with
+  | `Empty -> ()
+  | `String s -> f s
+  | `Strings sl -> List.iter f sl
+  | `Stream _s ->
+      Eio.Std.Fibre.fork ~sw:client_conn.switch @@ fun () ->
+      let fin = ref false in
+      while !fin do
+        ()
+      done
+
 let rec handle_client (t : t) (client_conn : Client_connection.t) : unit =
   let ic = In_channel.of_flow client_conn.flow in
+  let oc = (client_conn.flow :> Eio.Flow.write) in
   match Io.Request.read ic with
   | `Eof -> ()
   | `Invalid err_msg ->
@@ -91,12 +105,13 @@ let rec handle_client (t : t) (client_conn : Client_connection.t) : unit =
             in
             { res with Cohttp.Response.headers }
           in
-          Io.Response.write ~flush
-            (fun _oc -> ()) (* TODO write body here. *)
-            res
-            (client_conn.flow :> Eio.Flow.write);
+          Io.Response.write ~flush (fun _writer -> ()) res oc;
           if keep_alive then (handle_client [@tailcall]) t client_conn
-          else Client_connection.close client_conn)
+          else Client_connection.close client_conn
+      | `Expert (res, io_handler) ->
+          Io.Response.write_header res oc;
+          io_handler ic oc;
+          (handle_client [@tailcall]) t client_conn)
 
 let run_accept_loop (t : t) sw env =
   let net = Eio.Stdenv.net env in

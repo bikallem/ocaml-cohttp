@@ -1,6 +1,8 @@
 type t
-type response = Cohttp.Response.t * Cohttp.Body.t [@@deriving sexp_of]
-type response_action = [ `Response of response ]
+
+type response =
+  [ `Response of Cohttp.Response.t * Cohttp.Body.t
+  | `Expert of Cohttp.Response.t * (In_channel.t -> Eio.Flow.write -> unit) ]
 
 module Client_connection : sig
   type t
@@ -16,7 +18,7 @@ val create :
   ?chunkstream_backlog:int ->
   port:int ->
   error_handler:(Eio.Net.Sockaddr.t -> exn -> unit) ->
-  (Client_connection.t -> Cohttp.Request.t * Body.t -> response_action) ->
+  (Client_connection.t -> Cohttp.Request.t * Body.t -> response) ->
   t
 
 val run : t -> unit

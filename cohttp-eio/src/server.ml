@@ -98,10 +98,7 @@ let rec handle_client (t : t) (client_conn : Client_connection.t) : unit =
           if keep_alive then (handle_client [@tailcall]) t client_conn
           else Client_connection.close client_conn)
 
-let run_accept_thread (t : t) sw env =
-  let domain_mgr = Eio.Stdenv.domain_mgr env in
-  Fibre.fork ~sw @@ fun () ->
-  Eio.Domain_manager.run domain_mgr @@ fun () ->
+let run_accept_loop (t : t) sw env =
   let net = Eio.Stdenv.net env in
   let sockaddr = `Tcp (Unix.inet_addr_loopback, t.port) in
   let ssock =
@@ -135,7 +132,9 @@ let run (t : t) =
   Eio_main.run @@ fun env ->
   Switch.run @@ fun sw ->
   (* Run accept loop on domain0 without creating a Domain.t *)
-  run_accept_thread t sw env;
+  run_accept_loop t sw env;
+  let domain_mgr = Eio.Stdenv.domain_mgr env in
   for _ = 2 to t.domains do
-    run_accept_thread t sw env
+    Fibre.fork ~sw @@ fun () ->
+    Eio.Domain_manager.run domain_mgr @@ fun () -> run_accept_loop t sw env
   done

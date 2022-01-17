@@ -108,7 +108,8 @@ let chunk_size =
    https://portswigger.net/web-security/request-smuggling
    Allowed headers are defined in 2nd paragraph of
    https://datatracker.ietf.org/doc/html/rfc7230#section-4.1.2 *)
-let is_trailer_header_allowed = function
+let is_trailer_header_allowed h =
+  match String.lowercase_ascii h with
   | "transfer-encoding" | "content-length" | "host"
   (* Request control headers are not allowed. *)
   | "cache-control" | "expect" | "max-forwards" | "pragma" | "range" | "te"
@@ -146,7 +147,7 @@ let rec read_chunk (total_read : int) (req : Http.Request.t) : unit t =
       perform (Chunk (data, extensions));
       (read_chunk [@tailcall]) (total_read + sz) req
   | 0 ->
-      (* Read chunk trailers if any and addpend those trailer headers to request headers.
+      (* Read chunk trailers if any and append those trailer headers to request headers.
          The spec at https://datatracker.ietf.org/doc/html/rfc7230#section-4.1.3
          specifies that 'Content-Length' and 'Transfer-Encoding' headers must be
          updated. *)
@@ -192,7 +193,8 @@ let rec read_chunk (total_read : int) (req : Http.Request.t) : unit t =
           (string_of_int total_read)
       in
       let req = { req with headers = request_headers } in
-      return (perform @@ Last_chunk req)
+      perform @@ Last_chunk req;
+      return ()
   | sz -> fail (Format.sprintf "Invalid chunk size: %d" sz)
 
 let io_buffer_size = 65536 (* UNIX_BUFFER_SIZE 4.0.0 in bytes *)

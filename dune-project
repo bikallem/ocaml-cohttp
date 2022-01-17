@@ -244,4 +244,6 @@ along with the eio threading library in order to provide a
   cstruct
   logs
   eio
-  (cohttp (= :version))))
+  eio_main
+  angstrom
+  (http (= :version))))

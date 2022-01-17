@@ -27,7 +27,9 @@ depends: [
   "cstruct"
   "logs"
   "eio"
-  "cohttp" {= version}
+  "eio_main"
+  "angstrom"
+  "http" {= version}
   "odoc" {with-doc}
 ]
 build: [

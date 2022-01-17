@@ -1,7 +1,4 @@
 type t
-and body = [ `String of Cstruct.t | `Chunked of unit -> chunk option ]
-and chunk = { data : Cstruct.t; extensions : chunk_extension list }
-and chunk_extension = { name : string; value : string option }
 
 type response =
   [ `Response of Cohttp.Response.t * Cohttp.Body.t

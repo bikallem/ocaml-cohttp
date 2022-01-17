@@ -1,14 +1,7 @@
-type t = [ Cohttp.Body.t | `Stream of string Eio.Stream.t ] [@@deriving sexp_of]
+type t = [ `String of Cstruct.t | `Chunked of unit -> chunk ]
 
-val of_string : string -> t
-val to_string : t -> string
-val of_string_list : string list -> t
-val to_string_list : t -> string list
-val of_form : ?scheme:string -> (string * string list) list -> t
-val to_form : t -> (string * string list) list
-val of_stream : string Eio.Stream.t -> t
-val to_stream : capacity:int -> t -> string Eio.Stream.t
-val empty : t
-val is_empty : t -> bool
-val map : (string -> string) -> t -> t
-val transfer_encoding : t -> Cohttp.Transfer.encoding
+and chunk =
+  | Chunk of { data : Cstruct.t; extensions : chunk_extension list }
+  | Last_chunk of Http.Request.t
+
+and chunk_extension = { name : string; value : string option }

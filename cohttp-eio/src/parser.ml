@@ -146,9 +146,10 @@ let rec chunk (total_read : int) (req : Http.Request.t) f =
          The spec at https://datatracker.ietf.org/doc/html/rfc7230#section-4.1.3
          specifies that 'Content-Length' and 'Transfer-Encoding' headers must be
          updated. *)
+      let* extensions = chunk_exts <* crlf in
+      let* trailer_headers = headers <* crlf <* commit in
       let request_trailer_headers = request_trailer_headers req in
       let request_headers = Http.Request.headers req in
-      let* trailer_headers = headers <* crlf <* commit in
       let trailer_headers =
         List.filter
           (fun (name, _) ->
@@ -187,7 +188,12 @@ let rec chunk (total_read : int) (req : Http.Request.t) f =
         Http.Header.add request_headers "Content-Length"
           (string_of_int total_read)
       in
-      f @@ Last_chunk { req with headers = request_headers };
+      f
+      @@ Last_chunk
+           {
+             extensions;
+             updated_request = { req with headers = request_headers };
+           };
       return ()
   | sz -> fail (Format.sprintf "Invalid chunk size: %d" sz)
 

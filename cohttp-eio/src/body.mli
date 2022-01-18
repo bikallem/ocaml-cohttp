@@ -7,6 +7,9 @@ and chunk =
       length : int;
       extensions : chunk_extension list;
     }
-  | Last_chunk of Http.Request.t
+  | Last_chunk of {
+      extensions : chunk_extension list;
+      updated_request : Http.Request.t;
+    }
 
 and chunk_extension = { name : string; value : string option }

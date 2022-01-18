@@ -203,7 +203,7 @@ let parse :
     'a Angstrom.t ->
     #Eio.Flow.read ->
     Cstruct.t ->
-    [ `Done of Cstruct.t * 'a | `Error of string ] =
+    (Cstruct.t * 'a, string) result =
  fun p client_fd unconsumed ->
   let rec loop = function
     | Buffered.Partial k -> (
@@ -224,9 +224,9 @@ let parse :
         let unconsumed =
           if len > 0 then Cstruct.of_bigarray ~off ~len buf else Cstruct.empty
         in
-        `Done (unconsumed, x)
+        Ok (unconsumed, x)
     | Buffered.Fail (_, marks, err) ->
-        `Error (String.concat " > " marks ^ ": " ^ err)
+        Error (String.concat " > " marks ^ ": " ^ err)
   in
   loop (Buffered.parse p)
 

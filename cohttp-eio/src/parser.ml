@@ -142,11 +142,15 @@ let rec chunk (total_read : int) (req : Http.Request.t) f =
       f (Body.Chunk { data; length = sz; extensions });
       (chunk [@tailcall]) (total_read + sz) req f
   | 0 ->
-      (* Read chunk trailers if any and append those trailer headers to request headers.
+      let* extensions = chunk_exts <* crlf in
+      (* Read trailer headers if any and append those to request headers.
+
+         Only headers names appearing in 'Trailer' request headers and "allowed" trailer
+         headers are appended to request.
+
          The spec at https://datatracker.ietf.org/doc/html/rfc7230#section-4.1.3
          specifies that 'Content-Length' and 'Transfer-Encoding' headers must be
          updated. *)
-      let* extensions = chunk_exts <* crlf in
       let* trailer_headers = headers <* crlf <* commit in
       let request_trailer_headers = request_trailer_headers req in
       let request_headers = Http.Request.headers req in

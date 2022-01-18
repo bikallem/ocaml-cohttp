@@ -133,14 +133,13 @@ let request_trailer_headers (req : Http.Request.t) =
 
 (* Chunk decoding algorithm is explained at
    https://datatracker.ietf.org/doc/html/rfc7230#section-4.1.3 *)
-let rec chunk (total_read : int) (req : Http.Request.t) f =
+let chunk (total_read : int) (req : Http.Request.t) =
   let* sz = chunk_size in
   match sz with
   | sz when sz > 0 ->
       let* extensions = chunk_exts <* crlf in
       let* data = take_bigstring sz <* crlf >>| Cstruct.of_bigarray in
-      f (Body.Chunk { data; length = sz; extensions });
-      (chunk [@tailcall]) (total_read + sz) req f
+      return (Body.Chunk { data; length = sz; extensions })
   | 0 ->
       let* extensions = chunk_exts <* crlf in
       (* Read trailer headers if any and append those to request headers.
@@ -193,17 +192,14 @@ let rec chunk (total_read : int) (req : Http.Request.t) f =
           (string_of_int total_read)
       in
       let updated_request = { req with headers = request_headers } in
-      f (Last_chunk { extensions; updated_request });
-      return ()
+      return (Body.Last_chunk { extensions; updated_request })
   | sz -> fail (Format.sprintf "Invalid chunk size: %d" sz)
 
 let io_buffer_size = 65536 (* UNIX_BUFFER_SIZE 4.0.0 in bytes *)
 
-let parse :
-    'a Angstrom.t ->
-    #Eio.Flow.read ->
-    Cstruct.t ->
-    (Cstruct.t * 'a, string) result =
+exception Parse_error of string
+
+let parse : 'a Angstrom.t -> #Eio.Flow.read -> Cstruct.t -> Cstruct.t * 'a =
  fun p client_fd unconsumed ->
   let rec loop = function
     | Buffered.Partial k -> (
@@ -224,11 +220,17 @@ let parse :
         let unconsumed =
           if len > 0 then Cstruct.of_bigarray ~off ~len buf else Cstruct.empty
         in
-        Ok (unconsumed, x)
+        (unconsumed, x)
     | Buffered.Fail (_, marks, err) ->
-        Error (String.concat " > " marks ^ ": " ^ err)
+        raise (Parse_error (String.concat " > " marks ^ ": " ^ err))
   in
   loop (Buffered.parse p)
 
-let parse_chunk client_fd unconsumed req f =
-  parse (chunk 0 req f) client_fd unconsumed
+let rec read_chunk client_fd unconsumed total_read req f =
+  let unconsumed, chunk = parse (chunk total_read req) client_fd unconsumed in
+  match chunk with
+  | Body.Chunk x as c ->
+      f c;
+      let total_read = total_read + x.length in
+      (parse_chunk [@tailcall]) client_fd unconsumed total_read req f
+  | Body.Last_chunk _ as c -> f c

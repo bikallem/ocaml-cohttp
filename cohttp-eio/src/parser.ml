@@ -232,5 +232,5 @@ let rec read_chunk client_fd unconsumed total_read req f =
   | Body.Chunk x as c ->
       f c;
       let total_read = total_read + x.length in
-      (parse_chunk [@tailcall]) client_fd unconsumed total_read req f
+      (read_chunk [@tailcall]) client_fd unconsumed total_read req f
   | Body.Last_chunk _ as c -> f c

@@ -1,5 +1,4 @@
 open Angstrom
-open EffectHandlers
 
 let token =
   take_while1 (function
@@ -132,20 +131,16 @@ let request_trailer_headers (req : Http.Request.t) =
   | Some v -> List.map String.trim @@ String.split_on_char ',' v
   | None -> []
 
-type _ eff +=
-  | Chunk : (Cstruct.t * Body.chunk_extension list) -> unit eff
-  | Last_chunk : Http.Request.t -> unit eff
-
 (* Chunk decoding algorithm is explained at
    https://datatracker.ietf.org/doc/html/rfc7230#section-4.1.3 *)
-let rec read_chunk (total_read : int) (req : Http.Request.t) : unit t =
+let rec chunk (total_read : int) (req : Http.Request.t) f =
   let* sz = chunk_size in
   match sz with
   | sz when sz > 0 ->
       let* extensions = chunk_exts <* crlf in
       let* data = take_bigstring sz <* crlf >>| Cstruct.of_bigarray in
-      perform (Chunk (data, extensions));
-      (read_chunk [@tailcall]) (total_read + sz) req
+      f (Body.Chunk { data; length = sz; extensions });
+      (chunk [@tailcall]) (total_read + sz) req f
   | 0 ->
       (* Read chunk trailers if any and append those trailer headers to request headers.
          The spec at https://datatracker.ietf.org/doc/html/rfc7230#section-4.1.3
@@ -192,8 +187,7 @@ let rec read_chunk (total_read : int) (req : Http.Request.t) : unit t =
         Http.Header.add request_headers "Content-Length"
           (string_of_int total_read)
       in
-      let req = { req with headers = request_headers } in
-      perform @@ Last_chunk req;
+      f @@ Last_chunk { req with headers = request_headers };
       return ()
   | sz -> fail (Format.sprintf "Invalid chunk size: %d" sz)
 
@@ -229,3 +223,6 @@ let parse :
         `Error (String.concat " > " marks ^ ": " ^ err)
   in
   loop (Buffered.parse p)
+
+let parse_chunk client_fd unconsumed req f =
+  parse (chunk 0 req f) client_fd unconsumed

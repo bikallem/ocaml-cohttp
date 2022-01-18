@@ -188,12 +188,8 @@ let rec chunk (total_read : int) (req : Http.Request.t) f =
         Http.Header.add request_headers "Content-Length"
           (string_of_int total_read)
       in
-      f
-      @@ Last_chunk
-           {
-             extensions;
-             updated_request = { req with headers = request_headers };
-           };
+      let updated_request = { req with headers = request_headers } in
+      f (Last_chunk { extensions; updated_request });
       return ()
   | sz -> fail (Format.sprintf "Invalid chunk size: %d" sz)
 

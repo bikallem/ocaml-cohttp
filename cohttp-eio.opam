@@ -23,7 +23,6 @@ depends: [
   "eio"
   "cstruct"
   "http" {= version}
-  "angstrom"
   "odoc" {with-doc}
 ]
 build: [

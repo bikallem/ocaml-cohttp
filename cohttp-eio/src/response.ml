@@ -6,7 +6,7 @@ and body =
   | `Custom of Eio.Flow.sink -> unit
   | `None ]
 
-and write_chunk = (Chunk.t -> unit) -> unit
+and write_chunk = ([ `Chunk of string | `Last_chunk ] -> unit) -> unit
 
 let create ?headers ?(status = `OK) body =
   let res = Http.Response.make ?headers ~version:`HTTP_1_1 ~status () in

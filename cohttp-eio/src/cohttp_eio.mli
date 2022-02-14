@@ -2,57 +2,21 @@
 module Reader : sig
   type t
 
-  type bigstring =
-    (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
-
   val create : ?buffer_size:int -> Eio.Flow.source -> t
   (** [create ?buffer_size reader] creates [t]. [buffer_size] is the maximum
       number of bytes [reader] attempts to read in one call. If [buffer_size] is
-      not given then [default_io_buffer_size] is used. *)
+      not given then [4096] is used. *)
 
-  val default_io_buffer_size : int
-  (** [default_io_buffer_size] is [4096]. *)
-
-  (** {1 Low Level API} *)
-
-  val source : t -> Eio.Flow.source
-  (** [source t] returns the reader used by [t]. *)
-
-  val buffer : t -> bigstring
+  val buffer : t -> Cstruct.t
   (** [buffer t] is the unconsumed bytes in [t]. *)
-
-  val length : t -> int
-  (** [length t] is the count of unconsumed bytes in [t]. *)
-
-  val buffer_size : t -> int
-  (** [bufer_size t] returns the read buffer size of [t] *)
 
   val consume : t -> int -> unit
   (** [consume t n] marks [n] bytes of data as consumed in [t]. *)
 
-  val fill : t -> int -> unit
-  (** [fill t sz] attempts to read at least [sz] count of bytes into [t].
+  val fill : ?len:int -> t -> unit
+  (** [fill ?len t] attempts to read at least [len] count of bytes into [t].
 
       @raise End_of_file if [source t] has reached end of file. *)
-
-  exception Parse_error of string
-
-  val parse : t -> 'a Angstrom.t -> 'a
-  (** [parse t p] is [a] after an Angstrom parser [p] is successfully executed
-      over [t].
-
-      @raise Parse_error if an error is encountered during parsing.
-      @raise End_of_file if [t] has reached end of file. *)
-end
-
-(** [Chunk] encapsulates HTTP/1.1 chunk transfer encoding data structures.
-    https://datatracker.ietf.org/doc/html/rfc7230#section-4.1 *)
-module Chunk : sig
-  type t =
-    | Chunk of { size : int; data : Cstruct.t; extensions : extension list }
-    | Last_chunk of extension list
-
-  and extension = { name : string; value : string option }
 end
 
 (** [Request] is a HTTP/1.1 request. *)
@@ -71,12 +35,13 @@ module Request : sig
 
   (** {1 Builtin Request Body Readers} *)
 
-  val read_fixed : t -> (Cstruct.t, string) result
-  (** [read_fixed t] is [Ok buf] if "Content-Length" header is a valid integer
-      value in [t]. Otherwise it is [Error err] where [err] is the error text. *)
+  val read_fixed : t -> (string, string) result
+  (** [read_fixed t] is [Ok buf] where [buf] is the if "Content-Length" header
+      is a valid integer value in [t]. Otherwise it is [Error err] where [err]
+      is the error text. *)
 
-  val read_chunk : t -> (Chunk.t -> unit) -> (t, string) result
-  (** [read_chunk t f] is [Ok req] if "Transfer-Encoding" header value is
+  val read_chunk : t -> (string -> unit) -> (unit, string) result
+  (** [read_chunk t f] is [Ok ()] if "Transfer-Encoding" header value is
       "chunked" in [t] and all chunks in a request are read successfully. [req]
       is the updated request as specified by the chunked encoding algorithm in
       https://datatracker.ietf.org/doc/html/rfc7230#section-4.1.3. Otherwise it
@@ -87,9 +52,6 @@ module Request : sig
   val reader : t -> Reader.t
   (** [reader t] returns a [Reader.t] instance. This can be used to create a
       custom request body reader. *)
-
-  val set_read_complete : t -> unit
-  (** [set_read_complet t] indicates that request [t] body has been read. *)
 end
 
 (** [Response] is a HTTP/1.1 response. *)
@@ -102,7 +64,7 @@ module Response : sig
     | `Custom of Eio.Flow.sink -> unit
     | `None ]
 
-  and write_chunk = (Chunk.t -> unit) -> unit
+  and write_chunk = ([ `Chunk of string | `Last_chunk ] -> unit) -> unit
 
   val create : ?headers:Http.Header.t -> ?status:Http.Status.t -> body -> t
 
@@ -147,15 +109,4 @@ module Server : sig
   (** {1 Basic Handlers} *)
 
   val not_found : handler
-
-  (** {1 Handler Combinators} *)
-
-  (* val join : handler -> handler -> handler *)
-  (** [join h1 h2] executes handler [h1]. If response is [None] then it executes
-      handler [h2]. *)
-
-  (*module Infix : sig *)
-  (*  val ( >>? ) : handler -> handler -> handler *)
-  (*  (1** [h1 >>? h2] is [join h1 h2] *1) *)
-  (*end *)
 end

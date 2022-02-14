@@ -1,7 +1,7 @@
 type t = {
   req : Http.Request.t;
   reader : Reader.t;
-  mutable read_complete : bool;
+  mutable body_read_complete : bool;
 }
 
 let reader t = t.reader
@@ -16,33 +16,37 @@ let is_keep_alive t = Http.Request.is_keep_alive t.req
 let read_fixed t =
   match Http.Header.get_transfer_encoding t.req.headers with
   | Http.Transfer.Fixed content_length -> (
-      if t.read_complete then Error "End of file"
+      if t.body_read_complete then Error "End of file"
       else
-        let content_length = Int64.to_int content_length in
+        let len = Int64.to_int content_length in
+        let unconsumed_len = Reader.unconsumed_len t.reader in
         try
-          Result.ok @@ Reader.parse t.reader (Parser.fixed_body content_length)
-        with e -> Error (Printexc.to_string e))
+          if unconsumed_len < len then
+            Reader.fill ~len:(len - unconsumed_len) t.reader;
+          let body = Cstruct.to_string (Reader.buffer t.reader) ~off:0 ~len in
+          t.body_read_complete <- true;
+          Ok body
+        with Reader.Parse_error msg -> Error msg)
   | _ -> Error "Request is not a fixed content body"
 
 let read_chunk t =
+  let rec chunk_loop f =
+    try
+      let chunk_len = Reader.parse_chunk_length t.reader |> Int64.to_int in
+      if chunk_len = 0 then Ok ()
+      else
+        let unconsumed_len = Reader.unconsumed_len t.reader in
+        if unconsumed_len < chunk_len then
+          Reader.fill ~len:(chunk_len - unconsumed_len) t.reader;
+        let chunk_body =
+          Cstruct.to_string (Reader.buffer t.reader) ~off:0 ~len:chunk_len
+        in
+        f chunk_body;
+        chunk_loop f
+    with Reader.Parse_error msg -> Error msg
+  in
   match Http.Header.get_transfer_encoding t.req.headers with
   | Http.Transfer.Chunked ->
-      let total_read = ref 0 in
-      let rec chunk_loop f =
-        if t.read_complete then Error "End of file"
-        else
-          let chunk = Reader.parse t.reader @@ Parser.chunk !total_read t.req in
-          match chunk with
-          | `Chunk (size, data, extensions) ->
-              f (Chunk.Chunk { size; data; extensions });
-              total_read := !total_read + size;
-              (chunk_loop [@tailcall]) f
-          | `Last_chunk (extensions, updated_request) ->
-              t.read_complete <- true;
-              f (Chunk.Last_chunk extensions);
-              Ok { t with req = updated_request }
-      in
-      chunk_loop
+      fun f ->
+        if t.body_read_complete then Error "End of file" else chunk_loop f
   | _ -> fun _ -> Error "Request is not a chunked request"
-
-let set_read_complete t = t.read_complete <- true

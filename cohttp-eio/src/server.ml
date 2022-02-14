@@ -18,28 +18,13 @@ let domain_count =
   | Some d -> int_of_string d
   | None -> 1
 
-(* https://datatracker.ietf.org/doc/html/rfc7230#section-4.1 *)
 let write_chunked (client_conn : Client_connection.t) chunk_writer =
-  let extensions exts =
-    let buf = Buffer.create 0 in
-    List.iter
-      (fun { Chunk.name; value } ->
-        let v =
-          match value with None -> "" | Some v -> Printf.sprintf "=%s" v
-        in
-        Printf.sprintf ";%s%s" name v |> Buffer.add_string buf)
-      exts;
-    Buffer.contents buf
-  in
   let write = function
-    | Chunk.Chunk { size; data; extensions = exts } ->
-        let buf =
-          Printf.sprintf "%X%s\r\n%s\r\n" size (extensions exts)
-            (Cstruct.to_string data)
-        in
+    | `Chunk body ->
+        let buf = Printf.sprintf "%X\r\n%s\r\n" (String.length body) body in
         Eio.Flow.copy_string buf client_conn.flow
-    | Chunk.Last_chunk exts ->
-        let buf = Printf.sprintf "%X%s\r\n" 0 (extensions exts) in
+    | `Last_chunk ->
+        let buf = Printf.sprintf "%X\r\n" 0 in
         Eio.Flow.copy_string buf client_conn.flow
   in
   chunk_writer write
@@ -73,31 +58,17 @@ let write_response (client_conn : Client_connection.t) { Response.res; body } =
   | `None -> Eio.Flow.copy_string (Buffer.contents buf) client_conn.flow
 
 let rec handle_request (t : t) (conn : Client_connection.t) : unit =
-  match Reader.parse conn.reader Parser.request with
+  match Reader.parse_request conn.reader with
   | req -> (
-      let req = Request.{ req; reader = conn.reader; read_complete = false } in
+      let req =
+        Request.{ req; reader = conn.reader; body_read_complete = false }
+      in
       let { Response.res; body } = t.request_handler req in
       let keep_alive = Request.is_keep_alive req in
-      let response_headers =
-        Http.Header.add_unless_exists
-          (Http.Response.headers res)
-          "connection"
-          (if keep_alive then "keep-alive" else "close")
-      in
-      let res = { res with headers = response_headers } in
       write_response conn { Response.res; body };
       match (keep_alive, Atomic.get t.stopped) with
       | _, true | false, _ -> Client_connection.close conn
-      | true, false ->
-          (* Drain unread bytes from client connection before
-             reading another request. *)
-          if not req.read_complete then
-            match Http.Header.get_transfer_encoding (Request.headers req) with
-            | Http.Transfer.Fixed _ -> ignore @@ Request.read_fixed req
-            | Http.Transfer.Chunked -> ignore @@ Request.read_chunk req ignore
-            | _ -> ()
-          else ();
-          (handle_request [@tailcall]) t conn)
+      | true, false -> handle_request t conn)
   | exception End_of_file ->
       Printf.eprintf "\nEnd_of_file%!";
       Client_connection.close conn
@@ -158,11 +129,3 @@ let run (t : t) env =
 (* Basic handlers *)
 
 let not_found : handler = fun (_ : Request.t) -> Response.not_found
-
-(* Handler combinators *)
-
-(* let join h1 h2 req = match h1 req with Some _ as res -> res | None -> h2 req *)
-
-(* module Infix = struct *)
-(*   let ( >>? ) = join *)
-(* end *)

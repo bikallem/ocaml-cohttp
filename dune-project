@@ -248,5 +248,4 @@
   eio
   cstruct
   (http
-   (= :version))
-  angstrom))
+   (= :version))))

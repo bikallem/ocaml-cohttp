@@ -1,10 +1,10 @@
-(lang dune 3.0)
+(lang dune 2.9)
 
 (name cohttp)
 
 (license ISC)
 
-(using mdx 0.2)
+(using mdx 0.1)
 
 (cram enable)
 

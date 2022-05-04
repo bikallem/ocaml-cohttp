@@ -1,6 +1,4 @@
 ## Unreleased
-- Address warning 32 errors (@bikallem #876)
-- Remove unused values. (@bikallem #873)
 - New curl based clients (@rgrinberg #813)
   + cohttp-curl-lwt for an Lwt backend
   + cohttp-curl-async for an Async backend
@@ -12,7 +10,7 @@
 - Faster Request/Response comparison (rgrinberg #814)
 - Use raise_notrace in header short circuiting exceptions (rgrinberg #802)
 - async(server): allow reading number of active connections (anuragsoni #809)
-- Various internal refactors (rgrinberg, mseri #820, #800, #799, #797)
+- Various internal refactors (rgrinberg, mseri, bikallem #876, #873, #820, #800, #799, #797)
 - http (all cohttp server backends): Consider the connection header in response
   in addition to the request when deciding on whether to keep a connection
   alive (anuragsoni, #843)

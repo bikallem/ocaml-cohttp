@@ -9,7 +9,7 @@ on:
     - cron: 0 1 * * MON
 
 jobs:
-  build-test-ubuntu:
+  build-test-default:
     strategy:
       fail-fast: false
       matrix:

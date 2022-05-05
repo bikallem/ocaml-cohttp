@@ -1,6 +1,5 @@
 (** [Server] is a HTTP 1.1 server. *)
 module Server : sig
-
   (** [Reader] is a buffered reader. *)
   module Reader : sig
     type t
@@ -89,7 +88,12 @@ module Server : sig
 
     (** {1 Configuring Basic Response} *)
 
-    val create : ?version:Http.Version.t -> ?status:Http.Status.t -> ?headers:Http.Header.t -> body -> t
+    val create :
+      ?version:Http.Version.t ->
+      ?status:Http.Status.t ->
+      ?headers:Http.Header.t ->
+      body ->
+      t
     (** [create body] returns a HTTP/1.1, 200 status response with no headers. *)
 
     val text : string -> t

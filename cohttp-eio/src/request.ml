@@ -18,7 +18,7 @@ let is_keep_alive t =
   | Some "keep-alive" -> true
   | _ -> Http.Version.(compare t.version `HTTP_1_1) >= 0
 
-module P = Parser
+module P = Reader
 
 let token =
   P.(
@@ -83,7 +83,7 @@ let read_fixed =
       | Some v -> (
           try
             let content_length = int_of_string v in
-            let content = Parser.take content_length t.reader in
+            let content = Reader.take content_length t.reader in
             read_complete := true;
             Ok content
           with e -> Error (Printexc.to_string e))

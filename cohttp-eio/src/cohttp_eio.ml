@@ -5,10 +5,3 @@ module Server = struct
   module Response = Response
   include Server
 end
-
-module Private = struct
-  let create_reader = Reader.create
-  let commit_reader = Reader.commit
-
-  module Parser = Parser
-end

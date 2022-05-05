@@ -1,8 +1,14 @@
 (** [Server] is a HTTP 1.1 server. *)
 module Server : sig
-  (** [Reader] is a buffered reader. *)
+  (** [Reader] is a buffered reader with back-tracking support. *)
   module Reader : sig
     type t
+
+    exception Parse_failure of string
+
+    type 'a parser = t -> 'a
+
+    val create : int -> Eio.Flow.source -> t
 
     val length : t -> int
     (** [length t] is the count of unconsumed bytes in [t]. *)
@@ -19,6 +25,41 @@ module Server : sig
     val unsafe_get : t -> int -> char
     val substring : t -> off:int -> len:int -> string
     val copy : t -> off:int -> len:int -> Bigstringaf.t
+
+    (** {1 Parser/Reader Combinators} *)
+
+    val return : 'a -> 'a parser
+    val fail : string -> 'a parser
+    val commit : unit parser
+    val pos : int parser
+    val ( <?> ) : 'a parser -> string -> 'a parser
+    val ( >>= ) : 'a parser -> ('a -> 'b parser) -> 'b parser
+    val ( let* ) : 'a parser -> ('a -> 'b parser) -> 'b parser
+    val ( >>| ) : 'a parser -> ('a -> 'b) -> 'b parser
+    val ( let+ ) : 'a parser -> ('a -> 'b) -> 'b parser
+    val ( <* ) : 'a parser -> _ parser -> 'a parser
+    val ( *> ) : _ parser -> 'b parser -> 'b parser
+    val ( <|> ) : 'a parser -> 'a parser -> 'a parser
+    val lift : ('a -> 'b) -> 'a parser -> 'b parser
+    val lift2 : ('a -> 'b -> 'c) -> 'a parser -> 'b parser -> 'c parser
+    val end_of_input : bool parser
+    val option : 'a -> 'a parser -> 'a parser
+    val peek_char : char parser
+    val peek_string : int -> string parser
+    val char : char -> unit parser
+    val any_char : char parser
+    val satisfy : (char -> bool) -> char parser
+    val string : string -> unit parser
+    val take_while1 : (char -> bool) -> string parser
+    val take_while : (char -> bool) -> string parser
+    val take_bigstring : int -> Bigstringaf.t parser
+    val take : int -> string parser
+    val take_till : (char -> bool) -> string parser
+    val many : 'a parser -> 'a list parser
+    val many_till : 'a parser -> _ parser -> 'a list parser
+    val skip : (char -> bool) -> unit parser
+    val skip_while : (char -> bool) -> unit parser
+    val skip_many : 'a parser -> unit parser
   end
 
   (** [Chunk] encapsulates HTTP/1.1 chunk transfer encoding data structures.
@@ -131,53 +172,4 @@ module Server : sig
   (** {1 Basic Handlers} *)
 
   val not_found : handler
-end
-
-(**/**)
-
-(** Do not use directly. Used for unit testing only. *)
-module Private : sig
-  open Server
-
-  val create_reader : int -> Eio.Flow.source -> Reader.t
-  val commit_reader : Reader.t -> unit
-
-  module Parser : sig
-    type 'a t = Reader.t -> 'a
-
-    exception Parse_failure of string
-
-    val return : 'a -> 'a t
-    val fail : string -> 'a t
-    val commit : unit t
-    val pos : int t
-    val ( <?> ) : 'a t -> string -> 'a t
-    val ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t
-    val ( let* ) : 'a t -> ('a -> 'b t) -> 'b t
-    val ( >>| ) : 'a t -> ('a -> 'b) -> 'b t
-    val ( let+ ) : 'a t -> ('a -> 'b) -> 'b t
-    val ( <* ) : 'a t -> _ t -> 'a t
-    val ( *> ) : _ t -> 'b t -> 'b t
-    val ( <|> ) : 'a t -> 'a t -> 'a t
-    val lift : ('a -> 'b) -> 'a t -> 'b t
-    val lift2 : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
-    val end_of_input : bool t
-    val option : 'a -> 'a t -> 'a t
-    val peek_char : char t
-    val peek_string : int -> string t
-    val char : char -> unit t
-    val any_char : char t
-    val satisfy : (char -> bool) -> char t
-    val string : string -> unit t
-    val take_while1 : (char -> bool) -> string t
-    val take_while : (char -> bool) -> string t
-    val take_bigstring : int -> Bigstringaf.t t
-    val take : int -> string t
-    val take_till : (char -> bool) -> string t
-    val many : 'a t -> 'a list t
-    val many_till : 'a t -> _ t -> 'a list t
-    val skip : (char -> bool) -> unit t
-    val skip_while : (char -> bool) -> unit t
-    val skip_many : 'a t -> unit t
-  end
 end

@@ -1,4 +1,4 @@
-.PHONY: build clean test clean eio eio-shell
+.PHONY: build clean test clean eio eio-shell eio-test
 
 build:
 	dune build
@@ -18,6 +18,9 @@ nix/opam-selection.nix:
 
 eio: #build eio
 	dune build cohttp-eio
+
+eio-test:
+	dune runtest cohttp-eio
 
 eio-shell: # nix-shell for eio dev
 	nix-shell -p gmp libev nmap 

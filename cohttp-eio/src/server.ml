@@ -8,9 +8,8 @@ let domain_count =
   | Some d -> int_of_string d
   | None -> 1
 
-let is_custom resp = match Response.body resp with
-  | Custom _ -> true
-  | _ -> false
+let is_custom resp =
+  match Response.body resp with Custom _ -> true | _ -> false
 
 let rec handle_request reader writer flow handler =
   match Request.parse reader with
@@ -26,7 +25,7 @@ let rec handle_request reader writer flow handler =
       else Eio.Flow.close flow
   | (exception End_of_file) | (exception Eio.Net.Connection_reset _) ->
       Eio.Flow.close flow
-  | exception Parser.Parse_failure _e ->
+  | exception Reader.Parse_failure _e ->
       Response.(write bad_request writer);
       Writer.wakeup writer;
       Eio.Flow.close flow

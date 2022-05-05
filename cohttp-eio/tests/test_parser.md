@@ -8,18 +8,17 @@
 
 ```ocaml
 open Cohttp_eio
-module P = Private.Parser
-module R = Server.Reader
+module P = Server.Reader
 
 let create_reader s = 
   let flow = Eio.Flow.string_source s in
-  Private.create_reader 1 flow
+  P.create 1 flow
 
 let parse ?rdr p s = 
   let p = P.(lift2 (fun a pos -> (a, pos)) p pos) in
   let rdr = 
     match rdr with
-    | Some r -> (Private.commit_reader r; r)
+    | Some r -> (P.commit r; r)
     | None -> create_reader s 
   in
   p rdr
@@ -37,7 +36,7 @@ let p3 = P.(string "hello" *> commit *> char ' ' *> string "world")
 - : string * int = ("hello", 0)
 
 # parse p2 "";;
-Exception: Cohttp_eio__Parser.Parse_failure "parse error".
+Exception: Cohttp_eio__Reader.Parse_failure "parse error".
 
 # parse p3 "hello world";;
 - : unit * int = ((), 6)
@@ -92,19 +91,19 @@ let p8 = P.(take_while (function 'a' -> true | _ -> false) *> commit *> take_whi
 
 # parse p2 "DDD";;
 Exception:
-Cohttp_eio__Parser.Parse_failure "[take_while1] count is less than 1".
+Cohttp_eio__Reader.Parse_failure "[take_while1] count is less than 1".
 
 # parse p3 "DDDD";;
 - : Bigstringaf.t * int = (<abstr>, 4)
 
 # parse p3 "DDD";;
 Exception:
-Cohttp_eio__Parser.Parse_failure "[take_bigstring] not enough input".
+Cohttp_eio__Reader.Parse_failure "[take_bigstring] not enough input".
 
 # parse p4 "DDDD";;
 - : string * int = ("DDDD", 4)
 # parse p4 "DDD";;
-Exception: Cohttp_eio__Parser.Parse_failure "[take] not enough input".
+Exception: Cohttp_eio__Reader.Parse_failure "[take] not enough input".
 
 # parse (P.(string "GET" *> char ' ' *> take_while1 (fun c -> c != ' '))) "GET /hello  ";;
 - : string * int = ("/hello", 10)
@@ -167,12 +166,12 @@ let p4 = P.(char 'D' *> char ' ' *> string "hello world")
 
 ```ocaml
 # let rdr = create_reader "ABCD hello world!";;
-val rdr : R.t = <abstr>
+val rdr : P.t = <abstr>
 
 # let ((), pos) = parse ~rdr p2 "ABCD hello world!";;
 val pos : int = 3
 
-# R.consume rdr pos;;
+# P.consume rdr pos;;
 - : unit = ()
 
 # parse ~rdr p4 "";;

@@ -60,18 +60,18 @@ module Reader : sig
   val skip_many : 'a parser -> unit parser
 end
 
+(** [Chunk] encapsulates HTTP/1.1 chunk transfer encoding data structures.
+    https://datatracker.ietf.org/doc/html/rfc7230#section-4.1 *)
+module Chunk : sig
+  type t = Chunk of chunk | Last_chunk of extension list
+  and chunk = { size : int; data : Cstruct.t; extensions : extension list }
+  and extension = { name : string; value : string option }
+
+  val pp : Format.formatter -> t -> unit
+end
+
 (** [Server] is a HTTP 1.1 server. *)
 module Server : sig
-  (** [Chunk] encapsulates HTTP/1.1 chunk transfer encoding data structures.
-      https://datatracker.ietf.org/doc/html/rfc7230#section-4.1 *)
-  module Chunk : sig
-    type t = Chunk of chunk | Last_chunk of extension list
-    and chunk = { size : int; data : Cstruct.t; extensions : extension list }
-    and extension = { name : string; value : string option }
-
-    val pp : Format.formatter -> t -> unit
-  end
-
   (** [Request] is a HTTP/1.1 request. *)
   module Request : sig
     type t

@@ -1,3 +1,4 @@
+open Cohttp_eio
 open Cohttp_eio.Server
 
 let dump_chunk buf chunk =

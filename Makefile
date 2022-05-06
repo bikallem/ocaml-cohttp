@@ -12,6 +12,9 @@ js-test:
 clean:
 	dune clean
 
+fmt:
+	dune b @fmt --auto-promote
+
 .PHONY: nix/opam-selection.nix
 nix/opam-selection.nix:
 	nix-shell -A resolve default.nix

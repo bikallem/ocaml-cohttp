@@ -1,3 +1,13 @@
+(** [Chunk] encapsulates HTTP/1.1 chunk transfer encoding data structures.
+    https://datatracker.ietf.org/doc/html/rfc7230#section-4.1 *)
+module Chunk : sig
+  type t = Chunk of chunk | Last_chunk of extension list
+  and chunk = { size : int; data : Cstruct.t; extensions : extension list }
+  and extension = { name : string; value : string option }
+
+  val pp : Format.formatter -> t -> unit
+end
+
 (** [Reader] is a buffered reader with back-tracking support. *)
 module Reader : sig
   type t
@@ -58,57 +68,24 @@ module Reader : sig
   val skip : (char -> bool) -> unit parser
   val skip_while : (char -> bool) -> unit parser
   val skip_many : 'a parser -> unit parser
-end
 
-(** [Chunk] encapsulates HTTP/1.1 chunk transfer encoding data structures.
-    https://datatracker.ietf.org/doc/html/rfc7230#section-4.1 *)
-module Chunk : sig
-  type t = Chunk of chunk | Last_chunk of extension list
-  and chunk = { size : int; data : Cstruct.t; extensions : extension list }
-  and extension = { name : string; value : string option }
+  (** {1 Readers} *)
 
-  val pp : Format.formatter -> t -> unit
+  val read_fixed : t -> Http.Header.t -> (string, string) result
+  (** [read_fixed t] is [Ok buf] if "Content-Length" header is a valid integer
+      value in [t]. Otherwise it is [Error err] where [err] is the error text. *)
+
+  val read_chunked :
+    t -> Http.Header.t -> (Chunk.t -> unit) -> (Http.Header.t, string) result
+  (** [read_chunk t f] is [Ok req] if "Transfer-Encoding" header value is
+      "chunked" in [t] and all chunks in a request are read successfully. [req]
+      is the updated request as specified by the chunked encoding algorithm in
+      https://datatracker.ietf.org/doc/html/rfc7230#section-4.1.3. Otherwise it
+      is [Error err] where [err] is the error text. *)
 end
 
 (** [Server] is a HTTP 1.1 server. *)
 module Server : sig
-  (** [Request] is a HTTP/1.1 request. *)
-  module Request : sig
-    type t
-
-    (** {1 Request Details} *)
-
-    val headers : t -> Http.Header.t
-    val meth : t -> Http.Method.t
-    val resource : t -> string
-    val version : t -> Http.Version.t
-    val is_keep_alive : t -> bool
-
-    (** {1 Builtin Request Body Readers} *)
-
-    val read_fixed : t -> (string, string) result
-    (** [read_fixed t] is [Ok buf] if "Content-Length" header is a valid integer
-        value in [t]. Otherwise it is [Error err] where [err] is the error text. *)
-
-    val read_chunk : t -> (Chunk.t -> unit) -> (t, string) result
-    (** [read_chunk t f] is [Ok req] if "Transfer-Encoding" header value is
-        "chunked" in [t] and all chunks in a request are read successfully.
-        [req] is the updated request as specified by the chunked encoding
-        algorithm in
-        https://datatracker.ietf.org/doc/html/rfc7230#section-4.1.3. Otherwise
-        it is [Error err] where [err] is the error text. *)
-
-    (** {1 Custom Request Body Readers} *)
-
-    val reader : t -> Reader.t
-    (** [reader t] returns a [Reader.t] instance. This can be used to create a
-        custom request body reader. *)
-
-    (** {1 Pretty Printer} *)
-
-    val pp : Format.formatter -> t -> unit
-  end
-
   (** [Response] is a HTTP/1.1 response. *)
   module Response : sig
     type t
@@ -155,7 +132,7 @@ module Server : sig
     (** [bad_request t] returns a HTTP/1.1, 400 status response. *)
   end
 
-  type handler = Request.t -> Response.t
+  type handler = Http.Request.t * Reader.t -> Response.t
   type middleware = handler -> handler
 
   (** {1 Run Server} *)

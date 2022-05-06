@@ -1,18 +1,35 @@
 open Cohttp_eio
 open Cohttp_eio.Server
 
+let pp_method fmt meth = Format.fprintf fmt "%s" (Http.Method.to_string meth)
+let pp_version fmt v = Format.fprintf fmt "%s" (Http.Version.to_string v)
+
+let pp fmt (req : Http.Request.t) =
+  let fields =
+    [
+      Fmt.field "meth" (fun (t : Http.Request.t) -> t.meth) pp_method;
+      Fmt.field "resource" (fun (t : Http.Request.t) -> t.resource) Fmt.string;
+      Fmt.field "version" (fun (t : Http.Request.t) -> t.version) pp_version;
+      Fmt.field "headers"
+        (fun (t : Http.Request.t) -> t.headers)
+        Http.Header.pp_hum;
+    ]
+  in
+  Fmt.record fields fmt req
+
 let dump_chunk buf chunk =
   let s = Format.asprintf "\n%a" Chunk.pp chunk in
   Buffer.add_string buf s
 
-let app req =
-  match Request.resource req with
+let app (req, reader) =
+  match Http.Request.resource req with
   | "/" -> (
       let chunk_buf = Buffer.create 0 in
-      match Request.read_chunk req (dump_chunk chunk_buf) with
-      | Ok req ->
+      match Reader.read_chunked reader req.headers (dump_chunk chunk_buf) with
+      | Ok headers ->
+          let req = { req with headers } in
           Buffer.contents chunk_buf
-          |> Format.asprintf "%a@ %s%!" Request.pp req
+          |> Format.asprintf "%a@ %s%!" pp req
           |> Response.text
       | Error s -> Response.text s)
   | _ -> Response.not_found

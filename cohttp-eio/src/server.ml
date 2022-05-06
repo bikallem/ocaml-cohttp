@@ -1,6 +1,6 @@
 open Eio.Std
 
-type handler = Request.t -> Response.t
+type handler = Http.Request.t * Reader.t -> Response.t
 type middleware = handler -> handler
 
 let domain_count =
@@ -12,15 +12,15 @@ let is_custom resp =
   match Response.body resp with Custom _ -> true | _ -> false
 
 let rec handle_request reader writer flow handler =
-  match Request.parse reader with
+  match Reader.request reader with
   | request ->
-      let response = handler request in
+      let response = handler (request, reader) in
       Response.write response writer;
       (* A custom response needs to write the main response before calling
          the custom function for the body. Response.write wakes the writer for
          us if that is the case. *)
       if not (is_custom response) then Writer.wakeup writer;
-      if Request.is_keep_alive request then
+      if Http.Request.is_keep_alive request then
         handle_request reader writer flow handler
       else Eio.Flow.close flow
   | (exception End_of_file) | (exception Eio.Net.Connection_reset _) ->

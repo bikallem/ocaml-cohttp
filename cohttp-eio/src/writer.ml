@@ -76,10 +76,7 @@ let write_chunked flow chunk_writer =
   in
   let write = function
     | Body.Chunk { size; data; extensions = exts } ->
-        let buf =
-          Printf.sprintf "%X%s\r\n%s\r\n" size (extensions exts)
-            (Cstruct.to_string data)
-        in
+        let buf = Printf.sprintf "%X%s\r\n%s\r\n" size (extensions exts) data in
         Eio.Flow.copy_string buf flow
     | Body.Last_chunk exts ->
         let buf = Printf.sprintf "%X%s\r\n" 0 (extensions exts) in

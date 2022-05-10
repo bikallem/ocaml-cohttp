@@ -8,7 +8,7 @@ and chunk = Chunk of chunk_body | Last_chunk of chunk_extension list
 
 and chunk_body = {
   size : int;
-  data : Cstruct.t;
+  data : string;
   extensions : chunk_extension list;
 }
 
@@ -31,7 +31,7 @@ let pp_chunk fmt = function
         record
           [
             Fmt.field "size" (fun t -> t.size) Fmt.int;
-            Fmt.field "data" (fun t -> Cstruct.to_string t.data) Fmt.string;
+            Fmt.field "data" (fun t -> t.data) Fmt.string;
             Fmt.field "extensions" (fun t -> t.extensions) pp_chunk_extension;
           ])
         fmt chunk
@@ -132,7 +132,8 @@ let chunk (total_read : int) (headers : Http.Header.t) =
   match sz with
   | sz when sz > 0 ->
       let* extensions = chunk_exts <* crlf in
-      let* data = take_bigstring sz <* crlf >>| Cstruct.of_bigarray in
+      let* data = take_bigstring sz <* crlf in
+      let data = data |> Bigstringaf.to_string in
       return @@ `Chunk (sz, data, extensions)
   | 0 ->
       let* extensions = chunk_exts <* crlf in

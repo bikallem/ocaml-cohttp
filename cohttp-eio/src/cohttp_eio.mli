@@ -24,6 +24,11 @@ module Reader : sig
   val substring : t -> off:int -> len:int -> string
   val copy : t -> off:int -> len:int -> Bigstringaf.t
 
+  (** {1 Common Parsers} *)
+
+  val http_request : Http.Request.t parser
+  val http_headers : Http.Header.t parser
+
   (** {1 Parser/Reader Combinators} *)
 
   val return : 'a -> 'a parser
@@ -58,11 +63,6 @@ module Reader : sig
   val skip : (char -> bool) -> unit parser
   val skip_while : (char -> bool) -> unit parser
   val skip_many : 'a parser -> unit parser
-
-  (** {1 Common Parsers} *)
-
-  val http_request : Http.Request.t parser
-  val http_headers : Http.Header.t parser
 end
 
 module Body : sig
@@ -78,7 +78,7 @@ module Body : sig
 
   and chunk_body = {
     size : int;
-    data : Cstruct.t;
+    data : string;
     extensions : chunk_extension list;
   }
 

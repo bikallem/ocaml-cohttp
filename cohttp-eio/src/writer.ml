@@ -45,28 +45,75 @@ end = struct
 end
 
 type t = {
-  flow : < Eio.Flow.two_way ; Eio.Flow.close >;
+  sink : Eio.Flow.sink;
   buf : Buffer.t;
   mutable wakeup : Optional_thunk.t;
 }
 
-let create flow =
+let create sink =
   let buf = Buffer.create 0x1000 in
-  { flow; buf; wakeup = Optional_thunk.none }
+  { sink; buf; wakeup = Optional_thunk.none }
 
 let write_string t s = Buffer.add_string t.buf s
-let sink t = (t.flow :> Eio.Flow.sink)
-let close t = Eio.Flow.close t.flow
 
 let wakeup t =
   let f = t.wakeup in
   t.wakeup <- Optional_thunk.none;
   Optional_thunk.call_if_some f
 
+(* https://datatracker.ietf.org/doc/html/rfc7230#section-4.1 *)
+let write_chunked flow chunk_writer =
+  let extensions exts =
+    let buf = Buffer.create 0 in
+    List.iter
+      (fun { Body.name; value } ->
+        let v =
+          match value with None -> "" | Some v -> Printf.sprintf "=%s" v
+        in
+        Printf.sprintf ";%s%s" name v |> Buffer.add_string buf)
+      exts;
+    Buffer.contents buf
+  in
+  let write = function
+    | Body.Chunk { size; data; extensions = exts } ->
+        let buf =
+          Printf.sprintf "%X%s\r\n%s\r\n" size (extensions exts)
+            (Cstruct.to_string data)
+        in
+        Eio.Flow.copy_string buf flow
+    | Body.Last_chunk exts ->
+        let buf = Printf.sprintf "%X%s\r\n" 0 (extensions exts) in
+        Eio.Flow.copy_string buf flow
+  in
+  chunk_writer write
+
+let write (t : t) ((response, body) : Http.Response.t * Body.t) =
+  let version = Http.Version.to_string response.version in
+  let status = Http.Status.to_string response.status in
+  write_string t version;
+  write_string t " ";
+  write_string t status;
+  write_string t "\r\n";
+  Http.Header.iter
+    (fun k v ->
+      write_string t k;
+      write_string t ": ";
+      write_string t v;
+      write_string t "\r\n")
+    response.headers;
+  write_string t "\r\n";
+  match body with
+  | Body.Fixed s -> write_string t s
+  | Custom f ->
+      wakeup t;
+      f (t.sink :> Eio.Flow.sink)
+  | Chunked { writer; _ } -> write_chunked t.sink writer
+  | Empty -> ()
+
 let run t =
   let rec loop () =
     if Buffer.length t.buf > 0 then (
-      Eio.Flow.copy_string (Buffer.contents t.buf) t.flow;
+      Eio.Flow.copy_string (Buffer.contents t.buf) t.sink;
       Buffer.clear t.buf;
       loop ())
     else t.wakeup <- Optional_thunk.some loop

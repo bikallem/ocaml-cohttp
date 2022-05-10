@@ -30,9 +30,9 @@ let app (req, reader) =
           let req = { req with headers } in
           Buffer.contents chunk_buf
           |> Format.asprintf "%a@ %s%!" pp req
-          |> Response.text
-      | Error s -> Response.text s)
-  | _ -> Response.not_found
+          |> Server.text_response
+      | Error s -> Server.text_response s)
+  | _ -> Server.not_found_response
 
 let () =
   let port = ref 8080 in

@@ -1,6 +1,6 @@
 type t =
   | Fixed of string
-  | Chunked of { writer : (Chunk.t -> unit) -> unit; trailers : Http.Header.t }
+  | Chunked of { writer : (chunk -> unit) -> unit; trailers : Http.Header.t }
   | Custom of (Eio.Flow.sink -> unit)
   | Empty
 

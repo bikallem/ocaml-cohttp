@@ -1,13 +1,3 @@
-(** [Chunk] encapsulates HTTP/1.1 chunk transfer encoding data structures.
-    https://datatracker.ietf.org/doc/html/rfc7230#section-4.1 *)
-module Chunk : sig
-  type t = Chunk of chunk | Last_chunk of extension list
-  and chunk = { size : int; data : Cstruct.t; extensions : extension list }
-  and extension = { name : string; value : string option }
-
-  val pp : Format.formatter -> t -> unit
-end
-
 (** [Reader] is a buffered reader with back-tracking support. *)
 module Reader : sig
   type t
@@ -69,7 +59,7 @@ module Reader : sig
   val skip_while : (char -> bool) -> unit parser
   val skip_many : 'a parser -> unit parser
 
-  (** {1 Readers} *)
+  (** {1 Common Parsers} *)
 
   val http_request : Http.Request.t parser
   val http_headers : Http.Header.t parser
@@ -78,13 +68,12 @@ end
 module Body : sig
   type t =
     | Fixed of string
-    | Chunked of {
-        writer : (Chunk.t -> unit) -> unit;
-        trailers : Http.Header.t;
-      }
+    | Chunked of { writer : (chunk -> unit) -> unit; trailers : Http.Header.t }
     | Custom of (Eio.Flow.sink -> unit)
     | Empty
 
+  (** [Chunk] encapsulates HTTP/1.1 chunk transfer encoding data structures.
+      https://datatracker.ietf.org/doc/html/rfc7230#section-4.1 *)
   and chunk = Chunk of chunk_body | Last_chunk of chunk_extension list
 
   and chunk_body = {
@@ -117,54 +106,29 @@ end
 
 (** [Server] is a HTTP 1.1 server. *)
 module Server : sig
-  (** [Response] is a HTTP/1.1 response. *)
-  module Response : sig
-    type t
-
-    and body =
-      | String of string
-      | Chunked of write_chunk
-      | Custom of (Eio.Flow.sink -> unit)
-      | Empty
-
-    and write_chunk = (Chunk.t -> unit) -> unit
-
-    (** {1 Response Details} *)
-
-    val headers : t -> Http.Header.t
-    val status : t -> Http.Status.t
-    val body : t -> body
-
-    (** {1 Configuring Basic Response} *)
-
-    val create :
-      ?version:Http.Version.t ->
-      ?status:Http.Status.t ->
-      ?headers:Http.Header.t ->
-      body ->
-      t
-    (** [create body] returns a HTTP/1.1, 200 status response with no headers. *)
-
-    val text : string -> t
-    (** [text t s] returns a HTTP/1.1, 200 status response with "Content-Type"
-        header set to "text/plain". *)
-
-    val html : string -> t
-    (** [html t s] returns a HTTP/1.1, 200 status response with header set to
-        "Content-Type: text/html". *)
-
-    val not_found : t
-    (** [not_found t] returns a HTTP/1.1, 404 status response. *)
-
-    val internal_server_error : t
-    (** [internal_server_error] returns a HTTP/1.1, 500 status response. *)
-
-    val bad_request : t
-    (** [bad_request t] returns a HTTP/1.1, 400 status response. *)
-  end
-
-  type handler = Http.Request.t * Reader.t -> Response.t
   type middleware = handler -> handler
+  and handler = request -> response
+  and request = Http.Request.t * Reader.t
+  and response = Http.Response.t * Body.t
+
+  (** {1 Response} *)
+
+  val text_response : string -> response
+  (** [text t s] returns a HTTP/1.1, 200 status response with "Content-Type"
+      header set to "text/plain". *)
+
+  val html_response : string -> response
+  (** [html t s] returns a HTTP/1.1, 200 status response with header set to
+      "Content-Type: text/html". *)
+
+  val not_found_response : response
+  (** [not_found t] returns a HTTP/1.1, 404 status response. *)
+
+  val internal_server_error_response : response
+  (** [internal_server_error] returns a HTTP/1.1, 500 status response. *)
+
+  val bad_request_response : response
+  (* [bad_request t] returns a HTTP/1.1, 400 status response. *)
 
   (** {1 Run Server} *)
 
@@ -179,5 +143,5 @@ module Server : sig
 
   (** {1 Basic Handlers} *)
 
-  val not_found : handler
+  val not_found_handler : handler
 end

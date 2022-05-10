@@ -1,4 +1,4 @@
-open Cohttp_eio.Server
+open Cohttp_eio
 
 let pp_method fmt meth = Format.fprintf fmt "%s" (Http.Method.to_string meth)
 let pp_version fmt v = Format.fprintf fmt "%s" (Http.Version.to_string v)
@@ -26,8 +26,8 @@ let app ((req : Http.Request.t), reader) =
   let fmt = Format.formatter_of_buffer buf in
   pp fmt req;
   Format.fprintf fmt "\n\n%s%!" body;
-  Response.text (Buffer.contents buf)
+  Server.text_response (Buffer.contents buf)
 
 let () =
   Eio_main.run @@ fun env ->
-  Eio.Switch.run @@ fun sw -> run ~port:8080 env sw app
+  Eio.Switch.run @@ fun sw -> Server.run ~port:8080 env sw app

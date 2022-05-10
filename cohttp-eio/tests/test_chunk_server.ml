@@ -18,14 +18,14 @@ let pp fmt (req : Http.Request.t) =
   Fmt.record fields fmt req
 
 let dump_chunk buf chunk =
-  let s = Format.asprintf "\n%a" Chunk.pp chunk in
+  let s = Format.asprintf "\n%a" Body.pp_chunk chunk in
   Buffer.add_string buf s
 
 let app (req, reader) =
   match Http.Request.resource req with
   | "/" -> (
       let chunk_buf = Buffer.create 0 in
-      match Reader.read_chunked reader req.headers (dump_chunk chunk_buf) with
+      match Body.read_chunked reader req.headers (dump_chunk chunk_buf) with
       | Ok headers ->
           let req = { req with headers } in
           Buffer.contents chunk_buf

@@ -71,17 +71,48 @@ module Reader : sig
 
   (** {1 Readers} *)
 
-  val read_fixed : t -> Http.Header.t -> (string, string) result
+  val http_request : Http.Request.t parser
+  val http_headers : Http.Header.t parser
+end
+
+module Body : sig
+  type t =
+    | Fixed of string
+    | Chunked of {
+        writer : (Chunk.t -> unit) -> unit;
+        trailers : Http.Header.t;
+      }
+    | Custom of (Eio.Flow.sink -> unit)
+    | Empty
+
+  and chunk = Chunk of chunk_body | Last_chunk of chunk_extension list
+
+  and chunk_body = {
+    size : int;
+    data : Cstruct.t;
+    extensions : chunk_extension list;
+  }
+
+  and chunk_extension = { name : string; value : string option }
+
+  val read_fixed : Reader.t -> Http.Header.t -> (string, string) result
   (** [read_fixed t] is [Ok buf] if "Content-Length" header is a valid integer
       value in [t]. Otherwise it is [Error err] where [err] is the error text. *)
 
   val read_chunked :
-    t -> Http.Header.t -> (Chunk.t -> unit) -> (Http.Header.t, string) result
-  (** [read_chunk t f] is [Ok req] if "Transfer-Encoding" header value is
-      "chunked" in [t] and all chunks in a request are read successfully. [req]
-      is the updated request as specified by the chunked encoding algorithm in
+    Reader.t ->
+    Http.Header.t ->
+    (chunk -> unit) ->
+    (Http.Header.t, string) result
+  (** [read_chunked reader headers chunk_handler] is [Ok headers] if
+      "Transfer-Encoding" header value is "chunked" in [headers] and all chunks
+      in [reader] are read successfully. [Ok headers] is the updated headers as
+      specified by the chunked encoding algorithm in
       https://datatracker.ietf.org/doc/html/rfc7230#section-4.1.3. Otherwise it
       is [Error err] where [err] is the error text. *)
+
+  val pp_chunk_extension : Format.formatter -> chunk_extension list -> unit
+  val pp_chunk : Format.formatter -> chunk -> unit
 end
 
 (** [Server] is a HTTP 1.1 server. *)

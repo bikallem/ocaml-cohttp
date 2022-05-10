@@ -12,7 +12,7 @@ let is_custom resp =
   match Response.body resp with Custom _ -> true | _ -> false
 
 let rec handle_request reader writer flow handler =
-  match Reader.request reader with
+  match Reader.http_request reader with
   | request ->
       let response = handler (request, reader) in
       Response.write response writer;

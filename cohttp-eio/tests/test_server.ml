@@ -18,7 +18,7 @@ let pp fmt (req : Http.Request.t) =
 
 let app ((req : Http.Request.t), reader) =
   let body =
-    match Cohttp_eio.Reader.read_fixed reader req.headers with
+    match Cohttp_eio.Body.read_fixed reader req.headers with
     | Ok s -> s
     | Error _ -> ""
   in

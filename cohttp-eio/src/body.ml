@@ -1,8 +1,13 @@
 type t =
   | Fixed of string
-  | Chunked of { writer : (chunk -> unit) -> unit; trailers : Http.Header.t }
+  | Chunked of chunk_writer
   | Custom of (Eio.Flow.sink -> unit)
   | Empty
+
+and chunk_writer = {
+  body_writer : (chunk -> unit) -> unit;
+  trailer_writer : (Http.Header.t -> unit) -> unit;
+}
 
 and chunk = Chunk of chunk_body | Last_chunk of chunk_extension list
 

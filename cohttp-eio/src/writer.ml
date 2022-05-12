@@ -54,35 +54,48 @@ let create sink =
   let buf = Buffer.create 0x1000 in
   { sink; buf; wakeup = Optional_thunk.none }
 
-let write_string t s = Buffer.add_string t.buf s
-
 let wakeup t =
   let f = t.wakeup in
   t.wakeup <- Optional_thunk.none;
   Optional_thunk.call_if_some f
 
+let write_string t s = Buffer.add_string t.buf s
+
+let write_headers t headers =
+  Http.Header.iter
+    (fun k v ->
+      write_string t k;
+      write_string t ": ";
+      write_string t v;
+      write_string t "\r\n")
+    headers
+
 (* https://datatracker.ietf.org/doc/html/rfc7230#section-4.1 *)
-let write_chunked flow chunk_writer =
-  let extensions exts =
-    let buf = Buffer.create 0 in
+let write_chunked t (chunk_writer : Body.chunk_writer) =
+  let write_extensions exts =
     List.iter
       (fun { Body.name; value } ->
         let v =
           match value with None -> "" | Some v -> Printf.sprintf "=%s" v
         in
-        Printf.sprintf ";%s%s" name v |> Buffer.add_string buf)
-      exts;
-    Buffer.contents buf
+        write_string t (Printf.sprintf ";%s%s" name v))
+      exts
   in
-  let write = function
+  let write_body = function
     | Body.Chunk { size; data; extensions = exts } ->
-        let buf = Printf.sprintf "%X%s\r\n%s\r\n" size (extensions exts) data in
-        Eio.Flow.copy_string buf flow
+        write_string t (Printf.sprintf "%X" size);
+        write_extensions exts;
+        write_string t "\r\n";
+        write_string t data;
+        write_string t "\r\n"
     | Body.Last_chunk exts ->
-        let buf = Printf.sprintf "%X%s\r\n" 0 (extensions exts) in
-        Eio.Flow.copy_string buf flow
+        write_string t "0";
+        write_extensions exts;
+        write_string t "\r\n"
   in
-  chunk_writer write
+  chunk_writer.body_writer write_body;
+  chunk_writer.trailer_writer (write_headers t);
+  write_string t "\r\n"
 
 let write (t : t) ((response, body) : Http.Response.t * Body.t) =
   let version = Http.Version.to_string response.version in
@@ -91,20 +104,14 @@ let write (t : t) ((response, body) : Http.Response.t * Body.t) =
   write_string t " ";
   write_string t status;
   write_string t "\r\n";
-  Http.Header.iter
-    (fun k v ->
-      write_string t k;
-      write_string t ": ";
-      write_string t v;
-      write_string t "\r\n")
-    response.headers;
+  write_headers t response.headers;
   write_string t "\r\n";
   match body with
   | Body.Fixed s -> write_string t s
+  | Chunked chunk_writer -> write_chunked t chunk_writer
   | Custom f ->
       wakeup t;
       f (t.sink :> Eio.Flow.sink)
-  | Chunked { writer; _ } -> write_chunked t.sink writer
   | Empty -> ()
 
 let run t =

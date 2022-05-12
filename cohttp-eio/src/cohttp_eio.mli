@@ -68,9 +68,14 @@ end
 module Body : sig
   type t =
     | Fixed of string
-    | Chunked of { writer : (chunk -> unit) -> unit; trailers : Http.Header.t }
+    | Chunked of chunk_writer
     | Custom of (Eio.Flow.sink -> unit)
     | Empty
+
+  and chunk_writer = {
+    body_writer : (chunk -> unit) -> unit;
+    trailer_writer : (Http.Header.t -> unit) -> unit;
+  }
 
   (** [Chunk] encapsulates HTTP/1.1 chunk transfer encoding data structures.
       https://datatracker.ietf.org/doc/html/rfc7230#section-4.1 *)

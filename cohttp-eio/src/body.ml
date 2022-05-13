@@ -44,20 +44,15 @@ let pp_chunk fmt = function
 
 open Reader
 
-let read_fixed =
-  let read_complete = ref false in
-  fun t headers ->
-    if !read_complete then Error "End of file"
-    else
-      match Http.Header.get headers "content-length" with
-      | Some v -> (
-          try
-            let content_length = int_of_string v in
-            let content = take content_length t in
-            read_complete := true;
-            Ok content
-          with e -> Error (Printexc.to_string e))
-      | None -> Error "Request is not a fixed content body"
+let read_fixed t headers =
+  match Http.Header.get headers "content-length" with
+  | Some v -> (
+      try
+        let content_length = int_of_string v in
+        let content = take content_length t in
+        Ok content
+      with e -> Error (Printexc.to_string e))
+  | None -> Error "Request is not a fixed content body"
 
 (* Chunked encoding parser *)
 
@@ -194,20 +189,16 @@ let read_chunked t headers =
   match Http.Header.get_transfer_encoding headers with
   | Http.Transfer.Chunked ->
       let total_read = ref 0 in
-      let read_complete = ref false in
       let rec chunk_loop f =
-        if !read_complete then Error "End of file"
-        else
-          let chunk = chunk !total_read headers t in
-          match chunk with
-          | `Chunk (size, data, extensions) ->
-              f (Chunk { size; data; extensions });
-              total_read := !total_read + size;
-              (chunk_loop [@tailcall]) f
-          | `Last_chunk (extensions, headers) ->
-              read_complete := true;
-              f (Last_chunk extensions);
-              Ok headers
+        let chunk = chunk !total_read headers t in
+        match chunk with
+        | `Chunk (size, data, extensions) ->
+            f (Chunk { size; data; extensions });
+            total_read := !total_read + size;
+            (chunk_loop [@tailcall]) f
+        | `Last_chunk (extensions, headers) ->
+            f (Last_chunk extensions);
+            Ok headers
       in
       chunk_loop
   | _ -> fun _ -> Error "Request is not a chunked request"

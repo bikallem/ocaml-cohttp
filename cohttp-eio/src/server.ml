@@ -47,6 +47,17 @@ let internal_server_error_response =
 let bad_request_response =
   (Http.Response.make ~status:`Bad_request (), Body.Empty)
 
+let read_fixed ((request, reader) : Http.Request.t * Reader.t) =
+  match request.meth with
+  | `POST | `PUT | `PATCH -> Body.read_fixed reader request.headers
+  | _ ->
+      let err =
+        Printf.sprintf
+          "Request with HTTP method '%s' doesn't support request body"
+          (Http.Method.to_string request.meth)
+      in
+      raise @@ Invalid_argument err
+
 let rec handle_request reader writer flow handler =
   match Reader.http_request reader with
   | request ->

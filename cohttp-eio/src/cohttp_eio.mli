@@ -24,11 +24,6 @@ module Reader : sig
   val substring : t -> off:int -> len:int -> string
   val copy : t -> off:int -> len:int -> Bigstringaf.t
 
-  (** {1 Common Parsers} *)
-
-  val http_request : Http.Request.t parser
-  val http_headers : Http.Header.t parser
-
   (** {1 Parser/Reader Combinators} *)
 
   val return : 'a -> 'a parser
@@ -89,21 +84,17 @@ module Body : sig
 
   and chunk_extension = { name : string; value : string option }
 
-  val read_fixed : Reader.t -> Http.Header.t -> (string, string) result
-  (** [read_fixed t] is [Ok buf] if "Content-Length" header is a valid integer
-      value in [t]. Otherwise it is [Error err] where [err] is the error text. *)
-
   val read_chunked :
-    Reader.t ->
-    Http.Header.t ->
-    (chunk -> unit) ->
-    (Http.Header.t, string) result
-  (** [read_chunked reader headers chunk_handler] is [Ok headers] if
+    Reader.t -> Http.Header.t -> (chunk -> unit) -> Http.Header.t
+  (** [read_chunked reader headers chunk_handler] is [updated_headers] if
       "Transfer-Encoding" header value is "chunked" in [headers] and all chunks
-      in [reader] are read successfully. [Ok headers] is the updated headers as
-      specified by the chunked encoding algorithm in
+      in [reader] are read successfully. [updated_headers] is the updated
+      headers as specified by the chunked encoding algorithm in
       https://datatracker.ietf.org/doc/html/rfc7230#section-4.1.3. Otherwise it
-      is [Error err] where [err] is the error text. *)
+      is [Error err] where [err] is the error text.
+
+      @raise Invalid_argument
+        if [Transfer-Encoding] header in [headers] is not specified as "chunked" *)
 
   val pp_chunk_extension : Format.formatter -> chunk_extension list -> unit
   val pp_chunk : Format.formatter -> chunk -> unit
@@ -115,6 +106,16 @@ module Server : sig
   and handler = request -> response
   and request = Http.Request.t * Reader.t
   and response = Http.Response.t * Body.t
+
+  (** {1 Request} *)
+
+  val read_fixed : request -> string
+  (** [read_fixed request] is [content] if "Content-Length" header is a valid
+      integer value in [headers].
+
+      @raise Invalid_argument
+        if ["Content-Length"] header is missing or is invalid in [headers] OR if
+        the request http method is not one of [POST], [PUT] or [PATCH]. *)
 
   (** {1 Response} *)
 

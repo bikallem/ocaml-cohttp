@@ -61,10 +61,14 @@ let fill t to_read =
 
 let unsafe_get t off = Bigstringaf.unsafe_get t.buf (t.off + off)
 
-let substring t ~off ~len =
+let sub t ~off ~len =
   let b = Bytes.create len in
   Bigstringaf.unsafe_blit_to_bytes t.buf ~src_off:(t.off + off) b ~dst_off:0
     ~len;
+  b
+
+let substring t ~off ~len =
+  let b = sub t ~off ~len in
   Bytes.unsafe_to_string b
 
 let copy t ~off ~len = Bigstringaf.copy t.buf ~off:(t.off + off) ~len
@@ -217,6 +221,15 @@ let take_bigstring : int -> Bigstringaf.t parser =
     incr_pos ~n rdr;
     s
   with End_of_file -> fail "[take_bigstring] not enough input" rdr
+
+let take_bytes : int -> bytes parser =
+ fun n rdr ->
+  try
+    ensure rdr n;
+    let s = sub rdr ~off:(pos rdr) ~len:n in
+    incr_pos ~n rdr;
+    s
+  with End_of_file -> fail "[take] not enough input" rdr
 
 let take : int -> string parser =
  fun n rdr ->

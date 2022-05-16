@@ -21,6 +21,7 @@ module Reader : sig
       @raise End_of_file if end of file is reached. *)
 
   val unsafe_get : t -> int -> char
+  val sub : t -> off:int -> len:int -> bytes
   val substring : t -> off:int -> len:int -> string
   val copy : t -> off:int -> len:int -> Bigstringaf.t
 
@@ -51,6 +52,7 @@ module Reader : sig
   val take_while1 : (char -> bool) -> string parser
   val take_while : (char -> bool) -> string parser
   val take_bigstring : int -> Bigstringaf.t parser
+  val take_bytes : int -> bytes parser
   val take : int -> string parser
   val take_till : (char -> bool) -> string parser
   val many : 'a parser -> 'a list parser

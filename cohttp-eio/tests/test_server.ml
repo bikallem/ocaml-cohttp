@@ -21,7 +21,7 @@ let read_body (req, reader) =
   let buf = Buffer.create 0 in
   let fmt = Format.formatter_of_buffer buf in
   pp fmt req;
-  Format.fprintf fmt "\n\n%s%!" body;
+  Format.fprintf fmt "\n\n%s%!" (Bytes.unsafe_to_string body);
   Server.text_response (Buffer.contents buf)
 
 let app (req, reader) =

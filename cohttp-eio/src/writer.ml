@@ -61,59 +61,6 @@ let wakeup t =
 
 let write_string t s = Buffer.add_string t.buf s
 
-let write_headers t headers =
-  Http.Header.iter
-    (fun k v ->
-      write_string t k;
-      write_string t ": ";
-      write_string t v;
-      write_string t "\r\n")
-    headers
-
-(* https://datatracker.ietf.org/doc/html/rfc7230#section-4.1 *)
-let write_chunked t (chunk_writer : Body.chunk_writer) =
-  let write_extensions exts =
-    List.iter
-      (fun { Body.name; value } ->
-        let v =
-          match value with None -> "" | Some v -> Printf.sprintf "=%s" v
-        in
-        write_string t (Printf.sprintf ";%s%s" name v))
-      exts
-  in
-  let write_body = function
-    | Body.Chunk { size; data; extensions = exts } ->
-        write_string t (Printf.sprintf "%X" size);
-        write_extensions exts;
-        write_string t "\r\n";
-        write_string t data;
-        write_string t "\r\n"
-    | Body.Last_chunk exts ->
-        write_string t "0";
-        write_extensions exts;
-        write_string t "\r\n"
-  in
-  chunk_writer.body_writer write_body;
-  chunk_writer.trailer_writer (write_headers t);
-  write_string t "\r\n"
-
-let write (t : t) ((response, body) : Http.Response.t * Body.t) =
-  let version = Http.Version.to_string response.version in
-  let status = Http.Status.to_string response.status in
-  write_string t version;
-  write_string t " ";
-  write_string t status;
-  write_string t "\r\n";
-  write_headers t response.headers;
-  write_string t "\r\n";
-  match body with
-  | Body.Fixed s -> write_string t s
-  | Chunked chunk_writer -> write_chunked t chunk_writer
-  | Custom f ->
-      wakeup t;
-      f (t.sink :> Eio.Flow.sink)
-  | Empty -> ()
-
 let run t =
   let rec loop () =
     if Buffer.length t.buf > 0 then (

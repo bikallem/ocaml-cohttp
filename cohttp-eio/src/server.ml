@@ -10,9 +10,26 @@ let domain_count =
   | Some d -> int_of_string d
   | None -> 1
 
-let is_custom body = match body with Body.Custom _ -> true | _ -> false
+(* Request *)
+
+let read_fixed ((request, reader) : Http.Request.t * Reader.t) =
+  match request.meth with
+  | `POST | `PUT | `PATCH -> Body.read_fixed reader request.headers
+  | _ ->
+      let err =
+        Printf.sprintf
+          "Request with HTTP method '%s' doesn't support request body"
+          (Http.Method.to_string request.meth)
+      in
+      raise @@ Invalid_argument err
+
+let read_chunked : request -> (Body.chunk -> unit) -> Http.Header.t =
+ fun (request, reader) f -> Body.read_chunked reader request.headers f
 
 (* Responses *)
+
+let is_custom body = match body with Body.Custom _ -> true | _ -> false
+
 let text_response body =
   let headers =
     Http.Header.of_list
@@ -47,21 +64,23 @@ let internal_server_error_response =
 let bad_request_response =
   (Http.Response.make ~status:`Bad_request (), Body.Empty)
 
-(* Request *)
-
-let read_fixed ((request, reader) : Http.Request.t * Reader.t) =
-  match request.meth with
-  | `POST | `PUT | `PATCH -> Body.read_fixed reader request.headers
-  | _ ->
-      let err =
-        Printf.sprintf
-          "Request with HTTP method '%s' doesn't support request body"
-          (Http.Method.to_string request.meth)
-      in
-      raise @@ Invalid_argument err
-
-let read_chunked : request -> (Body.chunk -> unit) -> Http.Header.t =
- fun (request, reader) f -> Body.read_chunked reader request.headers f
+let write_response (writer : Writer.t)
+    ((response, body) : Http.Response.t * Body.t) =
+  let version = Http.Version.to_string response.version in
+  let status = Http.Status.to_string response.status in
+  Writer.write_string writer version;
+  Writer.write_string writer " ";
+  Writer.write_string writer status;
+  Writer.write_string writer "\r\n";
+  Body.write_headers writer response.headers;
+  Writer.write_string writer "\r\n";
+  match body with
+  | Fixed s -> Writer.write_string writer s
+  | Chunked chunk_writer -> Body.write_chunked writer chunk_writer
+  | Custom f ->
+      Writer.wakeup writer;
+      f (writer.sink :> Eio.Flow.sink)
+  | Empty -> ()
 
 (* main *)
 
@@ -69,7 +88,7 @@ let rec handle_request reader writer flow handler =
   match Reader.http_request reader with
   | request ->
       let response, body = handler (request, reader) in
-      Writer.write writer (response, body);
+      write_response writer (response, body);
       (* A custom response needs to write the main response before calling
          the custom function for the body. Response.write wakes the writer for
          us if that is the case. *)
@@ -80,11 +99,11 @@ let rec handle_request reader writer flow handler =
   | (exception End_of_file) | (exception Eio.Net.Connection_reset _) ->
       Eio.Flow.close flow
   | exception Reader.Parse_failure _e ->
-      Writer.write writer bad_request_response;
+      write_response writer bad_request_response;
       Writer.wakeup writer;
       Eio.Flow.close flow
   | exception _ ->
-      Writer.write writer internal_server_error_response;
+      write_response writer internal_server_error_response;
       Writer.wakeup writer;
       Eio.Flow.close flow
 

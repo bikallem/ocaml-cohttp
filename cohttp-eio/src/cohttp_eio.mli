@@ -1,4 +1,4 @@
-(** [Reader] is a buffered reader with back-tracking support. *)
+(** [Reader] is a mutable, buffered reader with back-tracking support. *)
 module Reader : sig
   type t
 
@@ -84,18 +84,6 @@ module Body : sig
 
   and chunk_extension = { name : string; value : string option }
 
-  val read_chunked :
-    Reader.t -> Http.Header.t -> (chunk -> unit) -> Http.Header.t
-  (** [read_chunked reader headers chunk_handler] is [updated_headers] if
-      "Transfer-Encoding" header value is "chunked" in [headers] and all chunks
-      in [reader] are read successfully. [updated_headers] is the updated
-      headers as specified by the chunked encoding algorithm in
-      https://datatracker.ietf.org/doc/html/rfc7230#section-4.1.3. Otherwise it
-      is [Error err] where [err] is the error text.
-
-      @raise Invalid_argument
-        if [Transfer-Encoding] header in [headers] is not specified as "chunked" *)
-
   val pp_chunk_extension : Format.formatter -> chunk_extension list -> unit
   val pp_chunk : Format.formatter -> chunk -> unit
 end
@@ -109,13 +97,26 @@ module Server : sig
 
   (** {1 Request} *)
 
-  val read_fixed : request -> string
-  (** [read_fixed request] is [content] if "Content-Length" header is a valid
-      integer value in [headers].
+  val read_fixed : request -> bytes
+  (** [read_fixed (request,reader)] is bytes of length [n] if "Content-Length"
+      header is a valid integer value [n] in [request]. [reader] is updated to
+      reflect that [n] bytes was read.
 
       @raise Invalid_argument
-        if ["Content-Length"] header is missing or is invalid in [headers] OR if
-        the request http method is not one of [POST], [PUT] or [PATCH]. *)
+        if ["Content-Length"] header is missing or is an invalid value in
+        [headers] OR if the request http method is not one of [POST], [PUT] or
+        [PATCH]. *)
+
+  val read_chunked : request -> (Body.chunk -> unit) -> Http.Header.t
+  (** [read_chunked request chunk_handler] is [updated_headers] if
+      "Transfer-Encoding" header value is "chunked" in [headers] and all chunks
+      in [reader] are read successfully. [updated_headers] is the updated
+      headers as specified by the chunked encoding algorithm in
+      https://datatracker.ietf.org/doc/html/rfc7230#section-4.1.3. Otherwise it
+      is [Error err] where [err] is the error text.
+
+      @raise Invalid_argument
+        if [Transfer-Encoding] header in [headers] is not specified as "chunked" *)
 
   (** {1 Response} *)
 

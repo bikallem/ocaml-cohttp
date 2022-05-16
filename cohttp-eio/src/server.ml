@@ -47,6 +47,8 @@ let internal_server_error_response =
 let bad_request_response =
   (Http.Response.make ~status:`Bad_request (), Body.Empty)
 
+(* Request *)
+
 let read_fixed ((request, reader) : Http.Request.t * Reader.t) =
   match request.meth with
   | `POST | `PUT | `PATCH -> Body.read_fixed reader request.headers
@@ -57,6 +59,11 @@ let read_fixed ((request, reader) : Http.Request.t * Reader.t) =
           (Http.Method.to_string request.meth)
       in
       raise @@ Invalid_argument err
+
+let read_chunked : request -> (Body.chunk -> unit) -> Http.Header.t =
+ fun (request, reader) f -> Body.read_chunked reader request.headers f
+
+(* main *)
 
 let rec handle_request reader writer flow handler =
   match Reader.http_request reader with

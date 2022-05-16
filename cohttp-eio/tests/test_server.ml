@@ -34,7 +34,7 @@ let app (req, reader) =
       Server.text_response (Buffer.contents buf)
   | "/get_error" -> (
       try
-        let _ = Server.read_fixed (req,reader) in
+        let _ = Server.read_fixed (req, reader) in
         assert false
       with Invalid_argument e -> Server.text_response e)
   | "/post" -> read_body (req, reader)

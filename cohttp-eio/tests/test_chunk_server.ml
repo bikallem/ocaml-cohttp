@@ -25,7 +25,7 @@ let app (req, reader) =
   match Http.Request.resource req with
   | "/" -> (
       let chunk_buf = Buffer.create 0 in
-      match Body.read_chunked reader req.headers (dump_chunk chunk_buf) with
+      match Server.read_chunked (req, reader) (dump_chunk chunk_buf) with
       | headers ->
           let req = { req with headers } in
           Buffer.contents chunk_buf

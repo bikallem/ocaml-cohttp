@@ -183,12 +183,12 @@ let chunk (total_read : int) (headers : Http.Header.t) =
       return @@ `Last_chunk (extensions, headers)
   | sz -> fail (Format.sprintf "Invalid chunk size: %d" sz)
 
-let read_chunked t headers f =
+let read_chunked reader headers f =
   match Http.Header.get_transfer_encoding headers with
   | Http.Transfer.Chunked ->
       let total_read = ref 0 in
       let rec chunk_loop f =
-        let chunk = chunk !total_read headers t in
+        let chunk = chunk !total_read headers reader in
         match chunk with
         | `Chunk (size, data, extensions) ->
             f (Chunk { size; data; extensions });

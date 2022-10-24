@@ -8,6 +8,7 @@ Test GET success.
   > 
   > EOF
   HTTP/1.1 200 OK
+  Date: Mon, 24 Oct 2022 16:20:41 GMT
   content-length: 63
   content-type: text/plain; charset=UTF-8
   
@@ -28,6 +29,7 @@ The test should respond with error message since we are trying to read request b
   > 
   > EOF
   HTTP/1.1 200 OK
+  Date: Mon, 24 Oct 2022 16:20:41 GMT
   content-length: 4
   content-type: text/plain; charset=UTF-8
   
@@ -46,6 +48,7 @@ Test POST
   > hello world!
   > EOF
   HTTP/1.1 200 OK
+  Date: Mon, 24 Oct 2022 16:20:41 GMT
   content-length: 100
   content-type: text/plain; charset=UTF-8
   
@@ -84,6 +87,7 @@ Test chunk request processing:
   > 
   > EOF
   HTTP/1.1 200 OK
+  Date: Mon, 24 Oct 2022 16:20:41 GMT
   content-length: 354
   content-type: text/plain; charset=UTF-8
   

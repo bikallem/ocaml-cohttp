@@ -90,5 +90,5 @@ Test "chunked" response in client and "chunked" response writing in server.
   
   Header {
   Content-Length = "23"; Header1 = "Header1 value text";
-  Content-Type = "text/plain"
+  Content-Type = "text/plain"; Date = "Mon, 24 Oct 2022 16:20:41 GMT"
   }

@@ -10,10 +10,13 @@ open Eio.Std
 open Cohttp_eio
 ```
 
-A mock socket for testing:
+A mock socket, clock for testing:
 
 ```ocaml
 let socket = Eio_mock.Flow.make "socket"
+let mock_clock = Eio_mock.Clock.make ();;
+Eio_mock.Clock.set_time mock_clock 1666627935.85052109;;
+let clock = (mock_clock :> Eio.Time.clock)
 ```
 
 ## Example request handler
@@ -36,7 +39,7 @@ let app (req, _body, _client_addr) =
   | "/stream" -> stream_response ()
   | _ -> Server.not_found_response
 
-let connection_handler = Server.connection_handler app
+let connection_handler = Server.connection_handler app clock
 ```
 
 To test it, we run the connection handler with our mock socket:
@@ -63,6 +66,7 @@ Asking for the root:
 +socket: read "GET / HTTP/1.1\r\n"
 +             "\r\n"
 +socket: wrote "HTTP/1.1 200 OK\r\n"
++              "Date: Mon, 24 Oct 2022 16:12:15 GMT\r\n"
 +              "content-length: 4\r\n"
 +              "content-type: text/plain; charset=UTF-8\r\n"
 +              "\r\n"
@@ -81,6 +85,7 @@ A missing page:
 +socket: read "GET /missing HTTP/1.1\r\n"
 +             "\r\n"
 +socket: wrote "HTTP/1.1 404 Not Found\r\n"
++              "Date: Mon, 24 Oct 2022 16:12:15 GMT\r\n"
 +              "Content-Length: 0\r\n"
 +              "\r\n"
 - : unit = ()
@@ -97,6 +102,7 @@ Streaming a response:
 +socket: read "GET /stream HTTP/1.1\r\n"
 +             "\r\n"
 +socket: wrote "HTTP/1.1 200 OK\r\n"
++              "Date: Mon, 24 Oct 2022 16:12:15 GMT\r\n"
 +              "transfer-encoding: chunked\r\n"
 +              "\r\n"
 +              "5\r\n"

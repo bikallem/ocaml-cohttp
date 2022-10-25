@@ -96,7 +96,7 @@ module Server : sig
 
   val connection_handler :
     handler ->
-    Eio.Time.clock ->
+    #Eio.Time.clock ->
     #Eio.Net.stream_socket ->
     Eio.Net.Sockaddr.stream ->
     unit

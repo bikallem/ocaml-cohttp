@@ -1,0 +1,10 @@
+(executable
+ (name bench1)
+ (libraries
+  eio
+  http
+  core
+  core_unix.command_unix
+  core_unix.time_stamp_counter
+  core_bench
+  eio_main))

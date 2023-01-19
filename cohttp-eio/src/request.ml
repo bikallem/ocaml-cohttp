@@ -19,17 +19,15 @@ let host_encoder = function
   | host, Some port -> host ^ ":" ^ string_of_int port
   | host, None -> host
 
-let header_def : Header.header_definition =
+let header_def =
   object
+    inherit Header.header_definition
+
     method header : type a. string -> a header option =
       function
       | "host" -> Obj.magic Host
       | "user-agent" -> Obj.magic User_agent
       | _ -> None
-
-    method id : type a. a header -> Header.id option =
-      function
-      | Host -> Some "host" | User_agent -> Some "user-agent" | _ -> None
 
     method equal : type a b. a header -> b header -> (a, b) Header.eq option =
       fun a b ->

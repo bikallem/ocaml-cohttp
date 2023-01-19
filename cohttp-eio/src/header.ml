@@ -30,8 +30,6 @@ type value = string (* Header value, eg 10, text/html, chunked etc *)
 class virtual header_definition =
   object
     method virtual header : 'a. string -> 'a header option
-    method virtual id : 'a. 'a header -> id option
-    method virtual equal : 'a 'b. 'a header -> 'b header -> ('a, 'b) eq option
     method virtual decoder : 'a. 'a header -> 'a decoder option
     method virtual encoder : 'a. 'a header -> (name * 'a encoder) option
   end
@@ -69,28 +67,15 @@ let constructor_name hdr =
 (* Defines header definition for headers included in this module, such as
    Content-Length, Transfer-Encoding and so on. If a typed defnition for a
    header is not given, then 'Hdr h' is used. *)
-let header_def : header_definition =
+let header_def =
   object
+    inherit header_definition
+
     method header : type a. string -> a header option =
       function
       | "content-length" -> Some (Obj.magic Content_length)
       | "transfer-encoding" -> Some (Obj.magic Transfer_encoding)
       | h -> Some (Obj.magic (H h))
-
-    method id : type a. a header -> id option =
-      function
-      | Content_length -> Some "content-length"
-      | Transfer_encoding -> Some "transfer-encoding"
-      | H h -> Some h
-      | _ -> None
-
-    method equal : type a b. a header -> b header -> (a, b) eq option =
-      fun a b ->
-        match (a, b) with
-        | Content_length, Content_length -> Some Eq
-        | Transfer_encoding, Transfer_encoding -> Some Eq
-        | H a, H b -> if String.equal a b then Some Eq else None
-        | _, _ -> None
 
     method decoder : type a. a header -> a decoder option =
       function
@@ -113,9 +98,7 @@ class virtual header_t =
   object
     method virtual decode : 'a. 'a header -> name -> 'a lazy_t
     method virtual encode : 'a. 'a header -> 'a -> name * value
-    method virtual equal : 'a 'b. 'a header -> 'b header -> ('a, 'b) eq option
     method virtual header : 'a. name -> 'a header
-    method virtual id : 'a. 'a header -> name
   end
 
 (* raise errors *)
@@ -137,15 +120,6 @@ let header_t =
     method header : type a. string -> a header =
       fun s ->
         match header_def#header s with Some x -> x | None -> assert false
-
-    method id : type a. a header -> id =
-      fun hdr ->
-        match header_def#id hdr with
-        | Some x -> x
-        | None -> err_id_undefined hdr
-
-    method equal : type a b. a header -> b header -> (a, b) eq option =
-      fun a b -> header_def#equal a b
 
     method decode : type a. a header -> string -> a Lazy.t =
       fun hdr v ->
@@ -180,16 +154,6 @@ let make_header_t : #header_definition -> header_t =
           val_of_opt_pair user_header_def#header header_def#header s (fun _s ->
               assert false)
 
-      method id : type a. a header -> id =
-        fun hdr ->
-          val_of_opt_pair user_header_def#id header_def#id hdr err_id_undefined
-
-      method equal : type a b. a header -> b header -> (a, b) eq option =
-        fun a b ->
-          match user_header_def#equal a b with
-          | Some _ as s -> s
-          | None -> header_def#equal a b
-
       method decode : type a. a header -> string -> a Lazy.t =
         fun hdr v ->
           let decode =
@@ -210,7 +174,7 @@ let make_header_t : #header_definition -> header_t =
 type v = V : 'a header * 'a Lazy.t -> v (* Header values are stored lazily. *)
 type binding = B : 'a header * 'a -> binding
 
-module M = Map.Make (String)
+module M = Map.Make (Int)
 
 type t = { header_t : header_t; m : v M.t }
 
@@ -224,27 +188,25 @@ let make : ?header_def:#header_definition -> unit -> t =
   { header_t; m = M.empty }
 
 let add_string_val k s t =
-  let key = t.header_t#id k in
+  let key = Hashtbl.hash k in
   let m = M.add key (V (k, t.header_t#decode k s)) t.m in
   { t with m }
 
 let add_key_val ~key ~value t =
   let k = t.header_t#header key in
-  let m = M.add key (V (k, t.header_t#decode k value)) t.m in
+  let k' = Hashtbl.hash k in
+  let m = M.add k' (V (k, t.header_t#decode k value)) t.m in
   { t with m }
 
 let add k v t =
-  let m = M.add (t.header_t#id k) (V (k, lazy v)) t.m in
+  let k' = Hashtbl.hash k in
+  let m = M.add k' (V (k, lazy v)) t.m in
   { t with m }
 
 let find : type a. a header -> t -> a =
  fun k t ->
-  let key = t.header_t#id k in
-  match M.find key t.m with
-  | V (k', v) -> (
-      match t.header_t#equal k k' with
-      | Some Eq -> Lazy.force v
-      | None -> raise Not_found)
+  let key = Hashtbl.hash k in
+  match M.find key t.m with V (_, v) -> Obj.magic (Lazy.force v)
 
 let find_opt k t =
   match find k t with v -> Some v | exception Not_found -> None
@@ -270,7 +232,8 @@ let fold f t =
     t.m
 
 let remove key t =
-  let m = M.remove (t.header_t#id key) t.m in
+  let k = Hashtbl.hash key in
+  let m = M.remove k t.m in
   { t with m }
 
 let update key f t =

@@ -2,10 +2,13 @@ type name = string (* Header name, e.g. Date, Content-Length etc *)
 type value = string (* Header value, eg 10, text/html, chunked etc *)
 
 type lowercase_name = string
-(** Represents a unique header id value.
+(** Represents HTTP header name in lowercase form, e.g.
+    [Content-Type -> content-type], [Date -> date],
+    [Transfer-Encoding -> transfer-encoding] etc.
 
-    If you are providing this value, ensure it is in lowercase via
-    {!String.lowercase_ascii} or other suitable functions. *)
+    When using this value for retrieving headers, ensure it is in lowercase via
+    {!String.lowercase_ascii} or other suitable functions. However this is not
+    enforced by the library. *)
 
 type 'a header = ..
 (** Common headers to both Request and Response. *)
@@ -22,9 +25,8 @@ exception Encoder_undefined of string
 type 'a decoder = value -> 'a
 type 'a encoder = 'a -> value
 
-(** [header_definition] defines ['a header] functionality. An instance of this
-    class is required for those wishing to use custom headers in their
-    application. *)
+(** [header_definition] defines header functionality as declared in {!type:'a
+    header} *)
 class virtual header_definition =
   object
     method virtual header : 'a. string -> 'a header

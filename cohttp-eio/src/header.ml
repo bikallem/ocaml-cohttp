@@ -32,46 +32,46 @@ class virtual header_definition =
     method virtual encoder : 'a. 'a header -> name * 'a encoder
   end
 
+let int_decoder v = int_of_string v
+let int_encoder v = string_of_int v
+
+(* Transfer-Encoding decoder and encoder. *)
+let te_decoder v =
+  String.split_on_char ',' v
+  |> List.map String.trim
+  |> List.filter (fun s -> s <> "")
+  |> List.map (fun te ->
+         match te with
+         | "chunked" -> `chunked
+         | "compress" -> `compress
+         | "deflate" -> `deflate
+         | "gzip" -> `gzip
+         | v -> failwith @@ "Invalid 'Transfer-Encoding' value " ^ v)
+
+let te_encoder v =
+  List.map
+    (function
+      | `chunked -> "chunked"
+      | `compress -> "compress"
+      | `deflate -> "deflate"
+      | `gzip -> "gzip")
+    v
+  |> String.concat ", "
+
+let constructor_name hdr =
+  let nm = Obj.Extension_constructor.of_val hdr in
+  Obj.Extension_constructor.name nm
+
+let err_decoder_undefined hdr =
+  raise @@ Decoder_undefined (constructor_name hdr)
+
+let err_encoder_undefined hdr =
+  raise @@ Encoder_undefined (constructor_name hdr)
+
 (* Defines header definition for headers included in this module, such as
    Content-Length, Transfer-Encoding and so on. If a typed defnition for a
    header is not given, then 'H h' is used. *)
 let header =
-  let int_decoder v = int_of_string v in
-  let int_encoder v = string_of_int v in
-
-  (* Transfer-Encoding decoder and encoder. *)
-  let te_decoder v =
-    String.split_on_char ',' v
-    |> List.map String.trim
-    |> List.filter (fun s -> s <> "")
-    |> List.map (fun te ->
-           match te with
-           | "chunked" -> `chunked
-           | "compress" -> `compress
-           | "deflate" -> `deflate
-           | "gzip" -> `gzip
-           | v -> failwith @@ "Invalid 'Transfer-Encoding' value " ^ v)
-  in
-  let te_encoder v =
-    List.map
-      (function
-        | `chunked -> "chunked"
-        | `compress -> "compress"
-        | `deflate -> "deflate"
-        | `gzip -> "gzip")
-      v
-    |> String.concat ", "
-  in
-  let constructor_name hdr =
-    let nm = Obj.Extension_constructor.of_val hdr in
-    Obj.Extension_constructor.name nm
-  in
-  let err_decoder_undefined hdr =
-    raise @@ Decoder_undefined (constructor_name hdr)
-  in
-  let err_encoder_undefined hdr =
-    raise @@ Encoder_undefined (constructor_name hdr)
-  in
   object
     inherit header_definition
 

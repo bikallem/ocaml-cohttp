@@ -166,10 +166,10 @@ let header_t =
     is first tried. If one is not found, then [default_header_def] is tried. If
     both attempts results in [None], then an appropriate exception is thrown. *)
 let make_header_t : #header_definition -> header_t =
-  let val_of_opt_pair first_opt_f second_opt_f v err_f =
-    match first_opt_f v with
+  let val_of_opt_pair first_opt second_opt v err_f =
+    match first_opt v with
     | Some x -> x
-    | None -> ( match second_opt_f v with Some x -> x | None -> err_f v)
+    | None -> ( match second_opt v with Some x -> x | None -> err_f v)
   in
   fun user_header_def ->
     object

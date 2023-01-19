@@ -13,7 +13,7 @@ type 'a header = ..
 type 'a header +=
   | Content_length : int header
   | Transfer_encoding : [ `chunked | `compress | `deflate | `gzip ] list header
-  | H : lowercase_name -> string header
+  | H : lowercase_name -> value header
         (** A generic header. See {!type:lowercase_name}. *)
 
 exception Decoder_undefined of string

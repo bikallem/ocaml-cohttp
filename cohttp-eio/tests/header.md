@@ -51,7 +51,7 @@ val h : H.t = {H.header = <obj>; m = <abstr>}
 Headers which are undefined can be retrieved via `Hdr "hdr"`
 
 ```ocaml
-# let h = H.add_key_val ~key:"age" ~value:"9" h;;
+# let h = H.add_name_val ~name:"age" ~value:"9" h;;
 val h : H.t = {H.header = <obj>; m = <abstr>}
 
 # H.find_opt (R.H "age") h;;

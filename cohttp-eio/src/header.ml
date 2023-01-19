@@ -114,8 +114,8 @@ let add_string_val k s t =
   let m = M.add key (V (k, v)) t.m in
   { t with m }
 
-let add_key_val ~key ~value t =
-  let k = t.header#v key in
+let add_name_value ~name ~value t =
+  let k = t.header#v name in
   let k' = Hashtbl.hash k in
   let v = lazy (t.header#decoder k value) in
   let m = M.add k' (V (k, v)) t.m in

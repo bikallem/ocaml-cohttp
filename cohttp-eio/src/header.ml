@@ -1,25 +1,26 @@
+type name = string (* Header name, e.g. Date, Content-Length etc *)
+type value = string (* Header value, eg 10, text/html, chunked etc *)
+
+type lowercase_name = string
+(** Represents a unique header id value.
+
+    If you are providing this value, ensure it is in lowercase via
+    {!String.lowercase_ascii} or other suitable functions. *)
+
 type 'a header = ..
-type lowercase_id = string
-(* Represents a unique header id value.
-
-   If you are providing this value, ensure it is in lowercase via
-   {!String.lowercase_ascii} or other suitable functions. *)
-
 (** Common headers to both Request and Response. *)
+
 type 'a header +=
   | Content_length : int header
   | Transfer_encoding : [ `chunked | `compress | `deflate | `gzip ] list header
-  | H : lowercase_id -> string header
-        (** A generic header. See {!type:lowercase_id}. *)
+  | H : lowercase_name -> string header
+        (** A generic header. See {!type:lowercase_name}. *)
 
 exception Decoder_undefined of string
 exception Encoder_undefined of string
 
-type id = string
-type 'a decoder = string -> 'a
-type 'a encoder = 'a -> string
-type name = string (* Header name, e.g. Date, Content-Length etc *)
-type value = string (* Header value, eg 10, text/html, chunked etc *)
+type 'a decoder = value -> 'a
+type 'a encoder = 'a -> value
 
 (** [header_definition] defines ['a header] functionality. An instance of this
     class is required for those wishing to use custom headers in their

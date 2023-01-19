@@ -29,7 +29,7 @@ type 'a encoder = 'a -> value
     header} *)
 class virtual header_definition =
   object
-    method virtual header : 'a. string -> 'a header
+    method virtual header : 'a. lowercase_name -> 'a header
     method virtual decoder : 'a. 'a header -> 'a decoder
     method virtual encoder : 'a. 'a header -> name * 'a encoder
   end

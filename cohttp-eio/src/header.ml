@@ -214,7 +214,7 @@ module M = Map.Make (String)
 
 type t = { header_t : header_t; m : v M.t }
 
-let make : ?header_def:header_definition -> unit -> t =
+let make : ?header_def:#header_definition -> unit -> t =
  fun ?header_def () ->
   let header_t =
     match header_def with

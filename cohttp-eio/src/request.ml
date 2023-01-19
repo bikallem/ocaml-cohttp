@@ -19,33 +19,27 @@ let host_encoder = function
   | host, Some port -> host ^ ":" ^ string_of_int port
   | host, None -> host
 
-let header_def =
+let header =
   object
     inherit Header.header_definition
 
-    method header : type a. string -> a header option =
+    method header : type a. string -> a header =
       function
       | "host" -> Obj.magic Host
       | "user-agent" -> Obj.magic User_agent
-      | _ -> None
+      | hdr -> Header.header#header hdr
 
-    method equal : type a b. a header -> b header -> (a, b) Header.eq option =
-      fun a b ->
-        match (a, b) with
-        | Host, Host -> Some Eq
-        | User_agent, User_agent -> Some Eq
-        | _, _ -> None
-
-    method decoder : type a. a header -> a Header.decoder option =
+    method decoder : type a. a header -> a Header.decoder =
       function
-      | Host -> Some host_decoder | User_agent -> Some Fun.id | _ -> None
+      | Host -> host_decoder
+      | User_agent -> Fun.id
+      | hdr -> Header.header#decoder hdr
 
-    method encoder : type a. a header -> (Header.name * a Header.encoder) option
-        =
+    method encoder : type a. a header -> Header.name * a Header.encoder =
       function
-      | Host -> Some ("Host", host_encoder)
-      | User_agent -> Some ("User_agent", Fun.id)
-      | _ -> None
+      | Host -> ("Host", host_encoder)
+      | User_agent -> ("User_agent", Fun.id)
+      | hdr -> Header.header#encoder hdr
   end
 
 type t = {
@@ -56,7 +50,7 @@ type t = {
 }
 
 let make ?(meth = `GET) ?(version = `HTTP_1_1)
-    ?(headers = Header.make ~header_def ()) resource_path =
+    ?(headers = Header.make ~header ()) resource_path =
   { headers; meth; version; resource_path }
 
 let meth t = t.meth

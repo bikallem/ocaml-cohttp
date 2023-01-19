@@ -12,8 +12,6 @@ type 'a header +=
   | H : lowercase_id -> string header
         (** A generic header. See {!type:lowercase_id}. *)
 
-type (_, _) eq = Eq : ('a, 'a) eq
-
 exception Decoder_undefined of string
 exception Encoder_undefined of string
 exception Id_undefined of string
@@ -29,9 +27,9 @@ type value = string (* Header value, eg 10, text/html, chunked etc *)
     application. *)
 class virtual header_definition =
   object
-    method virtual header : 'a. string -> 'a header option
-    method virtual decoder : 'a. 'a header -> 'a decoder option
-    method virtual encoder : 'a. 'a header -> (name * 'a encoder) option
+    method virtual header : 'a. string -> 'a header
+    method virtual decoder : 'a. 'a header -> 'a decoder
+    method virtual encoder : 'a. 'a header -> name * 'a encoder
   end
 
 let int_decoder v = int_of_string v
@@ -64,32 +62,41 @@ let constructor_name hdr =
   let nm = Obj.Extension_constructor.of_val hdr in
   Obj.Extension_constructor.name nm
 
+(* raise errors *)
+let err_id_undefined hdr = raise @@ Id_undefined (constructor_name hdr)
+
+let err_decoder_undefined hdr =
+  raise @@ Decoder_undefined (constructor_name hdr)
+
+let err_encoder_undefined hdr =
+  raise @@ Encoder_undefined (constructor_name hdr)
+
 (* Defines header definition for headers included in this module, such as
    Content-Length, Transfer-Encoding and so on. If a typed defnition for a
    header is not given, then 'Hdr h' is used. *)
-let header_def =
+let header =
   object
     inherit header_definition
 
-    method header : type a. string -> a header option =
+    method header : type a. string -> a header =
       function
-      | "content-length" -> Some (Obj.magic Content_length)
-      | "transfer-encoding" -> Some (Obj.magic Transfer_encoding)
-      | h -> Some (Obj.magic (H h))
+      | "content-length" -> Obj.magic Content_length
+      | "transfer-encoding" -> Obj.magic Transfer_encoding
+      | h -> Obj.magic (H h)
 
-    method decoder : type a. a header -> a decoder option =
+    method decoder : type a. a header -> a decoder =
       function
-      | Content_length -> Some int_decoder
-      | Transfer_encoding -> Some te_decoder
-      | H _ -> Some Fun.id
-      | _ -> None
+      | Content_length -> int_decoder
+      | Transfer_encoding -> te_decoder
+      | H _ -> Fun.id
+      | hdr -> err_decoder_undefined hdr
 
-    method encoder : type a. a header -> (name * a encoder) option =
+    method encoder : type a. a header -> name * a encoder =
       function
-      | Content_length -> Some ("Content-Length", int_encoder)
-      | Transfer_encoding -> Some ("Transfer-Encoding", te_encoder)
-      | H name -> Some (name, Fun.id)
-      | _ -> None
+      | Content_length -> ("Content-Length", int_encoder)
+      | Transfer_encoding -> ("Transfer-Encoding", te_encoder)
+      | H name -> (name, Fun.id)
+      | hdr -> err_encoder_undefined hdr
   end
 
 (* ['a header_t] represents HTTP header behaviour which may combines the user given header definition with
@@ -101,101 +108,27 @@ class virtual header_t =
     method virtual header : 'a. name -> 'a header
   end
 
-(* raise errors *)
-let err_id_undefined hdr = raise @@ Id_undefined (constructor_name hdr)
-
-let err_decoder_undefined hdr =
-  raise @@ Decoder_undefined (constructor_name hdr)
-
-let err_encoder_undefined hdr =
-  raise @@ Encoder_undefined (constructor_name hdr)
-
-(** [header_t] is the optimized version of [header_t] based ONLY on
-    [header_def]. This is the version used when user defined [header_definition]
-    is not given in 'create' function below. *)
-let header_t =
-  object
-    inherit header_t
-
-    method header : type a. string -> a header =
-      fun s ->
-        match header_def#header s with Some x -> x | None -> assert false
-
-    method decode : type a. a header -> string -> a Lazy.t =
-      fun hdr v ->
-        match header_def#decoder hdr with
-        | Some decode -> lazy (decode v)
-        | None -> err_decoder_undefined hdr
-
-    method encode : type a. a header -> a -> name * string =
-      fun hdr v ->
-        match header_def#encoder hdr with
-        | Some (name, encode) -> (name, encode v)
-        | None -> err_encoder_undefined hdr
-  end
-
-(** [make_header_t] creates [' header_t] based on given user defined
-    [header_definition] and [default_header_def]. When trying to determine id,
-    decoder, and encoder for a given header, user provided [header_definition]
-    is first tried. If one is not found, then [default_header_def] is tried. If
-    both attempts results in [None], then an appropriate exception is thrown. *)
-let make_header_t : #header_definition -> header_t =
-  let val_of_opt_pair first_opt second_opt v err_f =
-    match first_opt v with
-    | Some x -> x
-    | None -> ( match second_opt v with Some x -> x | None -> err_f v)
-  in
-  fun user_header_def ->
-    object
-      inherit header_t
-
-      method header : type a. string -> a header =
-        fun s ->
-          val_of_opt_pair user_header_def#header header_def#header s (fun _s ->
-              assert false)
-
-      method decode : type a. a header -> string -> a Lazy.t =
-        fun hdr v ->
-          let decode =
-            val_of_opt_pair user_header_def#decoder header_def#decoder hdr
-              err_decoder_undefined
-          in
-          lazy (decode v)
-
-      method encode : type a. a header -> a -> name * string =
-        fun hdr v ->
-          let name, encode =
-            val_of_opt_pair user_header_def#encoder header_def#encoder hdr
-              err_decoder_undefined
-          in
-          (name, encode v)
-    end
-
 type v = V : 'a header * 'a Lazy.t -> v (* Header values are stored lazily. *)
 type binding = B : 'a header * 'a -> binding
 
 module M = Map.Make (Int)
 
-type t = { header_t : header_t; m : v M.t }
+type t = { header : header_definition; m : v M.t }
 
-let make : ?header_def:#header_definition -> unit -> t =
- fun ?header_def () ->
-  let header_t =
-    match header_def with
-    | Some header_def -> make_header_t header_def
-    | None -> header_t
-  in
-  { header_t; m = M.empty }
+let make : ?header:header_definition -> unit -> t =
+ fun ?(header = header) () -> { header; m = M.empty }
 
 let add_string_val k s t =
   let key = Hashtbl.hash k in
-  let m = M.add key (V (k, t.header_t#decode k s)) t.m in
+  let v = lazy (t.header#decoder k s) in
+  let m = M.add key (V (k, v)) t.m in
   { t with m }
 
 let add_key_val ~key ~value t =
-  let k = t.header_t#header key in
+  let k = t.header#header key in
   let k' = Hashtbl.hash k in
-  let m = M.add k' (V (k, t.header_t#decode k value)) t.m in
+  let v = lazy (t.header#decoder k value) in
+  let m = M.add k' (V (k, v)) t.m in
   { t with m }
 
 let add k v t =

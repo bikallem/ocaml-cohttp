@@ -109,14 +109,14 @@ let default_header_def : header_definition =
 
 (* ['a header_t] represents HTTP header behaviour which may combines the user given header definition with
    default_header definition. *)
-type 'a header_t =
-  < decode : 'a. 'a header -> name -> 'a lazy_t
-  ; encode : 'a. 'a header -> 'a -> name * value
-  ; equal : 'a 'b. 'a header -> 'b header -> ('a, 'b) eq option
-  ; header : 'a. name -> 'a header
-  ; id : 'a. 'a header -> name >
-  as
-  'a
+class virtual header_t =
+  object
+    method virtual decode : 'a. 'a header -> name -> 'a lazy_t
+    method virtual encode : 'a. 'a header -> 'a -> name * value
+    method virtual equal : 'a 'b. 'a header -> 'b header -> ('a, 'b) eq option
+    method virtual header : 'a. name -> 'a header
+    method virtual id : 'a. 'a header -> name
+  end
 
 (* raise errors *)
 let err_id_undefined hdr = raise @@ Id_undefined (constructor_name hdr)
@@ -130,7 +130,7 @@ let err_encoder_undefined hdr =
 (** [default_header_t] is the optimized version of ['a header t] based ONLY on
     [default_header_def]. This is the version used when user defined
     [header_definition] is not given in 'create' function below. *)
-let default_header_t : 'a header_t =
+let default_header_t : header_t =
   object
     method header : type a. string -> a header =
       fun s ->
@@ -165,7 +165,7 @@ let default_header_t : 'a header_t =
     decoder, and encoder for a given header, user provided [header_definition]
     is first tried. If one is not found, then [default_header_def] is tried. If
     both attempts results in [None], then an appropriate exception is thrown. *)
-let make_header_t : #header_definition -> 'a header_t =
+let make_header_t : #header_definition -> header_t =
   let val_of_opt_pair first_opt_f second_opt_f v err_f =
     match first_opt_f v with
     | Some x -> x
@@ -173,6 +173,8 @@ let make_header_t : #header_definition -> 'a header_t =
   in
   fun header_def ->
     object
+      inherit header_t
+
       method header : type a. string -> a header =
         fun s ->
           val_of_opt_pair header_def#header default_header_def#header s
@@ -212,7 +214,7 @@ type mapper = < f : 'a. 'a header -> 'a -> 'a >
 
 module M = Map.Make (String)
 
-type t = { header_t : 'a header_t; m : v M.t }
+type t = { header_t : header_t; m : v M.t }
 
 let make : ?header_def:header_definition -> unit -> t =
  fun ?header_def () ->

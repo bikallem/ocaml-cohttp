@@ -29,7 +29,7 @@ type 'a encoder = 'a -> value
     header} *)
 class virtual header_definition =
   object
-    method virtual header : 'a. lowercase_name -> 'a header
+    method virtual v : 'a. lowercase_name -> 'a header
     method virtual decoder : 'a. 'a header -> 'a decoder
     method virtual encoder : 'a. 'a header -> name * 'a encoder
   end
@@ -77,7 +77,7 @@ let header =
   object
     inherit header_definition
 
-    method header : type a. string -> a header =
+    method v : type a. string -> a header =
       function
       | "content-length" -> Obj.magic Content_length
       | "transfer-encoding" -> Obj.magic Transfer_encoding
@@ -115,7 +115,7 @@ let add_string_val k s t =
   { t with m }
 
 let add_key_val ~key ~value t =
-  let k = t.header#header key in
+  let k = t.header#v key in
   let k' = Hashtbl.hash k in
   let v = lazy (t.header#decoder k value) in
   let m = M.add k' (V (k, v)) t.m in

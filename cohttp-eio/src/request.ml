@@ -23,11 +23,11 @@ let header =
   object
     inherit Header.header_definition
 
-    method header : type a. string -> a header =
+    method v : type a. string -> a header =
       function
       | "host" -> Obj.magic Host
       | "user-agent" -> Obj.magic User_agent
-      | hdr -> Header.header#header hdr
+      | hdr -> Header.header#v hdr
 
     method decoder : type a. a header -> a Header.decoder =
       function

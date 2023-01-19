@@ -95,15 +95,6 @@ let header =
       | hdr -> err_encoder_undefined hdr
   end
 
-(* ['a header_t] represents HTTP header behaviour which may combines the user given header definition with
-   default_header definition. *)
-class virtual header_t =
-  object
-    method virtual decode : 'a. 'a header -> name -> 'a lazy_t
-    method virtual encode : 'a. 'a header -> 'a -> name * value
-    method virtual header : 'a. name -> 'a header
-  end
-
 type v = V : 'a header * 'a Lazy.t -> v (* Header values are stored lazily. *)
 type binding = B : 'a header * 'a -> binding
 

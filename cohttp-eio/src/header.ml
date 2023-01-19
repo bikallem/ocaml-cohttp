@@ -69,7 +69,7 @@ let constructor_name hdr =
 (* Defines header definition for headers included in this module, such as
    Content-Length, Transfer-Encoding and so on. If a typed defnition for a
    header is not given, then 'Hdr h' is used. *)
-let default_header_def : header_definition =
+let header_def : header_definition =
   object
     method header : type a. string -> a header option =
       function
@@ -127,35 +127,35 @@ let err_decoder_undefined hdr =
 let err_encoder_undefined hdr =
   raise @@ Encoder_undefined (constructor_name hdr)
 
-(** [default_header_t] is the optimized version of ['a header t] based ONLY on
-    [default_header_def]. This is the version used when user defined
-    [header_definition] is not given in 'create' function below. *)
-let default_header_t : header_t =
+(** [header_t] is the optimized version of [header_t] based ONLY on
+    [header_def]. This is the version used when user defined [header_definition]
+    is not given in 'create' function below. *)
+let header_t =
   object
+    inherit header_t
+
     method header : type a. string -> a header =
       fun s ->
-        match default_header_def#header s with
-        | Some x -> x
-        | None -> assert false
+        match header_def#header s with Some x -> x | None -> assert false
 
     method id : type a. a header -> id =
       fun hdr ->
-        match default_header_def#id hdr with
+        match header_def#id hdr with
         | Some x -> x
         | None -> err_id_undefined hdr
 
     method equal : type a b. a header -> b header -> (a, b) eq option =
-      fun a b -> default_header_def#equal a b
+      fun a b -> header_def#equal a b
 
     method decode : type a. a header -> string -> a Lazy.t =
       fun hdr v ->
-        match default_header_def#decoder hdr with
+        match header_def#decoder hdr with
         | Some decode -> lazy (decode v)
         | None -> err_decoder_undefined hdr
 
     method encode : type a. a header -> a -> name * string =
       fun hdr v ->
-        match default_header_def#encoder hdr with
+        match header_def#encoder hdr with
         | Some (name, encode) -> (name, encode v)
         | None -> err_encoder_undefined hdr
   end
@@ -171,30 +171,29 @@ let make_header_t : #header_definition -> header_t =
     | Some x -> x
     | None -> ( match second_opt_f v with Some x -> x | None -> err_f v)
   in
-  fun header_def ->
+  fun user_header_def ->
     object
       inherit header_t
 
       method header : type a. string -> a header =
         fun s ->
-          val_of_opt_pair header_def#header default_header_def#header s
-            (fun _s -> assert false)
+          val_of_opt_pair user_header_def#header header_def#header s (fun _s ->
+              assert false)
 
       method id : type a. a header -> id =
         fun hdr ->
-          val_of_opt_pair header_def#id default_header_def#id hdr
-            err_id_undefined
+          val_of_opt_pair user_header_def#id header_def#id hdr err_id_undefined
 
       method equal : type a b. a header -> b header -> (a, b) eq option =
         fun a b ->
-          match header_def#equal a b with
+          match user_header_def#equal a b with
           | Some _ as s -> s
-          | None -> default_header_def#equal a b
+          | None -> header_def#equal a b
 
       method decode : type a. a header -> string -> a Lazy.t =
         fun hdr v ->
           let decode =
-            val_of_opt_pair header_def#decoder default_header_def#decoder hdr
+            val_of_opt_pair user_header_def#decoder header_def#decoder hdr
               err_decoder_undefined
           in
           lazy (decode v)
@@ -202,7 +201,7 @@ let make_header_t : #header_definition -> header_t =
       method encode : type a. a header -> a -> name * string =
         fun hdr v ->
           let name, encode =
-            val_of_opt_pair header_def#encoder default_header_def#encoder hdr
+            val_of_opt_pair user_header_def#encoder header_def#encoder hdr
               err_decoder_undefined
           in
           (name, encode v)
@@ -221,7 +220,7 @@ let make : ?header_def:header_definition -> unit -> t =
   let header_t =
     match header_def with
     | Some header_def -> make_header_t header_def
-    | None -> default_header_t
+    | None -> header_t
   in
   { header_t; m = M.empty }
 

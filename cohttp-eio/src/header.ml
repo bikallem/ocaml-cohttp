@@ -14,6 +14,13 @@ type 'a header +=
 
 type (_, _) eq = Eq : ('a, 'a) eq
 
+module Order = struct
+  type (_, _) t =
+    | Less_than : ('a, 'b) t
+    | Equal : ('a, 'a) t
+    | Greater_than : ('a, 'b) t
+end
+
 exception Decoder_undefined of string
 exception Encoder_undefined of string
 exception Id_undefined of string
@@ -31,6 +38,10 @@ class virtual header_definition =
   object
     method virtual header : 'a. string -> 'a header option
     method virtual id : 'a. 'a header -> id option
+
+    method virtual compare
+        : 'a 'b. 'a header -> 'b header -> ('a, 'b) Order.t option
+
     method virtual equal : 'a 'b. 'a header -> 'b header -> ('a, 'b) eq option
     method virtual decoder : 'a. 'a header -> 'a decoder option
     method virtual encoder : 'a. 'a header -> (name * 'a encoder) option
@@ -83,6 +94,23 @@ let header_def : header_definition =
       | Transfer_encoding -> Some "transfer-encoding"
       | H h -> Some h
       | _ -> None
+
+    method compare : type a b. a header -> b header -> (a, b) Order.t option =
+      let open Order in
+      fun a b ->
+        match (a, b) with
+        | Content_length, Content_length -> Some Equal
+        | Content_length, _ -> Some Less_than
+        | _, Content_length -> Some Greater_than
+        | Transfer_encoding, Transfer_encoding -> Some Equal
+        | Transfer_encoding, _ -> Some Less_than
+        | _, Transfer_encoding -> Some Greater_than
+        | H a, H b ->
+            let cmp = String.compare a b in
+            if cmp < 0 then Some Less_than
+            else if cmp > 0 then Some Greater_than
+            else Some Equal
+        | _ -> None
 
     method equal : type a b. a header -> b header -> (a, b) eq option =
       fun a b ->

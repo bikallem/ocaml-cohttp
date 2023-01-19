@@ -31,6 +31,19 @@ let header_def : Header.header_definition =
       function
       | Host -> Some "host" | User_agent -> Some "user-agent" | _ -> None
 
+    method compare : type a b.
+        a header -> b header -> (a, b) Header.Order.t option =
+      let open Header.Order in
+      fun a b ->
+        match (a, b) with
+        | Host, Host -> Some Equal
+        | Host, _ -> Some Less_than
+        | _, Host -> Some Greater_than
+        | User_agent, User_agent -> Some Equal
+        | User_agent, _ -> Some Less_than
+        | _, User_agent -> Some Greater_than
+        | _, _ -> None
+
     method equal : type a b. a header -> b header -> (a, b) Header.eq option =
       fun a b ->
         match (a, b) with

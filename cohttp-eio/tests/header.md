@@ -57,3 +57,25 @@ val h : H.t = {H.header = <obj>; m = <abstr>}
 # H.find_opt (R.H "age") h;;
 - : string option = Some "9"
 ```
+
+Map items in header with `map`.
+
+```ocaml
+# let f = object
+    method map: type a. a H.header -> a -> a =
+      fun hdr v ->
+        match hdr with
+        | R.Content_length -> v * 2
+        | _ -> v
+    end ;;
+val f : < map : 'a. 'a H.header -> 'a -> 'a > = <obj>
+
+# let h = H.map f h ;; 
+val h : H.t = {H.header = <obj>; m = <abstr>}
+
+# H.find R.Content_length h ;;
+- : int = 200
+
+# H.find (R.H "age") h ;;
+- : string = "9"
+```

@@ -137,13 +137,13 @@ let find_opt k t =
 let iter f t =
   M.iter (fun _key v -> match v with V (k, v) -> f @@ B (k, Lazy.force v)) t.m
 
-let map (m : < map : 'a. 'a header -> 'a -> 'a >) t =
+let map (f : < map : 'a. 'a header -> 'a -> 'a >) t =
   let m =
     M.map
       (fun v ->
         match v with
         | V (k, v) ->
-            let v = m#map k @@ Lazy.force v in
+            let v = f#map k @@ Lazy.force v in
             V (k, lazy v))
       t.m
   in

@@ -11,8 +11,8 @@ type lowercase_name = string
     enforced by the library. *)
 
 type 'a header = ..
-(** Common headers to both Request and Response. *)
 
+(** Common headers to both Request and Response. *)
 type 'a header +=
   | Content_length : int header
   | Transfer_encoding : [ `chunked | `compress | `deflate | `gzip ] list header

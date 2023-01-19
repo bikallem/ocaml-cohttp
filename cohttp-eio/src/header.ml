@@ -9,7 +9,7 @@ type lowercase_id = string
 type 'a header +=
   | Content_length : int header
   | Transfer_encoding : [ `chunked | `compress | `deflate | `gzip ] list header
-  | Hdr : lowercase_id -> string header
+  | H : lowercase_id -> string header
         (** A generic header. See {!type:lowercase_id}. *)
 
 type (_, _) eq = Eq : ('a, 'a) eq
@@ -89,13 +89,13 @@ let default_header_def : header_definition =
       function
       | "content-length" -> Some (Obj.magic Content_length)
       | "transfer-encoding" -> Some (Obj.magic Transfer_encoding)
-      | h -> Some (Obj.magic (Hdr h))
+      | h -> Some (Obj.magic (H h))
 
     method id : type a. a header -> id option =
       function
       | Content_length -> Some "content-length"
       | Transfer_encoding -> Some "transfer-encoding"
-      | Hdr h -> Some h
+      | H h -> Some h
       | _ -> None
 
     method equal : type a b. a header -> b header -> (a, b) eq option =
@@ -103,21 +103,21 @@ let default_header_def : header_definition =
         match (a, b) with
         | Content_length, Content_length -> Some Eq
         | Transfer_encoding, Transfer_encoding -> Some Eq
-        | Hdr a, Hdr b -> if String.equal a b then Some Eq else None
+        | H a, H b -> if String.equal a b then Some Eq else None
         | _, _ -> None
 
     method decoder : type a. a header -> a decoder option =
       function
       | Content_length -> Some int_decoder
       | Transfer_encoding -> Some te_decoder
-      | Hdr _ -> Some Fun.id
+      | H _ -> Some Fun.id
       | _ -> None
 
     method encoder : type a. a header -> (name * a encoder) option =
       function
       | Content_length -> Some ("Content-Length", int_encoder)
       | Transfer_encoding -> Some ("Transfer-Encoding", te_encoder)
-      | Hdr name -> Some (name, Fun.id)
+      | H name -> Some (name, Fun.id)
       | _ -> None
   end
 
@@ -330,7 +330,7 @@ with type 'a key = 'a Header.t = struct
         match (a, b) with
         | Content_length, Content_length -> Some Eq
         | Transfer_encoding, Transfer_encoding -> Some Eq
-        | Hdr a, Hdr b -> if String.equal a b then Some Eq else None
+        | H a, H b -> if String.equal a b then Some Eq else None
         | _, _ -> None)
 
   let decode : type a. a key -> string -> a Lazy.t =
@@ -353,7 +353,7 @@ with type 'a key = 'a Header.t = struct
                      | "gzip" -> `gzip
                      | v -> failwith @@ "Invalid 'Transfer-Encoding' value " ^ v)
               )
-        | Hdr _ -> lazy hdr_val
+        | H _ -> lazy hdr_val
         | hdr -> raise @@ Decoder_undefined (constructor_name hdr))
 
   let id : type a. a key -> string =
@@ -364,7 +364,7 @@ with type 'a key = 'a Header.t = struct
         match hdr with
         | Content_length -> "content-length"
         | Transfer_encoding -> "transfer-encoding"
-        | Hdr h -> h
+        | H h -> h
         | _ -> raise @@ Id_undefined (constructor_name hdr))
 
   let header_t : type a. string -> a key =
@@ -375,7 +375,7 @@ with type 'a key = 'a Header.t = struct
         match s with
         | "content-length" -> Obj.magic Content_length
         | "transfer-encoding" -> Obj.magic Transfer_encoding
-        | h -> Obj.magic (Hdr h))
+        | h -> Obj.magic (H h))
 
   let empty = M.empty
 

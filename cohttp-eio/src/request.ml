@@ -5,7 +5,7 @@ type 'a header = 'a Header.header
 type 'a Header.header +=
   | Content_length = Header.Content_length
   | Transfer_encoding = Header.Transfer_encoding
-  | Hdr = Header.Hdr
+  | H = Header.H
   | Host : host Header.header
   | User_agent : string Header.header
 
@@ -120,7 +120,7 @@ module R = struct
   type 'a Header.header +=
     | Content_length = Header.Content_length
     | Transfer_encoding = Header.Transfer_encoding
-    | Hdr = Header.Hdr
+    | Hdr = Header.H
     | Host = Request_header.Host
     | User_agent = Request_header.User_agent
 

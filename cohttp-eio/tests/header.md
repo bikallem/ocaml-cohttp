@@ -54,6 +54,6 @@ Headers which are undefined can be retrieved via `Hdr "hdr"`
 # let h = H.add_key_val ~key:"age" ~value:"9" h;;
 val h : H.t = {H.header_t = <obj>; m = <abstr>}
 
-# H.find_opt (R.Hdr "age") h;;
+# H.find_opt (R.H "age") h;;
 - : string option = Some "9"
 ```

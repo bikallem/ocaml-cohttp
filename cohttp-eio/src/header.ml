@@ -34,6 +34,14 @@ class virtual header_definition =
     method virtual encoder : 'a. 'a header -> name * 'a encoder
   end
 
+module type S = sig
+  type t
+  type 'a header = ..
+
+  val add : 'a header -> 'a -> t -> t
+  val add_value : 'a header -> value -> t -> t
+end
+
 let int_decoder v = int_of_string v
 let int_encoder v = string_of_int v
 
@@ -108,7 +116,7 @@ type t = { header : header_definition; m : v M.t }
 let make : ?header:header_definition -> unit -> t =
  fun ?(header = header) () -> { header; m = M.empty }
 
-let add_string_val k s t =
+let add_value k s t =
   let key = Hashtbl.hash k in
   let v = lazy (t.header#decoder k s) in
   let m = M.add key (V (k, v)) t.m in

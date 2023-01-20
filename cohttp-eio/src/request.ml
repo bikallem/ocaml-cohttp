@@ -1,6 +1,6 @@
 type host = string * int option
 type resource_path = string
-type 'a header = 'a Header.header
+type 'a header = 'a Header.header = ..
 
 type 'a Header.header +=
   | Content_length = Header.Content_length
@@ -18,6 +18,8 @@ let host_decoder v =
 let host_encoder = function
   | host, Some port -> host ^ ":" ^ string_of_int port
   | host, None -> host
+
+class virtual header_definition = Header.header_definition
 
 let header =
   object
@@ -49,11 +51,19 @@ type t = {
   resource_path : resource_path;
 }
 
-let make ?(meth = `GET) ?(version = `HTTP_1_1)
-    ?(headers = Header.make ~header ()) resource_path =
+let make ?(header = header) ?(meth = `GET) ?(version = `HTTP_1_1) resource_path
+    =
+  let headers = Header.make ~header () in
   { headers; meth; version; resource_path }
 
 let meth t = t.meth
 let version t = t.version
 let resource_path t = t.resource_path
-let headers t = t.headers
+
+let add h a t =
+  let headers = Header.add h a t.headers in
+  { t with headers }
+
+let add_value h v t =
+  let headers = Header.add_value h v t.headers in
+  { t with headers }

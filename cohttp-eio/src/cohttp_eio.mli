@@ -1,5 +1,60 @@
-module Header = Header
-module Request = Request
+module Header : sig
+  type name = string
+  type value = string
+  type lowercase_name = string
+
+  exception Decoder_undefined of string
+  exception Encoder_undefined of string
+
+  type 'a decoder = value -> 'a
+  type 'a encoder = 'a -> value
+
+  module type S = sig
+    type t
+    type 'a header = ..
+
+    val add : 'a header -> 'a -> t -> t
+    val add_value : 'a header -> value -> t -> t
+  end
+end
+
+module Request : sig
+  type t
+  type host = string * int option
+  type resource_path = string
+  type 'a header = ..
+
+  type 'a header +=
+    | Content_length : int header
+    | Transfer_encoding :
+        [ `chunked | `compress | `deflate | `gzip ] list header
+    | H : Header.lowercase_name -> Header.value header
+          (** A generic header. See {!type:lowercase_name}. *)
+    | Host : host header
+    | User_agent : string header
+
+  class virtual header_definition :
+    object
+      method virtual v : Header.lowercase_name -> 'a header
+      method virtual decoder : 'a header -> 'a Header.decoder
+      method virtual encoder : 'a header -> Header.name * 'a Header.encoder
+    end
+
+  val make :
+    ?header:header_definition ->
+    ?meth:Http.Method.t ->
+    ?version:Http.Version.t ->
+    resource_path ->
+    t
+
+  val meth : t -> Http.Method.t
+  val version : t -> Http.Version.t
+  val resource_path : t -> resource_path
+
+  (** {1 Headers} *)
+
+  include Header.S with type t := t with type 'a header := 'a header
+end
 
 module Body : sig
   type t =

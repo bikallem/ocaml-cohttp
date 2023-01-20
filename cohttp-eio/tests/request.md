@@ -72,11 +72,17 @@ Request.Header.iter
 ```ocaml
 # let f (Request.Header.B (h, v)) =
     match h with
-    | Request.Content_length -> Printf.printf "Content-Length: %d" v
+    | Request.Content_length -> Printf.printf "\nContent-Length: %d" v
+    | Request.Host -> (
+      match v with
+      | host, Some port -> Printf.printf "\nHost: %s:%d" host port
+      | host, None -> Printf.printf "\nHost: %s" host
+      )
     | _ -> () ;;
 val f : Request.Header.binding -> unit = <fun>
 
 # Request.Header.iter f h ;;
+Host: example.com:8080
 Content-Length: 10
 - : unit = ()
 ```
@@ -127,11 +133,34 @@ Request.Header.filter
     | _ -> false ;;
 val f : Request.Header.binding -> bool = <fun>
 
-# let h = Request.Header.filter f h ;;
+# let h1 = Request.Header.filter f h ;;
+val h1 : Request.Header.t = <abstr>
+
+# Request.Header.length h1 ;;
+- : int = 2
+```
+
+Request.Header.filter_map
+
+```ocaml
+# let f = object
+    method f: type a. a Request.header -> a -> a option =
+    fun h v ->
+      match h, v with
+      | Request.Content_length, 20 -> Some 200
+      | Request.Host, (host, Some 8080) -> Some (host, Some (8888))
+      | _ -> Some v
+  end ;;
+val f : < f : 'a. 'a Request.header -> 'a -> 'a option > = <obj>
+
+# let h = Request.Header.filter_map f h ;;
 val h : Request.Header.t = <abstr>
 
-# Request.Header.length h ;;
-- : int = 2
+# Request.(Header.find Content_length h) ;;
+- : int = 200
+
+# Request.(Header.find Host h) ;;
+- : Request.host = ("example.com", Some 8888)
 ```
 
 Request.Header.fold
@@ -140,7 +169,9 @@ Request.Header.fold
 # Request.Header.fold (fun b acc -> b :: acc) [] h;;      
 - : Request.Header.binding list =
 [Cohttp_eio.Request.Header.B (<extension>, <poly>);
- Cohttp_eio.Request.Header.B (Cohttp_eio__Request.Host, <poly>)]
+ Cohttp_eio.Request.Header.B (Cohttp_eio__Request.Host, <poly>);
+ Cohttp_eio.Request.Header.B (<extension>, <poly>);
+ Cohttp_eio.Request.Header.B (Cohttp_eio__Request.User_agent, <poly>)]
 ```
 
 Request.Header.of_seq

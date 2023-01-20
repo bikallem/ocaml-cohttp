@@ -158,6 +158,15 @@ struct
     let m = M.filter (fun _ (V (h, v)) -> f @@ B (h, Lazy.force v)) t.m in
     { t with m }
 
+  let filter_map (f : < f : 'a. 'a header -> 'a -> 'a option >) t =
+    let m =
+      M.filter_map
+        (fun _ (V (h, v)) ->
+          Option.map (fun v -> V (h, lazy v)) (f#f h @@ Lazy.force v))
+        t.m
+    in
+    { t with m }
+
   let fold f acc t =
     M.fold
       (fun _key v acc -> match v with V (h, v) -> f (B (h, Lazy.force v)) acc)

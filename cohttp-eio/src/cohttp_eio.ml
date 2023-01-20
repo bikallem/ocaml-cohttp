@@ -29,7 +29,7 @@ module type HEADER = sig
   val exists : (binding -> bool) -> t -> bool
   val iter : (binding -> unit) -> t -> unit
   val map : < f : 'a. 'a header -> 'a -> 'a > -> t -> t
-  val filter : < f : 'a. 'a header -> 'a -> bool > -> t -> t
+  val filter : (binding -> bool) -> t -> t
   val fold : < f : 'a. 'a header -> 'a -> 'b -> 'b > -> t -> 'b -> 'b
   val remove : 'a header -> t -> t
   val update : 'a header -> ('a option -> 'a option) -> t -> t

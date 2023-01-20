@@ -154,8 +154,8 @@ struct
     in
     { t with m }
 
-  let filter (f : < f : 'a. 'a header -> 'a -> bool >) t =
-    let m = M.filter (fun _ (V (h, v)) -> f#f h @@ Lazy.force v) t.m in
+  let filter f t =
+    let m = M.filter (fun _ (V (h, v)) -> f @@ B (h, Lazy.force v)) t.m in
     { t with m }
 
   let fold (f : < f : 'a. 'a header -> 'a -> 'b -> 'b >) t =

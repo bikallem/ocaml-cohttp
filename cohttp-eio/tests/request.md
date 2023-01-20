@@ -77,7 +77,7 @@ Request.Header.iter
 val f : Request.Header.binding -> unit = <fun>
 
 # Request.Header.iter f h ;;
-Content-Length: 20
+Content-Length: 10
 - : unit = ()
 ```
 
@@ -120,15 +120,12 @@ Request.Header.to_seq
 Request.Header.filter
 
 ```ocaml
-# let f = object
-    method f: type a. a Request.header -> a -> bool =
-      fun hdr _v ->
-        match hdr with
-        | Request.Host -> true
-        | Request.Content_length -> true
-        | _ -> false
-  end ;;
-val f : < f : 'a. 'a Request.header -> 'a -> bool > = <obj>
+# let f (Request.Header.B (h, v)) = 
+    match h with
+    | Request.Host -> true
+    | Request.Content_length -> true
+    | _ -> false ;;
+val f : Request.Header.binding -> bool = <fun>
 
 # let h = Request.Header.filter f h ;;
 val h : Request.Header.t = <abstr>

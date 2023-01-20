@@ -54,28 +54,6 @@ val h : Request.Header.t = <abstr>
 - : string option = Some "9"
 ```
 
-Map items in header with `map`.
-
-```ocaml
-# let f = object
-    method f: type a. a Request.header -> a -> a =
-      fun hdr v ->
-        match hdr with
-        | Request.Content_length -> v * 2
-        | _ -> v
-    end ;;
-val f : < f : 'a. 'a Request.header -> 'a -> 'a > = <obj>
-
-# let h = Request.Header.map f h ;; 
-val h : Request.Header.t = <abstr>
-
-# Request.(Header.find Content_length h) ;;
-- : int = 20
-
-# Request.(Header.find (H "age") h) ;;
-- : string = "9"
-```
-
 Request.exists
 
 ```ocaml
@@ -101,6 +79,28 @@ val f : Request.Header.binding -> unit = <fun>
 # Request.Header.iter f h ;;
 Content-Length: 20
 - : unit = ()
+```
+
+Request.Header.map
+
+```ocaml
+# let f = object
+    method f: type a. a Request.header -> a -> a =
+      fun hdr v ->
+        match hdr with
+        | Request.Content_length -> v * 2
+        | _ -> v
+    end ;;
+val f : < f : 'a. 'a Request.header -> 'a -> 'a > = <obj>
+
+# let h = Request.Header.map f h ;; 
+val h : Request.Header.t = <abstr>
+
+# Request.(Header.find Content_length h) ;;
+- : int = 20
+
+# Request.(Header.find (H "age") h) ;;
+- : string = "9"
 ```
 
 Request.Header.length

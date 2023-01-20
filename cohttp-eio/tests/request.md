@@ -55,13 +55,13 @@ Map items in header with `map`.
 
 ```ocaml
 # let f = object
-    method map: type a. a Request.header -> a -> a =
+    method f: type a. a Request.header -> a -> a =
       fun hdr v ->
         match hdr with
         | Request.Content_length -> v * 2
         | _ -> v
     end ;;
-val f : < map : 'a. 'a Request.header -> 'a -> 'a > = <obj>
+val f : < f : 'a. 'a Request.header -> 'a -> 'a > = <obj>
 
 # let r = Request.map f r ;; 
 val r : Request.t = <abstr>

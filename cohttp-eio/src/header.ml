@@ -51,9 +51,9 @@ module type S = sig
   val find : 'a header -> t -> 'a
   val find_opt : 'a header -> t -> 'a option
   val exists : < f : 'a. 'a header -> 'a -> bool > -> t -> bool
-  val iter : < iter : 'a. 'a header -> 'a -> unit > -> t -> unit
-  val map : < map : 'a. 'a header -> 'a -> 'a > -> t -> t
-  val fold : < fold : 'a. 'a header -> 'a -> 'b -> 'b > -> t -> 'b -> 'b
+  val iter : < f : 'a. 'a header -> 'a -> unit > -> t -> unit
+  val map : < f : 'a. 'a header -> 'a -> 'a > -> t -> t
+  val fold : < f : 'a. 'a header -> 'a -> 'b -> 'b > -> t -> 'b -> 'b
   val remove : 'a header -> t -> t
   val update : 'a header -> ('a option -> 'a option) -> t -> t
 
@@ -169,24 +169,24 @@ let find_opt k t =
 let exists (f : < f : 'a. 'a header -> 'a -> bool >) t =
   M.exists (fun _ (V (h, v)) -> f#f h (Lazy.force v)) t.m
 
-let iter (f : < iter : 'a. 'a header -> 'a -> unit >) t =
-  M.iter (fun _key v -> match v with V (h, v) -> f#iter h @@ Lazy.force v) t.m
+let iter (f : < f : 'a. 'a header -> 'a -> unit >) t =
+  M.iter (fun _ v -> match v with V (h, v) -> f#f h @@ Lazy.force v) t.m
 
-let map (f : < map : 'a. 'a header -> 'a -> 'a >) t =
+let map (f : < f : 'a. 'a header -> 'a -> 'a >) t =
   let m =
     M.map
       (fun v ->
         match v with
         | V (k, v) ->
-            let v = f#map k @@ Lazy.force v in
+            let v = f#f k @@ Lazy.force v in
             V (k, lazy v))
       t.m
   in
   { t with m }
 
-let fold (f : < fold : 'a. 'a header -> 'a -> 'b -> 'b >) t =
+let fold (f : < f : 'a. 'a header -> 'a -> 'b -> 'b >) t =
   M.fold
-    (fun _key v acc -> match v with V (k, v) -> f#fold k (Lazy.force v) acc)
+    (fun _key v acc -> match v with V (k, v) -> f#f k (Lazy.force v) acc)
     t.m
 
 let remove h t =

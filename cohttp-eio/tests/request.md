@@ -10,23 +10,26 @@ Add header key values using type-safe API - add.
 # let r = Request.make "/home" ;;
 val r : Request.t = <abstr>
 
-# let r = Request.(add User_agent "firefox") r ;;
-val r : Request.t = <abstr>
+# let h = Request.headers r ;;
+val h : Request.Header.t = <abstr>
 
-# let r = Request.(add Content_length 10) r ;;
-val r : Request.t = <abstr>
+# let h = Request.(Header.add User_agent "firefox" h) ;;
+val h : Request.Header.t = <abstr>
+
+# let h = Request.(Header.add Content_length 10 h) ;;
+val h : Request.Header.t = <abstr>
 ```
 
 Retrieve values using type-safe API - find and find_opt.
 
 ```ocaml
-# Request.(find User_agent r) ;;
+# Request.(Header.find User_agent h) ;;
 - : string = "firefox"
 
-# Request.(find Content_length r) ;;
+# Request.(Header.find Content_length h) ;;
 - : int = 10
 
-# Request.(find_opt Content_length r) ;;
+# Request.(Header.find_opt Content_length h) ;;
 - : int option = Some 10
 ```
 
@@ -34,20 +37,20 @@ Retrieve values using type-safe API - find and find_opt.
 `Request.add_name_value` usage is not recommended and will be removed.
 
 ```ocaml
-# let r = Request.(add_name_value ~name:"host" ~value:"example.com:8080") r ;;
-val r : Request.t = <abstr>
+# let h = Request.(Header.add_name_value ~name:"host" ~value:"example.com:8080" h) ;;
+val h : Request.Header.t = <abstr>
 
-# Request.(find_opt Host r) ;;
+# Request.(Header.find_opt Host h) ;;
 - : Request.host option = Some ("example.com", Some 8080)
 ```
 
 Headers which are undefined can be retrieved via `Hdr "hdr"`
 
 ```ocaml
-# let r = Request.add_name_value ~name:"age" ~value:"9" r ;;
-val r : Request.t = <abstr>
+# let h = Request.Header.add_name_value ~name:"age" ~value:"9" h ;;
+val h : Request.Header.t = <abstr>
 
-# Request.(find_opt @@ H "age") r ;;
+# Request.(Header.find_opt @@ H "age") h ;;
 - : string option = Some "9"
 ```
 
@@ -63,13 +66,13 @@ Map items in header with `map`.
     end ;;
 val f : < f : 'a. 'a Request.header -> 'a -> 'a > = <obj>
 
-# let r = Request.map f r ;; 
-val r : Request.t = <abstr>
+# let h = Request.Header.map f h ;; 
+val h : Request.Header.t = <abstr>
 
-# Request.(find Content_length) r ;;
+# Request.(Header.find Content_length h) ;;
 - : int = 20
 
-# Request.(find @@ H "age") r ;;
+# Request.(Header.find (H "age") h) ;;
 - : string = "9"
 ```
 
@@ -85,13 +88,13 @@ Request.exists
   end ;;
 val f : < f : 'a. 'a Request.header -> 'a -> bool > = <obj>
 
-# Request.exists f r ;;
+# Request.Header.exists f h ;;
 - : bool = true
 ```
 
-Request.headers_length
+Request.Header.length
 
 ```ocaml
-# Request.headers_length r;;
+# Request.Header.length h;;
 - : int = 4
 ```

@@ -1,4 +1,5 @@
-module Header : sig
+module type HEADER = sig
+  type t
   type name = string
   type value = string
   type lowercase_name = string
@@ -9,34 +10,40 @@ module Header : sig
   type 'a decoder = value -> 'a
   type 'a encoder = 'a -> value
 
-  module type S = sig
-    type t
-    type 'a header = ..
+  (** Common headers to both Request and Response. *)
 
-    class virtual header_definition :
-      object
-        method virtual v : lowercase_name -> 'a header
-        method virtual decoder : 'a header -> 'a decoder
-        method virtual encoder : 'a header -> name * 'a encoder
-      end
+  type 'a header = ..
 
-    val add : 'a header -> 'a -> t -> t
-    val add_lazy : 'a header -> 'a Lazy.t -> t -> t
-    val add_value : 'a header -> value -> t -> t
-    val find : 'a header -> t -> 'a
-    val find_opt : 'a header -> t -> 'a option
-    val exists : < f : 'a. 'a header -> 'a -> bool > -> t -> bool
-    val iter : < f : 'a. 'a header -> 'a -> unit > -> t -> unit
-    val map : < f : 'a. 'a header -> 'a -> 'a > -> t -> t
-    val fold : < f : 'a. 'a header -> 'a -> 'b -> 'b > -> t -> 'b -> 'b
-    val remove : 'a header -> t -> t
-    val update : 'a header -> ('a option -> 'a option) -> t -> t
-    val headers_length : t -> int
+  type 'a header +=
+    | Content_length : int header
+    | Transfer_encoding :
+        [ `chunked | `compress | `deflate | `gzip ] list header
+    | H : lowercase_name -> value header
+          (** A generic header. See {!type:lowercase_name}. *)
 
-    (**/**)
+  class virtual header_definition :
+    object
+      method virtual v : lowercase_name -> 'a header
+      method virtual decoder : 'a header -> 'a decoder
+      method virtual encoder : 'a header -> name * 'a encoder
+    end
 
-    val add_name_value : name:name -> value:value -> t -> t
-  end
+  val add : 'a header -> 'a -> t -> t
+  val add_lazy : 'a header -> 'a Lazy.t -> t -> t
+  val add_value : 'a header -> value -> t -> t
+  val find : 'a header -> t -> 'a
+  val find_opt : 'a header -> t -> 'a option
+  val exists : < f : 'a. 'a header -> 'a -> bool > -> t -> bool
+  val iter : < f : 'a. 'a header -> 'a -> unit > -> t -> unit
+  val map : < f : 'a. 'a header -> 'a -> 'a > -> t -> t
+  val fold : < f : 'a. 'a header -> 'a -> 'b -> 'b > -> t -> 'b -> 'b
+  val remove : 'a header -> t -> t
+  val update : 'a header -> ('a option -> 'a option) -> t -> t
+  val length : t -> int
+
+  (**/**)
+
+  val add_name_value : name:name -> value:value -> t -> t
 end
 
 module Request : sig
@@ -44,6 +51,10 @@ module Request : sig
   type host = string * int option
   type resource_path = string
   type 'a header = ..
+
+  (** {1 Headers} *)
+
+  module Header : HEADER with type 'a header = 'a header
 
   type 'a header +=
     | Content_length : int header
@@ -54,12 +65,12 @@ module Request : sig
     | Host : host header
     | User_agent : string header
 
-  (** {1 Headers} *)
+  val header : Header.header_definition
 
-  include Header.S with type t := t with type 'a header := 'a header
+  (** {1 Create Requests} *)
 
   val make :
-    ?header:header_definition ->
+    ?header:Header.header_definition ->
     ?meth:Http.Method.t ->
     ?version:Http.Version.t ->
     resource_path ->
@@ -68,6 +79,7 @@ module Request : sig
   val meth : t -> Http.Method.t
   val version : t -> Http.Version.t
   val resource_path : t -> resource_path
+  val headers : t -> Header.t
 end
 
 module Body : sig

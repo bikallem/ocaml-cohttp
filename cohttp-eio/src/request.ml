@@ -91,6 +91,8 @@ let update h f t =
   let headers = Header.update h f t.headers in
   { t with headers }
 
+let headers_length t = Header.length t.headers
+
 let add_name_value ~name ~value t =
   let headers = Header.add_name_value ~name ~value t.headers in
   { t with headers }

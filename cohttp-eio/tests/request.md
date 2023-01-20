@@ -73,7 +73,7 @@ val r : Request.t = <abstr>
 - : string = "9"
 ```
 
-Map.exists
+Request.exists
 
 ```ocaml
 # let f = object
@@ -87,4 +87,11 @@ val f : < f : 'a. 'a Request.header -> 'a -> bool > = <obj>
 
 # Request.exists f r ;;
 - : bool = true
+```
+
+Request.headers_length
+
+```ocaml
+# Request.headers_length r;;
+- : int = 4
 ```

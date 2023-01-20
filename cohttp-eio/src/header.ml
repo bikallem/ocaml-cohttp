@@ -56,6 +56,7 @@ module type S = sig
   val fold : < f : 'a. 'a header -> 'a -> 'b -> 'b > -> t -> 'b -> 'b
   val remove : 'a header -> t -> t
   val update : 'a header -> ('a option -> 'a option) -> t -> t
+  val headers_length : t -> int
 
   (**/**)
 
@@ -196,3 +197,5 @@ let remove h t =
 
 let update h f t =
   match f (find_opt h t) with None -> remove h t | Some v -> add h v t
+
+let length t = M.cardinal t.m

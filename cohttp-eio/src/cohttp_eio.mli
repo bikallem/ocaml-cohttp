@@ -31,6 +31,7 @@ module Header : sig
     val fold : < f : 'a. 'a header -> 'a -> 'b -> 'b > -> t -> 'b -> 'b
     val remove : 'a header -> t -> t
     val update : 'a header -> ('a option -> 'a option) -> t -> t
+    val headers_length : t -> int
 
     (**/**)
 

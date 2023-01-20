@@ -105,8 +105,7 @@ struct
 
   type t = { header : header_definition; m : v M.t }
 
-  let make : ?header:header_definition -> unit -> t =
-   fun ?(header = header) () -> { header; m = M.empty }
+  let empty header = { header; m = M.empty }
 
   let add h v t =
     let k' = Hashtbl.hash h in
@@ -177,4 +176,7 @@ struct
 
   let to_seq t =
     M.to_seq t.m |> Seq.map (fun (_, V (h, v)) -> B (h, Lazy.force v))
+
+  let of_seq m (seq : binding Seq.t) =
+    Seq.fold_left (fun m (B (h, v)) -> add h v m) m seq
 end

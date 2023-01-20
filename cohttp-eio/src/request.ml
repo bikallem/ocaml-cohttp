@@ -2,14 +2,14 @@ type host = string * int option
 type resource_path = string
 type 'a header = ..
 
-module Header = Header.Make (struct
+module H = Header.Make (struct
   type 'a t = 'a header = ..
 end)
 
 type 'a header +=
-  | Content_length = Header.Content_length
-  | Transfer_encoding = Header.Transfer_encoding
-  | H = Header.H
+  | Content_length = H.Content_length
+  | Transfer_encoding = H.Transfer_encoding
+  | H = H.H
   | Host : host header
   | User_agent : string header
 
@@ -23,39 +23,48 @@ let host_encoder = function
   | host, Some port -> host ^ ":" ^ string_of_int port
   | host, None -> host
 
-let header =
+let header : H.header_definition =
   object
-    inherit Header.header_definition
-
     method v : type a. string -> a header =
       function
       | "host" -> Obj.magic Host
       | "user-agent" -> Obj.magic User_agent
-      | hdr -> Header.header#v hdr
+      | hdr -> H.header#v hdr
 
-    method decoder : type a. a Header.header -> a Header.decoder =
+    method decoder : type a. a H.header -> a H.decoder =
       function
       | Host -> host_decoder
       | User_agent -> Fun.id
-      | hdr -> Header.header#decoder hdr
+      | hdr -> H.header#decoder hdr
 
-    method encoder : type a. a header -> Header.name * a Header.encoder =
+    method encoder : type a. a header -> H.name * a H.encoder =
       function
       | Host -> ("Host", host_encoder)
       | User_agent -> ("User_agent", Fun.id)
-      | hdr -> Header.header#encoder hdr
+      | hdr -> H.header#encoder hdr
   end
 
 type t = {
-  headers : Header.t;
+  headers : H.t;
   meth : Http.Method.t;
   version : Http.Version.t;
   resource_path : resource_path;
 }
 
-let make ?(header = header) ?(meth = `GET) ?(version = `HTTP_1_1) resource_path
-    =
-  let headers = Header.make ~header () in
+module Header = struct
+  let req_header = header
+
+  include H
+
+  let empty ?(header = req_header) () = H.empty header
+
+  let of_seq ?header seq =
+    let h = empty ?header () in
+    H.of_seq h seq
+end
+
+let make ?header ?(meth = `GET) ?(version = `HTTP_1_1) resource_path =
+  let headers = Header.empty ?header () in
   { headers; meth; version; resource_path }
 
 let meth t = t.meth

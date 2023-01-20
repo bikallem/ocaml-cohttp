@@ -1,5 +1,4 @@
 module type HEADER = sig
-  type t
   type name = string
   type value = string
   type lowercase_name = string
@@ -14,13 +13,6 @@ module type HEADER = sig
 
   type 'a header = ..
 
-  type 'a header +=
-    | Content_length : int header
-    | Transfer_encoding :
-        [ `chunked | `compress | `deflate | `gzip ] list header
-    | H : lowercase_name -> value header
-          (** A generic header. See {!type:lowercase_name}. *)
-
   class virtual header_definition :
     object
       method virtual v : lowercase_name -> 'a header
@@ -28,8 +20,10 @@ module type HEADER = sig
       method virtual encoder : 'a header -> name * 'a encoder
     end
 
+  type t
   type binding = B : 'a header * 'a -> binding
 
+  val empty : ?header:header_definition -> unit -> t
   val add : 'a header -> 'a -> t -> t
   val add_lazy : 'a header -> 'a Lazy.t -> t -> t
   val add_value : 'a header -> value -> t -> t
@@ -44,6 +38,7 @@ module type HEADER = sig
   val update : 'a header -> ('a option -> 'a option) -> t -> t
   val length : t -> int
   val to_seq : t -> binding Seq.t
+  val of_seq : ?header:header_definition -> binding Seq.t -> t
 
   (**/**)
 

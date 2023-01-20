@@ -125,3 +125,16 @@ val h : Request.Header.t = <abstr>
 # Request.Header.length h ;;
 - : int = 2
 ```
+
+Request.Header.of_seq
+
+```ocaml
+# let headers = Request.(Header.([ B (Content_length,10); B (Host, ("www.example.com", None)); B (H "age", "30")])) ;;
+val headers : Request.Header.binding list =
+  [Cohttp_eio.Request.Header.B (<extension>, <poly>);
+   Cohttp_eio.Request.Header.B (Cohttp_eio__Request.Host, <poly>);
+   Cohttp_eio.Request.Header.B (<extension>, <poly>)]
+
+# let h = Request.Header.of_seq (List.to_seq headers) ;;
+val h : Request.Header.t = <abstr>
+```

@@ -140,8 +140,8 @@ struct
 
   let exists f t = M.exists (fun _ (V (h, v)) -> f @@ B (h, Lazy.force v)) t.m
 
-  let iter (f : < f : 'a. 'a header -> 'a -> unit >) t =
-    M.iter (fun _ v -> match v with V (h, v) -> f#f h @@ Lazy.force v) t.m
+  let iter f t =
+    M.iter (fun _ v -> match v with V (h, v) -> f @@ B (h, Lazy.force v)) t.m
 
   let map (f : < f : 'a. 'a header -> 'a -> 'a >) t =
     let m =

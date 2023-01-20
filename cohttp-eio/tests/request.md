@@ -80,13 +80,27 @@ Request.exists
 
 ```ocaml
 # let f (Request.Header.B (h, v)) =
-        match h with
-        | Request.Content_length -> true
-        | _ -> false ;;
+    match h with
+    | Request.Content_length -> true
+    | _ -> false ;;
 val f : Request.Header.binding -> bool = <fun>
 
 # Request.Header.exists f h ;;
 - : bool = true
+```
+
+Request.Header.iter
+
+```ocaml
+# let f (Request.Header.B (h, v)) =
+    match h with
+    | Request.Content_length -> Printf.printf "Content-Length: %d" v
+    | _ -> () ;;
+val f : Request.Header.binding -> unit = <fun>
+
+# Request.Header.iter f h ;;
+Content-Length: 20
+- : unit = ()
 ```
 
 Request.Header.length

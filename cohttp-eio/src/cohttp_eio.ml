@@ -40,6 +40,10 @@ module type HEADER = sig
   val update : 'a header -> ('a option -> 'a option) -> t -> t
   val length : t -> int
 
+  type binding = B : 'a header * 'a -> binding
+
+  val to_seq : t -> binding Seq.t
+
   (**/**)
 
   val add_name_value : name:name -> value:value -> t -> t

@@ -28,6 +28,8 @@ module type HEADER = sig
       method virtual encoder : 'a header -> name * 'a encoder
     end
 
+  type binding = B : 'a header * 'a -> binding
+
   val add : 'a header -> 'a -> t -> t
   val add_lazy : 'a header -> 'a Lazy.t -> t -> t
   val add_value : 'a header -> value -> t -> t
@@ -41,6 +43,7 @@ module type HEADER = sig
   val remove : 'a header -> t -> t
   val update : 'a header -> ('a option -> 'a option) -> t -> t
   val length : t -> int
+  val to_seq : t -> binding Seq.t
 
   (**/**)
 

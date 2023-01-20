@@ -99,7 +99,14 @@ Request.Header.length
 - : int = 4
 ```
 
-Request.filter
+Request.Header.to_seq
+
+```ocaml
+# Request.Header.to_seq h |> Seq.length ;;
+- : int = 4
+```
+
+Request.Header.filter
 
 ```ocaml
 # let f = object

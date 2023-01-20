@@ -98,8 +98,8 @@ struct
         | hdr -> err_encoder_undefined hdr
     end
 
-  type v =
-    | V : 'a header * 'a Lazy.t -> v (* Header values are stored lazily. *)
+  type v = V : 'a header * 'a Lazy.t -> v
+  type binding = B : 'a header * 'a -> binding
 
   module M = Map.Make (Int)
 
@@ -174,4 +174,7 @@ struct
     match f (find_opt h t) with None -> remove h t | Some v -> add h v t
 
   let length t = M.cardinal t.m
+
+  let to_seq t =
+    M.to_seq t.m |> Seq.map (fun (_, V (h, v)) -> B (h, Lazy.force v))
 end

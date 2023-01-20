@@ -21,8 +21,6 @@ let host_encoder = function
 
 class virtual header_definition = Header.header_definition
 
-type binding = Header.binding = B : 'a header * 'a -> binding
-
 let header =
   object
     inherit Header.header_definition

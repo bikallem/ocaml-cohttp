@@ -45,16 +45,14 @@ module type S = sig
       method virtual encoder : 'a header -> name * 'a encoder
     end
 
-  type binding = B : 'a header * 'a -> binding
-
   val add : 'a header -> 'a -> t -> t
   val add_lazy : 'a header -> 'a Lazy.t -> t -> t
   val add_value : 'a header -> value -> t -> t
   val find : 'a header -> t -> 'a
   val find_opt : 'a header -> t -> 'a option
-  val iter : (binding -> unit) -> t -> unit
+  val iter : < iter : 'a. 'a header -> 'a -> unit > -> t -> unit
   val map : < map : 'a. 'a header -> 'a -> 'a > -> t -> t
-  val fold : (binding -> 'a -> 'a) -> t -> 'a -> 'a
+  val fold : < fold : 'a. 'a header -> 'a -> 'b -> 'b > -> t -> 'b -> 'b
   val remove : 'a header -> t -> t
   val update : 'a header -> ('a option -> 'a option) -> t -> t
 
@@ -128,7 +126,6 @@ let header =
   end
 
 type v = V : 'a header * 'a Lazy.t -> v (* Header values are stored lazily. *)
-type binding = B : 'a header * 'a -> binding
 
 module M = Map.Make (Int)
 
@@ -168,8 +165,8 @@ let find : type a. a header -> t -> a =
 let find_opt k t =
   match find k t with v -> Some v | exception Not_found -> None
 
-let iter f t =
-  M.iter (fun _key v -> match v with V (k, v) -> f @@ B (k, Lazy.force v)) t.m
+let iter (f : < iter : 'a. 'a header -> 'a -> unit >) t =
+  M.iter (fun _key v -> match v with V (k, v) -> f#iter k @@ Lazy.force v) t.m
 
 let map (f : < map : 'a. 'a header -> 'a -> 'a >) t =
   let m =
@@ -183,9 +180,9 @@ let map (f : < map : 'a. 'a header -> 'a -> 'a >) t =
   in
   { t with m }
 
-let fold f t =
+let fold (f : < fold : 'a. 'a header -> 'a -> 'b -> 'b >) t =
   M.fold
-    (fun _key v acc -> match v with V (k, v) -> f (B (k, Lazy.force v)) acc)
+    (fun _key v acc -> match v with V (k, v) -> f#fold k (Lazy.force v) acc)
     t.m
 
 let remove h t =

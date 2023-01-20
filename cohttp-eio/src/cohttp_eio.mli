@@ -20,16 +20,14 @@ module Header : sig
         method virtual encoder : 'a header -> Header.name * 'a Header.encoder
       end
 
-    type binding = B : 'a header * 'a -> binding
-
     val add : 'a header -> 'a -> t -> t
     val add_lazy : 'a header -> 'a Lazy.t -> t -> t
     val add_value : 'a header -> Header.value -> t -> t
     val find : 'a header -> t -> 'a
     val find_opt : 'a header -> t -> 'a option
-    val iter : (binding -> unit) -> t -> unit
+    val iter : < iter : 'a. 'a header -> 'a -> unit > -> t -> unit
     val map : < map : 'a. 'a header -> 'a -> 'a > -> t -> t
-    val fold : (binding -> 'a -> 'a) -> t -> 'a -> 'a
+    val fold : < fold : 'a. 'a header -> 'a -> 'b -> 'b > -> t -> 'b -> 'b
     val remove : 'a header -> t -> t
     val update : 'a header -> ('a option -> 'a option) -> t -> t
 

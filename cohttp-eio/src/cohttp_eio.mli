@@ -25,6 +25,7 @@ module Header : sig
     val add_value : 'a header -> Header.value -> t -> t
     val find : 'a header -> t -> 'a
     val find_opt : 'a header -> t -> 'a option
+    val exists : < f : 'a. 'a header -> 'a -> bool > -> t -> bool
     val iter : < iter : 'a. 'a header -> 'a -> unit > -> t -> unit
     val map : < map : 'a. 'a header -> 'a -> 'a > -> t -> t
     val fold : < fold : 'a. 'a header -> 'a -> 'b -> 'b > -> t -> 'b -> 'b

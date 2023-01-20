@@ -74,6 +74,7 @@ let add_value h v t =
 
 let find h t = Header.find h t.headers
 let find_opt h t = Header.find_opt h t.headers
+let exists h t = Header.exists h t.headers
 let iter f t = Header.iter f t.headers
 
 let map f t =

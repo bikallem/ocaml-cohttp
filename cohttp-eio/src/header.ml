@@ -50,6 +50,7 @@ module type S = sig
   val add_value : 'a header -> value -> t -> t
   val find : 'a header -> t -> 'a
   val find_opt : 'a header -> t -> 'a option
+  val exists : < f : 'a. 'a header -> 'a -> bool > -> t -> bool
   val iter : < iter : 'a. 'a header -> 'a -> unit > -> t -> unit
   val map : < map : 'a. 'a header -> 'a -> 'a > -> t -> t
   val fold : < fold : 'a. 'a header -> 'a -> 'b -> 'b > -> t -> 'b -> 'b
@@ -165,8 +166,11 @@ let find : type a. a header -> t -> a =
 let find_opt k t =
   match find k t with v -> Some v | exception Not_found -> None
 
+let exists (f : < f : 'a. 'a header -> 'a -> bool >) t =
+  M.exists (fun _ (V (h, v)) -> f#f h (Lazy.force v)) t.m
+
 let iter (f : < iter : 'a. 'a header -> 'a -> unit >) t =
-  M.iter (fun _key v -> match v with V (k, v) -> f#iter k @@ Lazy.force v) t.m
+  M.iter (fun _key v -> match v with V (h, v) -> f#iter h @@ Lazy.force v) t.m
 
 let map (f : < map : 'a. 'a header -> 'a -> 'a >) t =
   let m =

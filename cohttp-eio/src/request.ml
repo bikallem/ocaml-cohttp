@@ -63,8 +63,8 @@ module Header = struct
     H.of_seq h seq
 end
 
-let make ?header ?(meth = `GET) ?(version = `HTTP_1_1) resource_path =
-  let headers = Header.empty ?header () in
+let make ?(headers = Header.empty ()) ?(meth = `GET) ?(version = `HTTP_1_1)
+    resource_path =
   { headers; meth; version; resource_path }
 
 let meth t = t.meth

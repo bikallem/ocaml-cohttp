@@ -69,7 +69,7 @@ module Request : sig
   (** {1 Create Requests} *)
 
   val make :
-    ?header:Header.header_definition ->
+    ?headers:Header.t ->
     ?meth:Http.Method.t ->
     ?version:Http.Version.t ->
     resource_path ->

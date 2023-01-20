@@ -66,6 +66,10 @@ let add h a t =
   let headers = Header.add h a t.headers in
   { t with headers }
 
+let add_lazy h lazy_val t =
+  let headers = Header.add_lazy h lazy_val t.headers in
+  { t with headers }
+
 let add_value h v t =
   let headers = Header.add_value h v t.headers in
   { t with headers }

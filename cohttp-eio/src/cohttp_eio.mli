@@ -22,8 +22,8 @@ module Header : sig
 
     type binding = B : 'a header * 'a -> binding
 
-    val make : ?header:header_definition -> unit -> t
     val add : 'a header -> 'a -> t -> t
+    val add_lazy : 'a header -> 'a Lazy.t -> t -> t
     val add_value : 'a header -> Header.value -> t -> t
     val find : 'a header -> t -> 'a
     val find_opt : 'a header -> t -> 'a option

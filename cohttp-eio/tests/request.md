@@ -4,7 +4,7 @@
 # open Cohttp_eio;;
 ```
 
-Add header key values using type-safe API - add, add_lazy.
+Add header key values using type-safe API - add.
 
 ```ocaml
 # let r = Request.make "/home" ;;

@@ -47,8 +47,8 @@ module type S = sig
 
   type binding = B : 'a header * 'a -> binding
 
-  val make : ?header:header_definition -> unit -> t
   val add : 'a header -> 'a -> t -> t
+  val add_lazy : 'a header -> 'a Lazy.t -> t -> t
   val add_value : 'a header -> value -> t -> t
   val find : 'a header -> t -> 'a
   val find_opt : 'a header -> t -> 'a option
@@ -137,10 +137,20 @@ type t = { header : header_definition; m : v M.t }
 let make : ?header:header_definition -> unit -> t =
  fun ?(header = header) () -> { header; m = M.empty }
 
-let add_value k s t =
-  let key = Hashtbl.hash k in
-  let v = lazy (t.header#decoder k s) in
-  let m = M.add key (V (k, v)) t.m in
+let add h v t =
+  let k' = Hashtbl.hash h in
+  let m = M.add k' (V (h, lazy v)) t.m in
+  { t with m }
+
+let add_lazy h lazy_v t =
+  let k = Hashtbl.hash h in
+  let m = M.add k (V (h, lazy_v)) t.m in
+  { t with m }
+
+let add_value h s t =
+  let key = Hashtbl.hash h in
+  let v = lazy (t.header#decoder h s) in
+  let m = M.add key (V (h, v)) t.m in
   { t with m }
 
 let add_name_value ~name ~value t =
@@ -150,14 +160,9 @@ let add_name_value ~name ~value t =
   let m = M.add k' (V (k, v)) t.m in
   { t with m }
 
-let add k v t =
-  let k' = Hashtbl.hash k in
-  let m = M.add k' (V (k, lazy v)) t.m in
-  { t with m }
-
 let find : type a. a header -> t -> a =
- fun k t ->
-  let key = Hashtbl.hash k in
+ fun h t ->
+  let key = Hashtbl.hash h in
   match M.find key t.m with V (_, v) -> Obj.magic (Lazy.force v)
 
 let find_opt k t =
@@ -183,10 +188,10 @@ let fold f t =
     (fun _key v acc -> match v with V (k, v) -> f (B (k, Lazy.force v)) acc)
     t.m
 
-let remove key t =
-  let k = Hashtbl.hash key in
+let remove h t =
+  let k = Hashtbl.hash h in
   let m = M.remove k t.m in
   { t with m }
 
-let update key f t =
-  match f (find_opt key t) with None -> remove key t | Some v -> add key v t
+let update h f t =
+  match f (find_opt h t) with None -> remove h t | Some v -> add h v t

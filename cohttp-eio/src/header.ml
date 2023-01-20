@@ -158,10 +158,10 @@ struct
     let m = M.filter (fun _ (V (h, v)) -> f @@ B (h, Lazy.force v)) t.m in
     { t with m }
 
-  let fold (f : < f : 'a. 'a header -> 'a -> 'b -> 'b >) t =
+  let fold f acc t =
     M.fold
-      (fun _key v acc -> match v with V (k, v) -> f#f k (Lazy.force v) acc)
-      t.m
+      (fun _key v acc -> match v with V (h, v) -> f (B (h, Lazy.force v)) acc)
+      t.m acc
 
   let remove h t =
     let k = Hashtbl.hash h in

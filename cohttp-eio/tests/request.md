@@ -120,7 +120,7 @@ Request.Header.to_seq
 Request.Header.filter
 
 ```ocaml
-# let f (Request.Header.B (h, v)) = 
+# let f (Request.Header.B (h, v)) =
     match h with
     | Request.Host -> true
     | Request.Content_length -> true
@@ -132,6 +132,15 @@ val h : Request.Header.t = <abstr>
 
 # Request.Header.length h ;;
 - : int = 2
+```
+
+Request.Header.fold
+
+```ocaml
+# Request.Header.fold (fun b acc -> b :: acc) [] h;;      
+- : Request.Header.binding list =
+[Cohttp_eio.Request.Header.B (<extension>, <poly>);
+ Cohttp_eio.Request.Header.B (Cohttp_eio__Request.Host, <poly>)]
 ```
 
 Request.Header.of_seq

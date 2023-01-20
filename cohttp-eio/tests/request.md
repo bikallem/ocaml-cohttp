@@ -72,3 +72,19 @@ val r : Request.t = <abstr>
 # Request.(find @@ H "age") r ;;
 - : string = "9"
 ```
+
+Map.exists
+
+```ocaml
+# let f = object
+    method f: type a. a Request.header -> a -> bool =
+      fun hdr _v ->
+        match hdr with
+        | Request.Content_length -> true
+        | _ -> false
+  end ;;
+val f : < f : 'a. 'a Request.header -> 'a -> bool > = <obj>
+
+# Request.exists f r ;;
+- : bool = true
+```

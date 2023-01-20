@@ -15,14 +15,14 @@ module Header : sig
 
     class virtual header_definition :
       object
-        method virtual v : Header.lowercase_name -> 'a header
-        method virtual decoder : 'a header -> 'a Header.decoder
-        method virtual encoder : 'a header -> Header.name * 'a Header.encoder
+        method virtual v : lowercase_name -> 'a header
+        method virtual decoder : 'a header -> 'a decoder
+        method virtual encoder : 'a header -> name * 'a encoder
       end
 
     val add : 'a header -> 'a -> t -> t
     val add_lazy : 'a header -> 'a Lazy.t -> t -> t
-    val add_value : 'a header -> Header.value -> t -> t
+    val add_value : 'a header -> value -> t -> t
     val find : 'a header -> t -> 'a
     val find_opt : 'a header -> t -> 'a option
     val exists : < f : 'a. 'a header -> 'a -> bool > -> t -> bool

@@ -10,7 +10,7 @@ type 'a Header.header +=
   | User_agent : string Header.header
 
 let host_decoder v =
-  match String.split_on_char ',' v with
+  match String.split_on_char ':' v with
   | [ host; port ] -> (host, Some (int_of_string port))
   | host :: [] -> (String.trim host, None)
   | _ -> raise @@ Invalid_argument "invalid Host header value"
@@ -20,6 +20,8 @@ let host_encoder = function
   | host, None -> host
 
 class virtual header_definition = Header.header_definition
+
+type binding = Header.binding = B : 'a header * 'a -> binding
 
 let header =
   object
@@ -66,4 +68,26 @@ let add h a t =
 
 let add_value h v t =
   let headers = Header.add_value h v t.headers in
+  { t with headers }
+
+let find h t = Header.find h t.headers
+let find_opt h t = Header.find_opt h t.headers
+let iter f t = Header.iter f t.headers
+
+let map f t =
+  let headers = Header.map f t.headers in
+  { t with headers }
+
+let fold f t = Header.fold f t.headers
+
+let remove h t =
+  let headers = Header.remove h t.headers in
+  { t with headers }
+
+let update h f t =
+  let headers = Header.update h f t.headers in
+  { t with headers }
+
+let add_name_value ~name ~value t =
+  let headers = Header.add_name_value ~name ~value t.headers in
   { t with headers }

@@ -38,8 +38,29 @@ module type S = sig
   type t
   type 'a header = ..
 
+  class virtual header_definition :
+    object
+      method virtual v : lowercase_name -> 'a header
+      method virtual decoder : 'a header -> 'a decoder
+      method virtual encoder : 'a header -> name * 'a encoder
+    end
+
+  type binding = B : 'a header * 'a -> binding
+
+  val make : ?header:header_definition -> unit -> t
   val add : 'a header -> 'a -> t -> t
   val add_value : 'a header -> value -> t -> t
+  val find : 'a header -> t -> 'a
+  val find_opt : 'a header -> t -> 'a option
+  val iter : (binding -> unit) -> t -> unit
+  val map : < map : 'a. 'a header -> 'a -> 'a > -> t -> t
+  val fold : (binding -> 'a -> 'a) -> t -> 'a -> 'a
+  val remove : 'a header -> t -> t
+  val update : 'a header -> ('a option -> 'a option) -> t -> t
+
+  (**/**)
+
+  val add_name_value : name:name -> value:value -> t -> t
 end
 
 let int_decoder v = int_of_string v

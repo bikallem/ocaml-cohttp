@@ -79,14 +79,11 @@ val h : Request.Header.t = <abstr>
 Request.exists
 
 ```ocaml
-# let f = object
-    method f: type a. a Request.header -> a -> bool =
-      fun hdr _v ->
-        match hdr with
+# let f (Request.Header.B (h, v)) =
+        match h with
         | Request.Content_length -> true
-        | _ -> false
-  end ;;
-val f : < f : 'a. 'a Request.header -> 'a -> bool > = <obj>
+        | _ -> false ;;
+val f : Request.Header.binding -> bool = <fun>
 
 # Request.Header.exists f h ;;
 - : bool = true

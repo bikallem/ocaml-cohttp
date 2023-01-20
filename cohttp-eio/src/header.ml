@@ -138,8 +138,7 @@ struct
   let find_opt k t =
     match find k t with v -> Some v | exception Not_found -> None
 
-  let exists (f : < f : 'a. 'a header -> 'a -> bool >) t =
-    M.exists (fun _ (V (h, v)) -> f#f h (Lazy.force v)) t.m
+  let exists f t = M.exists (fun _ (V (h, v)) -> f @@ B (h, Lazy.force v)) t.m
 
   let iter (f : < f : 'a. 'a header -> 'a -> unit >) t =
     M.iter (fun _ v -> match v with V (h, v) -> f#f h @@ Lazy.force v) t.m

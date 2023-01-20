@@ -29,7 +29,7 @@ module type HEADER = sig
   val add_value : 'a header -> value -> t -> t
   val find : 'a header -> t -> 'a
   val find_opt : 'a header -> t -> 'a option
-  val exists : < f : 'a. 'a header -> 'a -> bool > -> t -> bool
+  val exists : (binding -> bool) -> t -> bool
   val iter : < f : 'a. 'a header -> 'a -> unit > -> t -> unit
   val map : < f : 'a. 'a header -> 'a -> 'a > -> t -> t
   val filter : < f : 'a. 'a header -> 'a -> bool > -> t -> t

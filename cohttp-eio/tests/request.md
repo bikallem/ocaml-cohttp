@@ -98,3 +98,23 @@ Request.Header.length
 # Request.Header.length h;;
 - : int = 4
 ```
+
+Request.filter
+
+```ocaml
+# let f = object
+    method f: type a. a Request.header -> a -> bool =
+      fun hdr _v ->
+        match hdr with
+        | Request.Host -> true
+        | Request.Content_length -> true
+        | _ -> false
+  end ;;
+val f : < f : 'a. 'a Request.header -> 'a -> bool > = <obj>
+
+# let h = Request.Header.filter f h ;;
+val h : Request.Header.t = <abstr>
+
+# Request.Header.length h ;;
+- : int = 2
+```

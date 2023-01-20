@@ -148,13 +148,16 @@ struct
   let map (f : < f : 'a. 'a header -> 'a -> 'a >) t =
     let m =
       M.map
-        (fun v ->
-          match v with
-          | V (k, v) ->
-              let v = f#f k @@ Lazy.force v in
-              V (k, lazy v))
+        (function
+          | V (h, v) ->
+              let v = f#f h @@ Lazy.force v in
+              V (h, lazy v))
         t.m
     in
+    { t with m }
+
+  let filter (f : < f : 'a. 'a header -> 'a -> bool >) t =
+    let m = M.filter (fun _ (V (h, v)) -> f#f h @@ Lazy.force v) t.m in
     { t with m }
 
   let fold (f : < f : 'a. 'a header -> 'a -> 'b -> 'b >) t =

@@ -1,40 +1,5 @@
 module type HEADER = Header.S
-
-module Request : sig
-  type t
-  type host = string * int option
-  type resource_path = string
-  type 'a header = ..
-
-  (** {1 Headers} *)
-
-  module Header : HEADER with type 'a header = 'a header
-
-  type 'a header +=
-    | Content_length : int header
-    | Transfer_encoding :
-        [ `chunked | `compress | `deflate | `gzip ] list header
-    | H : Header.lowercase_name -> Header.value header
-          (** A generic header. See {!type:lowercase_name}. *)
-    | Host : host header
-    | User_agent : string header
-
-  val header : Header.header_definition
-
-  (** {1 Create Requests} *)
-
-  val make :
-    ?headers:Header.t ->
-    ?meth:Http.Method.t ->
-    ?version:Http.Version.t ->
-    resource_path ->
-    t
-
-  val meth : t -> Http.Method.t
-  val version : t -> Http.Version.t
-  val resource_path : t -> resource_path
-  val headers : t -> Header.t
-end
+module type REQUEST = Request.S
 
 module Body : sig
   type t =
@@ -66,6 +31,24 @@ end
 
 (** [Server] is a HTTP 1.1 server. *)
 module Server : sig
+  module Request : sig
+    type t
+
+    include REQUEST with type t := t
+
+    val make :
+      ?headers:Header.t ->
+      ?meth:Http.Method.t ->
+      ?version:Http.Version.t ->
+      Eio.Buf_read.t ->
+      Eio.Net.Sockaddr.stream ->
+      resource_path ->
+      t
+
+    val reader : t -> Eio.Buf_read.t
+    val client_addr : t -> Eio.Net.Sockaddr.stream
+  end
+
   type request = Http.Request.t * Eio.Buf_read.t * Eio.Net.Sockaddr.stream
   (** The request headers, a reader for the socket, and the address of the
       client. To read the request body, use {!read_fixed} or {!read_chunked}. *)

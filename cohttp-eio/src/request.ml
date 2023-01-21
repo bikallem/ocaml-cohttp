@@ -1,3 +1,29 @@
+module type S = sig
+  type t
+  type host = string * int option
+  type resource_path = string
+  type 'a header = ..
+
+  (** {1 Headers} *)
+
+  module Header : Header.S with type 'a header = 'a header
+
+  type 'a header +=
+    | Content_length : int header
+    | Transfer_encoding :
+        [ `chunked | `compress | `deflate | `gzip ] list header
+    | H : Header.lowercase_name -> Header.value header
+          (** A generic header. See {!type:lowercase_name}. *)
+    | Host : host header
+    | User_agent : string header
+
+  val header : Header.header_definition
+  val meth : t -> Http.Method.t
+  val version : t -> Http.Version.t
+  val resource_path : t -> resource_path
+  val headers : t -> Header.t
+end
+
 type host = string * int option
 type resource_path = string
 type 'a header = ..
@@ -44,13 +70,6 @@ let header : H.header_definition =
       | hdr -> H.header#encoder hdr
   end
 
-type t = {
-  headers : H.t;
-  meth : Http.Method.t;
-  version : Http.Version.t;
-  resource_path : resource_path;
-}
-
 module Header = struct
   let req_header = header
 
@@ -62,12 +81,3 @@ module Header = struct
     let h = empty ?header () in
     H.of_seq h seq
 end
-
-let make ?(headers = Header.empty ()) ?(meth = `GET) ?(version = `HTTP_1_1)
-    resource_path =
-  { headers; meth; version; resource_path }
-
-let meth t = t.meth
-let version t = t.version
-let resource_path t = t.resource_path
-let headers t = t.headers

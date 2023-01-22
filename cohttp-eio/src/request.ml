@@ -3,8 +3,8 @@ type resource_path = string
 
 module type S = sig
   type t
-  type nonrec host = host
-  type nonrec resource_path = resource_path
+  type host = string * int option
+  type resource_path = string
 
   (** {1 Headers} *)
 
@@ -15,7 +15,6 @@ module type S = sig
     | Transfer_encoding :
         [ `chunked | `compress | `deflate | `gzip ] list header
     | H : string -> string header
-          (** A generic header. See {!type:lowercase_name}. *)
     | Host : host header
     | User_agent : string header
 

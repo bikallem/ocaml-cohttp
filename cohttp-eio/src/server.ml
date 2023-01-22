@@ -6,15 +6,15 @@ module Request = struct
   include Request
 
   type t = {
-    headers : H.t;
+    headers : Header.t;
     meth : Http.Method.t;
     version : Http.Version.t;
-    resource_path : resource_path;
+    resource_path : string;
     reader : Buf_read.t;
     client_addr : Eio.Net.Sockaddr.stream;
   }
 
-  let make ?(headers = Header.empty ()) ?(meth = `GET) ?(version = `HTTP_1_1)
+  let make ?(headers = Header.empty) ?(meth = `GET) ?(version = `HTTP_1_1)
       reader client_addr resource_path =
     { headers; meth; version; resource_path; reader; client_addr }
 

@@ -42,7 +42,7 @@ module Server : sig
       ?version:Http.Version.t ->
       Eio.Buf_read.t ->
       Eio.Net.Sockaddr.stream ->
-      resource_path ->
+      string ->
       t
 
     val reader : t -> Eio.Buf_read.t

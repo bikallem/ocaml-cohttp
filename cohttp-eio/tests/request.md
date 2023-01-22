@@ -1,13 +1,15 @@
-# Cohttp_eio.Request module unit tests
+# Cohttp_eio.Server.Request module unit tests
 
 ```ocaml
-# open Cohttp_eio;;
+open Cohttp_eio.Server
+
+let addr = `Tcp (Eio.Net.Ipaddr.V4.loopback, 8081)
 ```
 
 Add header key values using type-safe API - add.
 
 ```ocaml
-# let r = Request.make "/home" ;;
+# let r = Request.make (Eio.Buf_read.of_string "") addr "/home" ;;
 val r : Request.t = <abstr>
 
 # let h = Request.headers r ;;
@@ -168,10 +170,12 @@ Request.Header.fold
 ```ocaml
 # Request.Header.fold (fun b acc -> b :: acc) [] h;;      
 - : Request.Header.binding list =
-[Cohttp_eio.Request.Header.B (<extension>, <poly>);
- Cohttp_eio.Request.Header.B (Cohttp_eio__Request.Host, <poly>);
- Cohttp_eio.Request.Header.B (<extension>, <poly>);
- Cohttp_eio.Request.Header.B (Cohttp_eio__Request.User_agent, <poly>)]
+[Cohttp_eio.Server.Request.Header.B
+  (Cohttp_eio__Header.Common_header.H "age", <poly>);
+ Cohttp_eio.Server.Request.Header.B
+  (Cohttp_eio__Header.Common_header.Content_length, <poly>);
+ Cohttp_eio.Server.Request.Header.B (Cohttp_eio__Request.User_agent, <poly>);
+ Cohttp_eio.Server.Request.Header.B (Cohttp_eio__Request.Host, <poly>)]
 ```
 
 Request.Header.of_seq
@@ -179,9 +183,11 @@ Request.Header.of_seq
 ```ocaml
 # let headers = Request.(Header.([ B (Content_length,10); B (Host, ("www.example.com", None)); B (H "age", "30")])) ;;
 val headers : Request.Header.binding list =
-  [Cohttp_eio.Request.Header.B (<extension>, <poly>);
-   Cohttp_eio.Request.Header.B (Cohttp_eio__Request.Host, <poly>);
-   Cohttp_eio.Request.Header.B (<extension>, <poly>)]
+  [Cohttp_eio.Server.Request.Header.B
+    (Cohttp_eio__Header.Common_header.Content_length, <poly>);
+   Cohttp_eio.Server.Request.Header.B (Cohttp_eio__Request.Host, <poly>);
+   Cohttp_eio.Server.Request.Header.B
+    (Cohttp_eio__Header.Common_header.H "age", <poly>)]
 
 # let h = Request.Header.of_seq (List.to_seq headers) ;;
 val h : Request.Header.t = <abstr>

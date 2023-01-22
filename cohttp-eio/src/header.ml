@@ -1,29 +1,24 @@
+type 'a decoder = string -> 'a
+type 'a encoder = 'a -> string
+
+module type HEADER_DEFINITION = sig
+  type 'a t = ..
+
+  val v : string -> 'a t
+  val compare : 'a t -> 'b t -> int
+  val decoder : 'a t -> 'a decoder
+  val encoder : 'a t -> string * 'a encoder
+end
+
 module type S = sig
-  type name = string
-  type value = string
-  type lowercase_name = string
-
-  exception Decoder_undefined of string
-  exception Encoder_undefined of string
-
-  type 'a decoder = value -> 'a
-  type 'a encoder = 'a -> value
-  type 'a header = ..
-
-  class virtual header_definition :
-    object
-      method virtual v : lowercase_name -> 'a header
-      method virtual decoder : 'a header -> 'a decoder
-      method virtual encoder : 'a header -> name * 'a encoder
-    end
-
   type t
+  type 'a header = ..
   type binding = B : 'a header * 'a -> binding
 
-  val empty : ?header:header_definition -> unit -> t
+  val empty : t
   val add : 'a header -> 'a -> t -> t
   val add_lazy : 'a header -> 'a Lazy.t -> t -> t
-  val add_value : 'a header -> value -> t -> t
+  val add_value : 'a header -> string -> t -> t
   val find : 'a header -> t -> 'a
   val find_opt : 'a header -> t -> 'a option
   val exists : (binding -> bool) -> t -> bool
@@ -36,41 +31,20 @@ module type S = sig
   val update : 'a header -> ('a option -> 'a option) -> t -> t
   val length : t -> int
   val to_seq : t -> binding Seq.t
-  val of_seq : ?header:header_definition -> binding Seq.t -> t
+  val of_seq : binding Seq.t -> t
 
   (**/**)
 
-  val add_name_value : name:name -> value:value -> t -> t
+  val add_name_value : name:string -> value:string -> t -> t
 end
 
-module Make (H : sig
+module Common_header = struct
   type 'a t = ..
-end) =
-struct
-  type name = string (* Header name, e.g. Date, Content-Length etc *)
-  type value = string (* Header value, eg 10, text/html, chunked etc *)
 
-  type lowercase_name = string
-  (** Represents HTTP header name in lowercase form, e.g.
-      [Content-Type -> content-type], [Date -> date],
-      [Transfer-Encoding -> transfer-encoding] etc.
-
-      When using this value for retrieving headers, ensure it is in lowercase
-      via {!String.lowercase_ascii} or other suitable functions. However this is
-      not enforced by the library. *)
-
-  exception Decoder_undefined of string
-  exception Encoder_undefined of string
-
-  type 'a decoder = value -> 'a
-  type 'a encoder = 'a -> value
-  type 'a header = 'a H.t = ..
-
-  type 'a header +=
-    | Content_length : int header
-    | Transfer_encoding :
-        [ `chunked | `compress | `deflate | `gzip ] list header
-    | H : lowercase_name -> value header
+  type 'a t +=
+    | Content_length : int t
+    | Transfer_encoding : [ `chunked | `compress | `deflate | `gzip ] list t
+    | H : string -> string t
 
   let int_decoder v = int_of_string v
   let int_encoder v = string_of_int v
@@ -98,138 +72,120 @@ struct
       v
     |> String.concat ", "
 
-  class virtual header_definition =
-    object
-      method virtual v : 'a. lowercase_name -> 'a header
-      method virtual decoder : 'a. 'a header -> 'a decoder
-      method virtual encoder : 'a. 'a header -> name * 'a encoder
-    end
-
   let constructor_name hdr =
     let nm = Obj.Extension_constructor.of_val hdr in
     Obj.Extension_constructor.name nm
 
   let err_decoder_undefined hdr =
-    raise @@ Decoder_undefined (constructor_name hdr)
+    raise @@ Invalid_argument ("Decoder undefined for " ^ constructor_name hdr)
 
   let err_encoder_undefined hdr =
-    raise @@ Encoder_undefined (constructor_name hdr)
+    raise @@ Invalid_argument ("Encoder undefined for " ^ constructor_name hdr)
 
-  (* Defines header definition for headers included in this module, such as
-     Content-Length, Transfer-Encoding and so on. If a typed defnition for a
-     header is not given, then 'H h' is used. *)
-  let header =
-    object
-      inherit header_definition
+  let err_compare_undefined hdr =
+    raise @@ Invalid_argument ("Compare undefined for " ^ constructor_name hdr)
 
-      method v : type a. string -> a header =
-        function
-        | "content-length" -> Obj.magic Content_length
-        | "transfer-encoding" -> Obj.magic Transfer_encoding
-        | h -> Obj.magic (H h)
+  let v : type a. string -> a t = function
+    | "content-length" -> Obj.magic Content_length
+    | "transfer-encoding" -> Obj.magic Transfer_encoding
+    | h -> Obj.magic (H h)
 
-      method decoder : type a. a header -> a decoder =
-        function
-        | Content_length -> int_decoder
-        | Transfer_encoding -> te_decoder
-        | H _ -> Fun.id
-        | hdr -> err_decoder_undefined hdr
+  let compare : type a b. a t -> b t -> int =
+   fun a b ->
+    match (a, b) with
+    | Content_length, Content_length -> 0
+    | Content_length, _ -> -1
+    | _, Content_length -> 1
+    | Transfer_encoding, Transfer_encoding -> 0
+    | Transfer_encoding, _ -> -1
+    | _, Transfer_encoding -> 1
+    | H a, H b -> String.compare a b
+    | H _, _ -> -1
+    | _, H _ -> 1
+    | a, _ -> err_compare_undefined a
 
-      method encoder : type a. a header -> name * a encoder =
-        function
-        | Content_length -> ("Content-Length", int_encoder)
-        | Transfer_encoding -> ("Transfer-Encoding", te_encoder)
-        | H name -> (name, Fun.id)
-        | hdr -> err_encoder_undefined hdr
-    end
+  let decoder : type a. a t -> a decoder = function
+    | Content_length -> int_decoder
+    | Transfer_encoding -> te_decoder
+    | H _ -> Fun.id
+    | hdr -> err_decoder_undefined hdr
 
+  let encoder : type a. a t -> string * a encoder = function
+    | Content_length -> ("Content-Length", int_encoder)
+    | Transfer_encoding -> ("Transfer-Encoding", te_encoder)
+    | H name -> (name, Fun.id)
+    | hdr -> err_encoder_undefined hdr
+end
+
+module Make (H : HEADER_DEFINITION) = struct
+  type 'a header = 'a H.t = ..
   type v = V : 'a header * 'a Lazy.t -> v
+  type k = K : 'a header -> k
   type binding = B : 'a header * 'a -> binding
 
-  module M = Map.Make (Int)
+  module M = Map.Make (struct
+    type t = k
 
-  type t = { header : header_definition; m : v M.t }
+    let compare (K a) (K b) = H.compare a b
+  end)
 
-  let empty header = { header; m = M.empty }
+  type t = v M.t
 
-  let add h v t =
-    let k' = Hashtbl.hash h in
-    let m = M.add k' (V (h, lazy v)) t.m in
-    { t with m }
-
-  let add_lazy h lazy_v t =
-    let k = Hashtbl.hash h in
-    let m = M.add k (V (h, lazy_v)) t.m in
-    { t with m }
+  let empty = M.empty
+  let add h v t = M.add (K h) (V (h, lazy v)) t
+  let add_lazy h lazy_v t = M.add (K h) (V (h, lazy_v)) t
 
   let add_value h s t =
-    let key = Hashtbl.hash h in
-    let v = lazy (t.header#decoder h s) in
-    let m = M.add key (V (h, v)) t.m in
-    { t with m }
+    let v = lazy (H.decoder h s) in
+    M.add (K h) (V (h, v)) t
 
   let add_name_value ~name ~value t =
-    let k = t.header#v name in
-    let k' = Hashtbl.hash k in
-    let v = lazy (t.header#decoder k value) in
-    let m = M.add k' (V (k, v)) t.m in
-    { t with m }
+    let k = H.v name in
+    let v = lazy (H.decoder k value) in
+    M.add (K k) (V (k, v)) t
 
   let find : type a. a header -> t -> a =
-   fun h t ->
-    let key = Hashtbl.hash h in
-    match M.find key t.m with V (_, v) -> Obj.magic (Lazy.force v)
+   fun h t -> match M.find (K h) t with V (_, v) -> Obj.magic (Lazy.force v)
 
   let find_opt k t =
     match find k t with v -> Some v | exception Not_found -> None
 
-  let exists f t = M.exists (fun _ (V (h, v)) -> f @@ B (h, Lazy.force v)) t.m
+  let exists f t = M.exists (fun _ (V (h, v)) -> f @@ B (h, Lazy.force v)) t
 
   let iter f t =
-    M.iter (fun _ v -> match v with V (h, v) -> f @@ B (h, Lazy.force v)) t.m
+    M.iter (fun _ v -> match v with V (h, v) -> f @@ B (h, Lazy.force v)) t
 
   let map (f : < f : 'a. 'a header -> 'a -> 'a >) t =
-    let m =
-      M.map
-        (function
-          | V (h, v) ->
-              let v = f#f h @@ Lazy.force v in
-              V (h, lazy v))
-        t.m
-    in
-    { t with m }
+    M.map
+      (function
+        | V (h, v) ->
+            let v = f#f h @@ Lazy.force v in
+            V (h, lazy v))
+      t
 
-  let filter f t =
-    let m = M.filter (fun _ (V (h, v)) -> f @@ B (h, Lazy.force v)) t.m in
-    { t with m }
+  let filter f t = M.filter (fun _ (V (h, v)) -> f @@ B (h, Lazy.force v)) t
 
   let filter_map (f : < f : 'a. 'a header -> 'a -> 'a option >) t =
-    let m =
-      M.filter_map
-        (fun _ (V (h, v)) ->
-          Option.map (fun v -> V (h, lazy v)) (f#f h @@ Lazy.force v))
-        t.m
-    in
-    { t with m }
+    M.filter_map
+      (fun _ (V (h, v)) ->
+        Option.map (fun v -> V (h, lazy v)) (f#f h @@ Lazy.force v))
+      t
 
   let fold f acc t =
     M.fold
       (fun _key v acc -> match v with V (h, v) -> f (B (h, Lazy.force v)) acc)
-      t.m acc
+      t acc
 
-  let remove h t =
-    let k = Hashtbl.hash h in
-    let m = M.remove k t.m in
-    { t with m }
+  let remove h t = M.remove (K h) t
 
   let update h f t =
     match f (find_opt h t) with None -> remove h t | Some v -> add h v t
 
-  let length t = M.cardinal t.m
+  let length t = M.cardinal t
 
   let to_seq t =
-    M.to_seq t.m |> Seq.map (fun (_, V (h, v)) -> B (h, Lazy.force v))
+    M.to_seq t |> Seq.map (fun (_, V (h, v)) -> B (h, Lazy.force v))
 
-  let of_seq m (seq : binding Seq.t) =
-    Seq.fold_left (fun m (B (h, v)) -> add h v m) m seq
+  let of_seq (seq : binding Seq.t) =
+    Seq.fold_left (fun m (B (h, v)) -> add h v m) empty seq
 end

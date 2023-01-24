@@ -29,26 +29,26 @@ module Body : sig
   val pp_chunk : Format.formatter -> chunk -> unit
 end
 
+module Server_request : sig
+  type t
+
+  include REQUEST with type t := t
+
+  val make :
+    ?headers:Header.t ->
+    ?meth:Http.Method.t ->
+    ?version:Http.Version.t ->
+    Eio.Buf_read.t ->
+    Eio.Net.Sockaddr.stream ->
+    string ->
+    t
+
+  val reader : t -> Eio.Buf_read.t
+  val client_addr : t -> Eio.Net.Sockaddr.stream
+end
+
 (** [Server] is a HTTP 1.1 server. *)
 module Server : sig
-  module Request : sig
-    type t
-
-    include REQUEST with type t := t
-
-    val make :
-      ?headers:Header.t ->
-      ?meth:Http.Method.t ->
-      ?version:Http.Version.t ->
-      Eio.Buf_read.t ->
-      Eio.Net.Sockaddr.stream ->
-      string ->
-      t
-
-    val reader : t -> Eio.Buf_read.t
-    val client_addr : t -> Eio.Net.Sockaddr.stream
-  end
-
   type request = Http.Request.t * Eio.Buf_read.t * Eio.Net.Sockaddr.stream
   (** The request headers, a reader for the socket, and the address of the
       client. To read the request body, use {!read_fixed} or {!read_chunked}. *)

@@ -2,29 +2,30 @@ module Buf_read = Eio.Buf_read
 module Buf_write = Eio.Buf_write
 module Switch = Eio.Switch
 
-module Request = struct
-  include Request
+(* module Request = struct
+     include Request
 
-  type t = {
-    headers : H.t;
-    meth : Http.Method.t;
-    version : Http.Version.t;
-    resource_path : resource_path;
-    reader : Buf_read.t;
-    client_addr : Eio.Net.Sockaddr.stream;
-  }
+     type t = {
+       headers : H.t;
+       meth : Http.Method.t;
+       version : Http.Version.t;
+       resource_path : resource_path;
+       reader : Buf_read.t;
+       client_addr : Eio.Net.Sockaddr.stream;
+     }
 
-  let make ?(headers = Header.empty ()) ?(meth = `GET) ?(version = `HTTP_1_1)
-      reader client_addr resource_path =
-    { headers; meth; version; resource_path; reader; client_addr }
+     let make ?(headers = Header.empty ()) ?(meth = `GET) ?(version = `HTTP_1_1)
+         reader client_addr resource_path =
+       { headers; meth; version; resource_path; reader; client_addr }
 
-  let meth t = t.meth
-  let version t = t.version
-  let resource_path t = t.resource_path
-  let headers t = t.headers
-  let reader t = t.reader
-  let client_addr t = t.client_addr
-end
+     let meth t = t.meth
+     let version t = t.version
+     let resource_path t = t.resource_path
+     let headers t = t.headers
+     let reader t = t.reader
+     let client_addr t = t.client_addr
+   end
+*)
 
 type middleware = handler -> handler
 and handler = request -> response

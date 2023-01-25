@@ -1,5 +1,5 @@
-module type HEADER = Header.S
-module type REQUEST = Request.S
+(* module type HEADER = Header.S *)
+(* module type REQUEST = Request.S *)
 
 module Body : sig
   type t =
@@ -29,26 +29,64 @@ module Body : sig
   val pp_chunk : Format.formatter -> chunk -> unit
 end
 
+(* module Header : sig
+     type name = string (* Header name, e.g. Date, Content-Length etc *)
+     type value = string (* Header value, eg 10, text/html, chunked etc *)
+
+     type lowercase_name = string
+     (** Represents HTTP header name in lowercase form, e.g.
+         [Content-Type -> content-type], [Date -> date],
+         [Transfer-Encoding -> transfer-encoding] etc.
+
+         When using this value for retrieving headers, ensure it is in lowercase
+         via {!String.lowercase_ascii} or other suitable functions. However this is
+         not enforced by the library. *)
+
+     exception Decoder_undefined of string
+     exception Encoder_undefined of string
+
+     type 'a decoder = value -> 'a
+     type 'a encoder = 'a -> value
+     type 'a header = ..
+
+     type 'a header +=
+       | Content_length : int header
+       | Transfer_encoding :
+           [ `chunked | `compress | `deflate | `gzip ] list header
+       | H : lowercase_name -> value header
+
+     class t :
+       object
+         method v : 'a. lowercase_name -> 'a header
+         method decoder : 'a. 'a header -> 'a decoder
+         method encoder : 'a. 'a header -> name * 'a encoder
+         method add_value : 'a. 'a header -> value -> unit
+       end
+
+     val add_value : #t -> 'a header -> value -> unit
+   end
+*)
+
 (** [Server] is a HTTP 1.1 server. *)
 module Server : sig
-  module Request : sig
-    type t
+  (* module Request : sig
+       type t
 
-    include REQUEST with type t := t
+       include REQUEST with type t := t
 
-    val make :
-      ?headers:Header.t ->
-      ?meth:Http.Method.t ->
-      ?version:Http.Version.t ->
-      Eio.Buf_read.t ->
-      Eio.Net.Sockaddr.stream ->
-      resource_path ->
-      t
+       val make :
+         ?headers:Header.t ->
+         ?meth:Http.Method.t ->
+         ?version:Http.Version.t ->
+         Eio.Buf_read.t ->
+         Eio.Net.Sockaddr.stream ->
+         resource_path ->
+         t
 
-    val reader : t -> Eio.Buf_read.t
-    val client_addr : t -> Eio.Net.Sockaddr.stream
-  end
-
+       val reader : t -> Eio.Buf_read.t
+       val client_addr : t -> Eio.Net.Sockaddr.stream
+     end
+  *)
   type request = Http.Request.t * Eio.Buf_read.t * Eio.Net.Sockaddr.stream
   (** The request headers, a reader for the socket, and the address of the
       client. To read the request body, use {!read_fixed} or {!read_chunked}. *)

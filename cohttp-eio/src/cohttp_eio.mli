@@ -29,6 +29,7 @@ module Body : sig
   val pp_chunk : Format.formatter -> chunk -> unit
 end
 
+module Header = Header
 (* module Header : sig
      type name = string (* Header name, e.g. Date, Content-Length etc *)
      type value = string (* Header value, eg 10, text/html, chunked etc *)

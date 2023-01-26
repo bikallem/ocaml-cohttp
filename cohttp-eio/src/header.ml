@@ -1,50 +1,3 @@
-(*
-module type S = sig
-  type name = string
-  type value = string
-  type lowercase_name = string
-
-  exception Decoder_undefined of string
-  exception Encoder_undefined of string
-
-  type 'a decoder = value -> 'a
-  type 'a encoder = 'a -> value
-  type 'a header = ..
-
-  class virtual header_definition :
-    object
-      method virtual v : lowercase_name -> 'a header
-      method virtual decoder : 'a header -> 'a decoder
-      method virtual encoder : 'a header -> name * 'a encoder
-      method add_value : 'a header -> value -> unit
-    end
-
-  type t
-  type binding = B : 'a header * 'a -> binding
-
-  val empty : ?header:header_definition -> unit -> t
-  val add : 'a header -> 'a -> t -> t
-  val add_lazy : 'a header -> 'a Lazy.t -> t -> t
-  val add_value : 'a header -> value -> t -> t
-  val find : 'a header -> t -> 'a
-  val find_opt : 'a header -> t -> 'a option
-  val exists : (binding -> bool) -> t -> bool
-  val iter : (binding -> unit) -> t -> unit
-  val map : < f : 'a. 'a header -> 'a -> 'a > -> t -> t
-  val filter : (binding -> bool) -> t -> t
-  val filter_map : < f : 'a. 'a header -> 'a -> 'a option > -> t -> t
-  val fold : (binding -> 'b -> 'b) -> 'b -> t -> 'b
-  val remove : 'a header -> t -> t
-  val update : 'a header -> ('a option -> 'a option) -> t -> t
-  val length : t -> int
-  val to_seq : t -> binding Seq.t
-  val of_seq : ?header:header_definition -> binding Seq.t -> t
-
-  (**/**)
-
-  val add_name_value : name:name -> value:value -> t -> t
-end
-*)
 type name = string (* Header name, e.g. Date, Content-Length etc *)
 type value = string (* Header value, eg 10, text/html, chunked etc *)
 
@@ -205,6 +158,13 @@ let find : type a. t -> a header -> a =
 
 let find_opt t h =
   match find t h with x -> Some x | exception Not_found -> None
+
+let exists (f : < f : 'a. 'a header -> 'a -> bool >) (t : t) =
+  let rec loop = function
+    | [] -> false
+    | V (h, v) :: tl -> if f#f h (Lazy.force v) then true else loop tl
+  in
+  loop (Atomic.get t#l)
 
 (* type tt = { header : t; m : v M.t }
 

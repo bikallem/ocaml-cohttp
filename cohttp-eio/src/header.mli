@@ -48,6 +48,7 @@ val add_value : t -> 'a header -> value -> unit
 
 val find : t -> 'a header -> 'a
 val find_opt : t -> 'a header -> 'a option
+val exists : < f : 'a. 'a header -> 'a -> bool > -> t -> bool
 
 (** {1 Untyped} *)
 

@@ -20,12 +20,14 @@ type 'a header +=
   | H : lowercase_name -> value header  (** A generic header. *)
 
 type binding = B : 'a header * 'a -> binding
+type (_, _) eq = Eq : ('a, 'a) eq
 
 (** Codecs - encoders/decoders - for headers [Content-Length],
     [Transfer-Encoding] and [H]. *)
 class codec :
   object
     method v : 'a. lowercase_name -> 'a header
+    method equal : 'a 'b. 'a header -> 'b header -> ('a, 'b) eq option
     method decoder : 'a. 'a header -> 'a decoder
     method encoder : 'a. 'a header -> name * 'a encoder
   end
@@ -33,4 +35,11 @@ class codec :
 type t
 
 val make : #codec -> t
+val add : t -> 'a header -> 'a -> unit
+val add_lazy : t -> 'a header -> 'a Lazy.t -> unit
 val add_value : t -> 'a header -> value -> unit
+
+(** {1 Find} *)
+
+val find : t -> 'a header -> 'a
+val find_opt : t -> 'a header -> 'a option

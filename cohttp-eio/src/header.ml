@@ -134,7 +134,7 @@ class codec =
   end
 
 type v = V : 'a header * 'a Lazy.t -> v
-type binding = B : 'a header * 'a -> binding
+(* type binding = B : 'a header * 'a -> binding *)
 
 let rec modify f r =
   let v_old = Atomic.get r in
@@ -149,11 +149,11 @@ class virtual t =
 
 let make (c : #codec) : t =
   let l = Atomic.make [] in
-  object
-    inherit codec
-    method! v = c#v
-    method! decoder = c#decoder
-    method! encoder = c#encoder
+  object (_ : t)
+    method v = c#v
+    method decoder = c#decoder
+    method encoder = c#encoder
+    method equal = c#equal
     method l = l
   end
 
@@ -166,6 +166,14 @@ let add_lazy (type a) (t : t) (h : a header) v =
 let add_value (t : t) h value =
   modify
     (fun l ->
+      let v = lazy (t#decoder h value) in
+      V (h, v) :: l)
+    t#l
+
+let add_name_value (t : t) ~name ~value =
+  modify
+    (fun l ->
+      let h = t#v name in
       let v = lazy (t#decoder h value) in
       V (h, v) :: l)
     t#l

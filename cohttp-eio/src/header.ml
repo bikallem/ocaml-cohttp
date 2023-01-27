@@ -3,6 +3,7 @@ type value = string (* Header value, eg 10, text/html, chunked etc *)
 type lname = string
 type 'a decoder = value -> 'a
 type 'a encoder = 'a -> value
+type 'a undecoded = 'a Lazy.t
 type 'a header = ..
 
 type 'a header +=
@@ -139,10 +140,18 @@ let add_name_value (t : t) ~name ~value =
   let v = lazy (t#decoder h value) in
   add_lazy t h v
 
-let update (t : #t) (f : < f : 'a. 'a header -> 'a -> 'a option >) =
+let encode : type a. #codec -> a header -> a -> string * string =
+ fun codec h v ->
+  let name, encode = codec#encoder h in
+  let value = encode v in
+  (name, value)
+
+let decode : type a. a undecoded -> a = Lazy.force
+
+let update (t : #t) (f : < f : 'a. 'a header -> 'a undecoded -> 'a option >) =
   t#modify
     (List.filter_map (fun (V (h, v)) ->
-         let v = f#f h (Lazy.force v) in
+         let v = f#f h v in
          Option.map (fun v -> V (h, lazy v)) v))
 
 let remove (type a) ?(all = false) (t : #t) (h : a header) =
@@ -161,10 +170,10 @@ let remove (type a) ?(all = false) (t : #t) (h : a header) =
 
 let length (t : #t) = List.length t#to_list
 
-let exists (t : #t) (f : < f : 'a. 'a header -> 'a -> bool >) =
+let exists (t : #t) (f : < f : 'a. 'a header -> 'a undecoded -> bool >) =
   let rec aux = function
     | [] -> false
-    | V (h, v) :: tl -> if f#f h (Lazy.force v) then true else aux tl
+    | V (h, v) :: tl -> if f#f h v then true else aux tl
   in
   aux t#to_list
 
@@ -173,7 +182,7 @@ let find_opt (type a) (t : #t) (h : a header) =
     | [] -> None
     | V (h', v) :: tl -> (
         match t#equal h h' with
-        | Some Eq -> Some (Lazy.force v :> a)
+        | Some Eq -> ( try Some (Lazy.force v :> a) with _ -> None)
         | None -> aux tl)
   in
   aux t#to_list
@@ -203,12 +212,6 @@ let iter (t : #t) (f : < f : 'a. 'a header -> 'a -> unit >) =
 
 let fold_left (t : #t) (f : < f : 'a. 'a header -> 'a -> 'b -> 'b >) acc =
   List.fold_left (fun acc (V (h, v)) -> f#f h (Lazy.force v) acc) acc t#to_list
-
-let encode : type a. #codec -> a header -> a -> string * string =
- fun codec h v ->
-  let name, encode = codec#encoder h in
-  let value = encode v in
-  (name, value)
 
 let to_seq (t : #t) =
   List.map (fun (V (h, v)) -> B (h, Lazy.force v)) t#to_list |> List.to_seq

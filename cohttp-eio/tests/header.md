@@ -58,13 +58,14 @@ exists, find, find_opt
 
 ```ocaml
 # let f = object
-  method f: type a. a Header.header -> a -> bool =
+  method f: type a. a Header.header -> a Header.undecoded -> bool =
     fun t v ->
+      let v = Header.decode v in
       match t, v with
       | Header.Content_length, 200 -> true
       | _ -> false
   end ;;
-val f : < f : 'a. 'a Header.header -> 'a -> bool > = <obj>
+val f : < f : 'a. 'a Header.header -> 'a Header.undecoded -> bool > = <obj>
 
 # Header.exists t f ;;
 - : bool = true
@@ -99,6 +100,9 @@ val blah : Header.lname = "blah"
 
 # Header.(remove t (H blah)) ;;
 - : unit = ()
+
+# Header.(find_opt t (H blah)) ;;
+- : string option = None
 
 # Header.length t ;;
 - : int = 4
@@ -142,15 +146,17 @@ Apply `update`.
 
 ```ocaml
 # let f = object
-  method f: type a. a Header.header -> a -> a option =
+  method f: type a. a Header.header -> a Header.undecoded -> a option =
     fun h v ->
+      let v = Header.decode v in
       match h, v with
       | Header.Content_length, 200 -> Some 2000
       | Header.H nm, "20" when Header.lname_equal nm age -> Some "40"
       | Header.H nm, "blah2" when Header.lname_equal nm blah2 -> None
       | _ -> Some v
   end;;
-val f : < f : 'a. 'a Header.header -> 'a -> 'a option > = <obj>
+val f : < f : 'a. 'a Header.header -> 'a Header.undecoded -> 'a option > =
+  <obj>
 
 # Header.update t f ;;
 - : unit = ()

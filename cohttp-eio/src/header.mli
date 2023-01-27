@@ -1,24 +1,33 @@
 type name = private string
 (** [name] represents HTTP header name value in a canonical format, i.e. the
-    first letter and any letter following a hypen - [-] - symbol are converted
-    to upper case. For example, the canonical header name of [accept-encoding]
-    is [Accept-Encoding]. *)
+    first letter and any letter following a hypen([-]) symbol are converted to
+    upper case. For example, the canonical header name of [accept-encoding] is
+    [Accept-Encoding]. *)
 
 type value = string
-(** [value] is the raw, untyped HTTP header value, eg 10, text/html, chunked etc *)
+(** [value] is an untyped HTTP header value, eg 10, text/html, chunked etc *)
 
 type lname = private string
 (** [lname] represents HTTP header name in lowercase form, e.g.
     [Content-Type -> content-type], [Date -> date],
     [Transfer-Encoding -> transfer-encoding] etc.
 
-    When using this value for retrieving headers, ensure it is in lowercase via
-    {!String.lowercase_ascii} or other suitable functions. However this is not
-    enforced by the library. *)
+    See {!val:lname}. *)
+
+(** {1 Encoder, Decoder} *)
 
 type 'a decoder = value -> 'a
 type 'a encoder = 'a -> value
+
+type 'a undecoded
+(** ['a undecoded] represents a lazy value that is as yet undecoded. See
+    {!val:decode}. *)
+
+(** {1 Headers} *)
+
 type 'a header = ..
+(** [header] represents a HTTP header. Extend the type to use custom typed
+    headers in your applications and libraries. See below for supported headers. *)
 
 type 'a header +=
   | Content_length : int header
@@ -50,7 +59,8 @@ type t = private < codec ; .. >
 (** {1 Header name} *)
 
 val canonical_name : string -> name
-(** [canonical_name s] converts [s] to a canonical header name value. *)
+(** [canonical_name s] converts [s] to a canonical header name value. See
+    {!type:name}. *)
 
 val lname : string -> lname
 (** [lname s] converts [s] to {!type:lname} *)
@@ -79,10 +89,27 @@ val add : t -> 'a header -> 'a -> unit
 val add_value : t -> 'a header -> value -> unit
 val add_name_value : t -> name:lname -> value:value -> unit
 
+(** {1 Encode, Decode} *)
+
+val encode : #codec -> 'a header -> 'a -> name * value
+(** [encode codec h v] uses the encoder defined in [codec] to encode header [h]
+    with corresponding value [v] to a tuple of [(name,value)]. *)
+
+val decode : 'a undecoded -> 'a
+(** [decode codec v] decodes [v].
+
+    @raise exn if decoding results in an error. *)
+
 (** {1 Update, Remove} *)
 
-val update : t -> < f : 'a. 'a header -> 'a -> 'a option > -> unit
+val update : t -> < f : 'a. 'a header -> 'a undecoded -> 'a option > -> unit
+
 val remove : ?all:bool -> t -> 'a header -> unit
+(** [remove t h] removes header [h] from [t].
+
+    @param all
+      if [true] then all headers equal to [h] are removed from [t]. Default
+      value is [false]. *)
 
 (** {1 Length} *)
 
@@ -90,21 +117,24 @@ val length : t -> int
 
 (** {1 Find} *)
 
-val exists : t -> < f : 'a. 'a header -> 'a -> bool > -> bool
+val exists : t -> < f : 'a. 'a header -> 'a undecoded -> bool > -> bool
+
 val find_opt : t -> 'a header -> 'a option
+(** [find_opt t h] is [Some v] if [h] exists in [t]. It is [None] if [h] doesn't
+    exist in [t] or decoding a header value results in an error. *)
+
 val find : t -> 'a header -> 'a
+(** [find t h] returns [v] if [h] exists in [t].
+
+    @raise Not_found if [h] is not found in [t].
+    @raise exn if decoding [h] results in an error. *)
+
 val find_all : t -> 'a header -> 'a list
 
 (** {1 Iter, Fold} *)
 
 val iter : t -> < f : 'a. 'a header -> 'a -> unit > -> unit
 val fold_left : t -> < f : 'a. 'a header -> 'a -> 'b -> 'b > -> 'b -> 'b
-
-(** {1 Encode} *)
-
-val encode : #codec -> 'a header -> 'a -> name * value
-(** [encode codec h v] uses the encoder defined in [codec] to encode header [h]
-    with corresponding value [v] to a tuple of [(name,value)]. *)
 
 (** {1 Seq} *)
 

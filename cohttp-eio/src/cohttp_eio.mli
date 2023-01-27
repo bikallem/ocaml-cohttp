@@ -27,6 +27,7 @@ module Body : sig
 end
 
 module Header = Header
+module Request = Request
 
 (** [Server] is a HTTP 1.1 server. *)
 module Server : sig

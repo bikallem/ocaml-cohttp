@@ -1,8 +1,14 @@
-type name = string (* Header name, e.g. Date, Content-Length etc *)
-type value = string (* Header value, eg 10, text/html, chunked etc *)
+type name = private string
+(** [name] represents HTTP header name value in a canonical format, i.e. the
+    first letter and any letter following a hypen - [-] - symbol are converted
+    to upper case. For example, the canonical header name of [accept-encoding]
+    is [Accept-Encoding]. *)
 
-type lowercase_name = string
-(** Represents HTTP header name in lowercase form, e.g.
+type value = string
+(** [value] is the raw, untyped HTTP header value, eg 10, text/html, chunked etc *)
+
+type lname = private string
+(** [lname] represents HTTP header name in lowercase form, e.g.
     [Content-Type -> content-type], [Date -> date],
     [Transfer-Encoding -> transfer-encoding] etc.
 
@@ -17,7 +23,7 @@ type 'a header = ..
 type 'a header +=
   | Content_length : int header
   | Transfer_encoding : [ `chunked | `compress | `deflate | `gzip ] list header
-  | H : lowercase_name -> value header  (** A generic header. *)
+  | H : lname -> value header  (** A generic header. *)
 
 type (_, _) eq = Eq : ('a, 'a) eq
 type binding = B : 'a header * 'a -> binding
@@ -26,13 +32,21 @@ type binding = B : 'a header * 'a -> binding
     [Transfer-Encoding] and [H]. *)
 class codec :
   object
-    method v : 'a. lowercase_name -> 'a header
+    method v : 'a. lname -> 'a header
     method equal : 'a 'b. 'a header -> 'b header -> ('a, 'b) eq option
     method decoder : 'a. 'a header -> 'a decoder
     method encoder : 'a. 'a header -> name * 'a encoder
   end
 
 type t
+
+(** {1 Header name} *)
+
+val canonical_name : string -> name
+(** [canonical_name s] converts [s] to a canonical header name value. *)
+
+val lname : string -> lname
+val lname_equal : lname -> lname -> bool
 
 (** Create *)
 
@@ -43,7 +57,7 @@ val make : #codec -> t
 val add_lazy : t -> 'a header -> 'a Lazy.t -> unit
 val add : t -> 'a header -> 'a -> unit
 val add_value : t -> 'a header -> value -> unit
-val add_name_value : t -> name:name -> value:value -> unit
+val add_name_value : t -> name:lname -> value:value -> unit
 
 (** {1 Update, Remove} *)
 

@@ -1,6 +1,6 @@
 type name = string (* Header name, e.g. Date, Content-Length etc *)
 type value = string (* Header value, eg 10, text/html, chunked etc *)
-type lowercase_name = string
+type lname = string
 type 'a decoder = value -> 'a
 type 'a encoder = 'a -> value
 type 'a header = ..
@@ -8,7 +8,7 @@ type 'a header = ..
 type 'a header +=
   | Content_length : int header
   | Transfer_encoding : [ `chunked | `compress | `deflate | `gzip ] list header
-  | H : lowercase_name -> value header
+  | H : lname -> value header
 
 let int_decoder v = int_of_string v
 let int_encoder v = string_of_int v
@@ -46,7 +46,8 @@ class codec =
     Obj.Extension_constructor.name nm
   in
   object
-    method v : 'a. lowercase_name -> 'a header =
+    method v : 'a. lname -> 'a header =
+      (* Ensure we match on lowercase names.  *)
       function
       | "content-length" -> Obj.magic Content_length
       | "transfer-encoding" -> Obj.magic Transfer_encoding
@@ -92,6 +93,14 @@ class t =
     method to_list : v list = Atomic.get headers
     method modify : ('a -> 'a) -> unit = fun f -> modify f headers
   end
+
+let canonical_name nm =
+  String.split_on_char '-' nm
+  |> List.map String.capitalize_ascii
+  |> String.concat "-"
+
+let lname = String.lowercase_ascii
+let lname_equal (a : lname) (b : lname) = String.equal a b
 
 let make (c : #codec) =
   object

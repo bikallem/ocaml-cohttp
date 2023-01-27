@@ -2,6 +2,31 @@
 
 ```ocaml
 open Cohttp_eio
+```
+
+`canonical_name`
+
+```ocaml
+# Header.canonical_name "accept-encoding";;
+- : Header.name = "Accept-Encoding"
+
+# Header.canonical_name "content-length";;
+- : Header.name = "Content-Length"
+
+# Header.canonical_name "Age";;
+- : Header.name = "Age"
+```
+`lowercase_name`
+
+```ocaml
+# let content_type = Header.lname "Content-type";;
+val content_type : Header.lname = "content-type"
+
+# let age = Header.lname "Age";;
+val age : Header.lname = "age"
+```
+
+```ocaml
 
 let addr = `Tcp (Eio.Net.Ipaddr.V4.loopback, 8081)
 ```
@@ -20,10 +45,10 @@ add, add_lazy, add_value, add_name_value
 # Header.(add_lazy t Transfer_encoding (lazy [`chunked])) ;;
 - : unit = ()
 
-# Header.(add_value t (H "age") "20") ;; 
+# Header.(add_value t (H age) "20") ;; 
 - : unit = ()
 
-# Header.(add_name_value t ~name:"Content-Type" ~value:"text/html") ;;
+# Header.(add_name_value t ~name:content_type ~value:"text/html") ;;
 - : unit = ()
 ```
 
@@ -51,10 +76,10 @@ val f : < f : 'a. 'a Header.header -> 'a -> bool > = <obj>
 # Header.(find_opt t Content_length) ;;
 - : int option = Some 200
 
-# Header.(find t (H "age")) ;;
+# Header.(find t (H age)) ;;
 - : string = "20"
 
-# Header.(find t (H "Content-Type")) ;;
+# Header.(find t (H content_type)) ;;
 - : string = "text/html"
 ```
 
@@ -64,10 +89,13 @@ remove, length
 # Header.length t ;;
 - : int = 4
 
-# Header.(add t (H "blah") "blah") ;;
+# let blah = Header.lname "blah";;
+val blah : Header.lname = "blah"
+
+# Header.(add t (H blah) "blah") ;;
 - : unit = ()
 
-# Header.(remove t (H "blah")) ;;
+# Header.(remove t (H blah)) ;;
 - : unit = ()
 
 # Header.length t ;;
@@ -81,13 +109,14 @@ Print Age header using `iter`.
   method f: type a. a Header.header -> a -> unit =
     fun h v ->
       match h with
-      | Header.H "age" -> print_string ("\nAge: " ^ v)
+      | Header.H age -> print_string ("\nAge: " ^ v)
       | _ -> ()
   end;;
 val f : < f : 'a. 'a Header.header -> 'a -> unit > = <obj>
 
 # Header.iter t f ;;
 Age: 20
+Age: text/html
 - : unit = ()
 ```
 
@@ -97,10 +126,13 @@ First we add a new header item (H "blah2"), which we will remove via `update`. A
 we will update Content_length and Age header.
 
 ```ocaml
-# Header.(add t (H "blah2") "blah2") ;;
+# let blah2 = Header.lname "blah2";;
+val blah2 : Header.lname = "blah2"
+
+# Header.(add t (H blah2) "blah2") ;;
 - : unit = ()
 
-# Header.(find_opt t (H "blah2")) ;;
+# Header.(find_opt t (H blah2)) ;;
 - : string option = Some "blah2"
 ```
 
@@ -112,8 +144,8 @@ Apply `update`.
     fun h v ->
       match h, v with
       | Header.Content_length, 200 -> Some 2000
-      | Header.H "age", "20" -> Some "40"
-      | Header.H "blah2", "blah2" -> None
+      | Header.H nm, "20" when Header.lname_equal nm age -> Some "40"
+      | Header.H nm, "blah2" when Header.lname_equal nm blah2 -> None
       | _ -> Some v
   end;;
 val f : < f : 'a. 'a Header.header -> 'a -> 'a option > = <obj>
@@ -128,14 +160,14 @@ Content_length and (H "age") has been changed.
 # Header.(find t Content_length) ;;
 - : int = 2000
 
-# Header.(find t (H "age")) ;;
+# Header.(find t (H age)) ;;
 - : string = "40"
 ```
 
 H "blah2" has been removed.
 
 ```ocaml
-# Header.(find_opt t (H "blah2")) ;;
+# Header.(find_opt t (H blah2)) ;;
 - : string option = None
 ```
 
@@ -149,7 +181,7 @@ We get a list of headers in string form using `fold_left`.
     fun h v acc ->
       match h with
       | Header.Content_length -> ("Content-Length", string_of_int v) :: acc
-      | Header.(H "age") -> ("Age", v) :: acc
+      | Header.H nm when Header.lname_equal nm age -> ("Age", v) :: acc
       | _ -> acc
   end;;
 val f :

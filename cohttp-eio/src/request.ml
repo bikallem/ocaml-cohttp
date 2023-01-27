@@ -23,7 +23,7 @@ let header =
   object
     inherit Header.codec as super
 
-    method! v : type a. Header.lowercase_name -> a header =
+    method! v : type a. Header.lname -> a header =
       fun nm ->
         match (nm :> string) with
         | "host" -> Obj.magic Host
@@ -36,7 +36,7 @@ let header =
 
     method! encoder : type a. a header -> Header.name * a Header.encoder =
       function
-      | Host -> ("Host", host_encoder)
-      | User_agent -> ("User_agent", Fun.id)
+      | Host -> (Header.canonical_name "host", host_encoder)
+      | User_agent -> (Header.canonical_name "user-agent", Fun.id)
       | hdr -> super#encoder hdr
   end

@@ -15,7 +15,11 @@ open Cohttp_eio
 
 # Header.canonical_name "Age";;
 - : Header.name = "Age"
+
+# Header.canonical_name "cONTENt-tYPE";;
+- : Header.name = "Content-Type"
 ```
+
 `lowercase_name`
 
 ```ocaml

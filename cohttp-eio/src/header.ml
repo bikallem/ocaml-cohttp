@@ -96,7 +96,7 @@ class t =
 
 let canonical_name nm =
   String.split_on_char '-' nm
-  |> List.map String.capitalize_ascii
+  |> List.map (fun s -> String.(lowercase_ascii s |> capitalize_ascii))
   |> String.concat "-"
 
 let lname = String.lowercase_ascii

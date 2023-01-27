@@ -19,8 +19,8 @@ type 'a header +=
   | Transfer_encoding : [ `chunked | `compress | `deflate | `gzip ] list header
   | H : lowercase_name -> value header  (** A generic header. *)
 
-(* type binding = B : 'a header * 'a -> binding *)
 type (_, _) eq = Eq : ('a, 'a) eq
+type binding = B : 'a header * 'a -> binding
 
 (** Codecs - encoders/decoders - for headers [Content-Length],
     [Transfer-Encoding] and [H]. *)
@@ -34,22 +34,38 @@ class codec :
 
 type t
 
-(** {1 Create} *)
+(** Create *)
 
 val make : #codec -> t
 
-(** {1 Add} *)
+(** {1 Add, Remove, Length} *)
 
-val add : t -> 'a header -> 'a -> unit
 val add_lazy : t -> 'a header -> 'a Lazy.t -> unit
+val add : t -> 'a header -> 'a -> unit
 val add_value : t -> 'a header -> value -> unit
+val add_name_value : t -> name:name -> value:value -> unit
+
+(** {1 Update, Remove} *)
+
+val update : t -> < f : 'a. 'a header -> 'a -> 'a option > -> unit
+val remove : ?all:bool -> t -> 'a header -> unit
+
+(** {1 Length} *)
+
+val length : t -> int
 
 (** {1 Find} *)
 
-val find : t -> 'a header -> 'a
+val exists : t -> < f : 'a. 'a header -> 'a -> bool > -> bool
 val find_opt : t -> 'a header -> 'a option
-val exists : < f : 'a. 'a header -> 'a -> bool > -> t -> bool
+val find : t -> 'a header -> 'a
+val find_all : t -> 'a header -> 'a list
 
-(** {1 Untyped} *)
+(** {1 Iter, Fold} *)
 
-val add_name_value : t -> name:name -> value:value -> unit
+val iter : t -> < f : 'a. 'a header -> 'a -> unit > -> unit
+val fold_left : t -> < f : 'a. 'a header -> 'a -> 'b -> 'b > -> 'b -> 'b
+
+(** {1 Seq} *)
+
+val to_seq : t -> binding Seq.t

@@ -40,6 +40,11 @@ type (_, _) eq = Eq : ('a, 'a) eq
 type v = V : 'a header * 'a Lazy.t -> v
 type binding = B : 'a header * 'a -> binding
 
+let canonical_name nm =
+  String.split_on_char '-' nm
+  |> List.map (fun s -> String.(lowercase_ascii s |> capitalize_ascii))
+  |> String.concat "-"
+
 class codec =
   let constructor_name hdr =
     let nm = Obj.Extension_constructor.of_val hdr in
@@ -74,7 +79,7 @@ class codec =
       function
       | Content_length -> ("Content-Length", int_encoder)
       | Transfer_encoding -> ("Transfer-Encoding", te_encoder)
-      | H name -> (name, Fun.id)
+      | H name -> (canonical_name name, Fun.id)
       | hdr ->
           let err = "encoder undefined for header " ^ constructor_name hdr in
           raise @@ Invalid_argument err
@@ -94,11 +99,6 @@ class t values =
     method modify : ('a -> 'a) -> unit = fun f -> modify f headers
   end
 
-let canonical_name nm =
-  String.split_on_char '-' nm
-  |> List.map (fun s -> String.(lowercase_ascii s |> capitalize_ascii))
-  |> String.concat "-"
-
 let lname = String.lowercase_ascii
 let lname_equal (a : lname) (b : lname) = String.equal a b
 
@@ -115,6 +115,15 @@ let make code = make_n code []
 
 let of_seq codec s =
   Seq.map (fun (B (h, v)) -> V (h, lazy v)) s |> List.of_seq |> make_n codec
+
+let of_name_values codec l =
+  List.map
+    (fun (name, value) ->
+      let h = codec#v (lname name) in
+      let v = lazy (codec#decoder h value) in
+      V (h, v))
+    l
+  |> make_n codec
 
 let add_lazy (type a) (t : t) (h : a header) v =
   t#modify (fun l -> V (h, v) :: l)
@@ -195,5 +204,14 @@ let iter (t : #t) (f : < f : 'a. 'a header -> 'a -> unit >) =
 let fold_left (t : #t) (f : < f : 'a. 'a header -> 'a -> 'b -> 'b >) acc =
   List.fold_left (fun acc (V (h, v)) -> f#f h (Lazy.force v) acc) acc t#to_list
 
+let encode : type a. #codec -> a header -> a -> string * string =
+ fun codec h v ->
+  let name, encode = codec#encoder h in
+  let value = encode v in
+  (name, value)
+
 let to_seq (t : #t) =
   List.map (fun (V (h, v)) -> B (h, Lazy.force v)) t#to_list |> List.to_seq
+
+let to_name_values (t : #t) =
+  List.map (fun (V (h, v)) -> encode t h (Lazy.force v)) t#to_list

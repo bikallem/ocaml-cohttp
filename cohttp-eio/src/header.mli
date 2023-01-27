@@ -44,7 +44,7 @@ class codec :
     method encoder : 'a. 'a header -> name * 'a encoder
   end
 
-type t
+type t = private < codec ; .. >
 (** [t] represents a collection of HTTP headers *)
 
 (** {1 Header name} *)
@@ -67,6 +67,10 @@ val make : #codec -> t
 val of_seq : #codec -> binding Seq.t -> t
 (** [of_seq codec seq] is [t] with header items initialized to [seq] such that
     [Seq.length seq = Header.length t]. *)
+
+val of_name_values : #codec -> (string * string) list -> t
+(** [of_name_values codec l] is [t] with header items initialized to [l] such
+    that [List.length seq = Header.length t]. *)
 
 (** {1 Add, Remove, Length} *)
 
@@ -96,6 +100,13 @@ val find_all : t -> 'a header -> 'a list
 val iter : t -> < f : 'a. 'a header -> 'a -> unit > -> unit
 val fold_left : t -> < f : 'a. 'a header -> 'a -> 'b -> 'b > -> 'b -> 'b
 
+(** {1 Encode} *)
+
+val encode : #codec -> 'a header -> 'a -> name * value
+(** [encode codec h v] uses the encoder defined in [codec] to encode header [h]
+    with corresponding value [v] to a tuple of [(name,value)]. *)
+
 (** {1 Seq} *)
 
 val to_seq : t -> binding Seq.t
+val to_name_values : t -> (name * value) list

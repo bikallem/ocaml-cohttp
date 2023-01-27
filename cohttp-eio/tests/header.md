@@ -31,13 +31,11 @@ val age : Header.lname = "age"
 ```
 
 ```ocaml
+# let codec = new Header.codec ;;
+val codec : Header.codec = <obj>
 
-let addr = `Tcp (Eio.Net.Ipaddr.V4.loopback, 8081)
-```
-
-```ocaml
-# let t = Header.(make @@ new codec)  ;;
-val t : Header.t = <abstr>
+# let t = Header.make codec ;;
+val t : Header.t = <obj>
 ```
 
 add, add_lazy, add_value, add_name_value
@@ -198,6 +196,13 @@ val f :
 - : (string * string) list = [("Age", "40"); ("Content-Length", "2000")]
 ```
 
+`encode`
+
+```ocaml
+# Header.(encode t Content_length 10) ;;
+- : Header.name * string = ("Content-Length", "10")
+```
+
 `to_seq`
 
 ```ocaml
@@ -215,9 +220,35 @@ val headers : Header.binding Seq.t = <fun>
 `of_seq`
 
 ```ocaml
-# let t2 = Header.(of_seq (new codec) headers) ;;
-val t2 : Header.t = <abstr>
+# let t2 = Header.of_seq codec headers ;;
+val t2 : Header.t = <obj>
 
 # Header.length t2 = Seq.length headers ;;
+- : bool = true
+```
+
+`to_name_values`
+
+```ocaml
+# let l = Header.to_name_values t ;;
+val l : (Header.name * string) list =
+  [("Content-Length", "2000"); ("Transfer-Encoding", "chunked");
+   ("Age", "40"); ("Content-Type", "text/html")]
+```
+
+`of_name_values`
+
+```ocaml
+# let l = (l :> (string * string) list) ;;
+val l : (string * string) list =
+  [("Content-Length", "2000"); ("Transfer-Encoding", "chunked");
+   ("Age", "40"); ("Content-Type", "text/html")]
+# let t3 = Header.(of_name_values (new codec) l);;
+val t3 : Header.t = <obj>
+
+# Header.length t3 = List.length l ;;
+- : bool = true
+
+# l = (Header.to_name_values t3 :> (string * string) list) ;;
 - : bool = true
 ```

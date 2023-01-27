@@ -59,9 +59,14 @@ val lname_equal : lname -> lname -> bool
 (** [lname_equal s1 s2] return [true] if [s1] and [s2] are equal. [false]
     otherwise. *)
 
-(** Create *)
+(** {1 Create} *)
 
 val make : #codec -> t
+(** [make codec] is an empty [t]. *)
+
+val of_seq : #codec -> binding Seq.t -> t
+(** [of_seq codec seq] is [t] with header items initialized to [seq] such that
+    [Seq.length seq = Header.length t]. *)
 
 (** {1 Add, Remove, Length} *)
 

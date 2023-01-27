@@ -201,10 +201,23 @@ val f :
 `to_seq`
 
 ```ocaml
-# Header.to_seq t |> List.of_seq ;;
+# let headers = Header.to_seq t;;
+val headers : Header.binding Seq.t = <fun>
+
+# List.of_seq headers ;;
 - : Header.binding list =
 [Cohttp_eio.Header.B (Cohttp_eio__Header.Content_length, <poly>);
  Cohttp_eio.Header.B (Cohttp_eio__Header.Transfer_encoding, <poly>);
  Cohttp_eio.Header.B (Cohttp_eio__Header.H "age", <poly>);
  Cohttp_eio.Header.B (Cohttp_eio__Header.H "content-type", <poly>)]
+```
+
+`of_seq`
+
+```ocaml
+# let t2 = Header.(of_seq (new codec) headers) ;;
+val t2 : Header.t = <abstr>
+
+# Header.length t2 = Seq.length headers ;;
+- : bool = true
 ```

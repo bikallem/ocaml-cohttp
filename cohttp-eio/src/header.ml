@@ -80,8 +80,8 @@ class codec =
           raise @@ Invalid_argument err
   end
 
-class t =
-  let headers = Atomic.make [] in
+class t values =
+  let headers = Atomic.make values in
   let rec modify f r =
     let v_old = Atomic.get r in
     let v_new = f v_old in
@@ -102,14 +102,19 @@ let canonical_name nm =
 let lname = String.lowercase_ascii
 let lname_equal (a : lname) (b : lname) = String.equal a b
 
-let make (c : #codec) =
+let make_n (c : #codec) values =
   object
-    inherit t
+    inherit t values
     method! v = c#v
     method! equal = c#equal
     method! decoder = c#decoder
     method! encoder = c#encoder
   end
+
+let make code = make_n code []
+
+let of_seq codec s =
+  Seq.map (fun (B (h, v)) -> V (h, lazy v)) s |> List.of_seq |> make_n codec
 
 let add_lazy (type a) (t : t) (h : a header) v =
   t#modify (fun l -> V (h, v) :: l)

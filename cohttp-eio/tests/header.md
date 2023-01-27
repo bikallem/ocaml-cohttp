@@ -197,3 +197,14 @@ val f :
 # Header.fold_left t f [];;
 - : (string * string) list = [("Age", "40"); ("Content-Length", "2000")]
 ```
+
+`to_seq`
+
+```ocaml
+# Header.to_seq t |> List.of_seq ;;
+- : Header.binding list =
+[Cohttp_eio.Header.B (Cohttp_eio__Header.Content_length, <poly>);
+ Cohttp_eio.Header.B (Cohttp_eio__Header.Transfer_encoding, <poly>);
+ Cohttp_eio.Header.B (Cohttp_eio__Header.H "age", <poly>);
+ Cohttp_eio.Header.B (Cohttp_eio__Header.H "content-type", <poly>)]
+```

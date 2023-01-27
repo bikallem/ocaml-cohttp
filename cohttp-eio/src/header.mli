@@ -28,8 +28,14 @@ type 'a header +=
 type (_, _) eq = Eq : ('a, 'a) eq
 type binding = B : 'a header * 'a -> binding
 
-(** Codecs - encoders/decoders - for headers [Content-Length],
-    [Transfer-Encoding] and [H]. *)
+(** Codecs - encoders/decoders - for the following HTTP headers:
+
+    - [Content-Length],
+    - [Transfer-Encoding]
+    - [H]
+
+    Users wishing to extend {!type:header} with own user defined custom headers
+    should inherit from this class and override the class methods as required. *)
 class codec :
   object
     method v : 'a. lname -> 'a header
@@ -39,6 +45,7 @@ class codec :
   end
 
 type t
+(** [t] represents a collection of HTTP headers *)
 
 (** {1 Header name} *)
 
@@ -46,7 +53,11 @@ val canonical_name : string -> name
 (** [canonical_name s] converts [s] to a canonical header name value. *)
 
 val lname : string -> lname
+(** [lname s] converts [s] to {!type:lname} *)
+
 val lname_equal : lname -> lname -> bool
+(** [lname_equal s1 s2] return [true] if [s1] and [s2] are equal. [false]
+    otherwise. *)
 
 (** Create *)
 

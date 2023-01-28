@@ -93,7 +93,7 @@ type t = private < codec ; .. >
 
     {b Note} [t] is concurrency safe. *)
 
-(** {1 Header name} *)
+(** {1 Name} *)
 
 val name : #codec -> 'a header -> name
 (** [name codec h] is the canonical name for header [h]. *)

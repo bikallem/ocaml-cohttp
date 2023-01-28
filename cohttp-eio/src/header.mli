@@ -160,6 +160,7 @@ val remove : ?all:bool -> t -> 'a header -> unit
 (** {1 Length} *)
 
 val length : t -> int
+(** [length t] is total count of headers in [t]. *)
 
 (** {1 Find} *)
 

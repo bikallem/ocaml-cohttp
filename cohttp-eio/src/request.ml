@@ -30,6 +30,13 @@ let header =
         | "user-agent" -> Obj.magic User_agent
         | _ -> super#v nm
 
+    method! equal : type a b. a header -> b header -> (a, b) Header.eq option =
+      fun a b ->
+        match (a, b) with
+        | Host, Host -> Some Eq
+        | User_agent, User_agent -> Some Eq
+        | _ -> super#equal a b
+
     method! decoder : type a. a header -> a Header.decoder =
       function
       | Host -> host_decoder | User_agent -> Fun.id | hdr -> super#decoder hdr

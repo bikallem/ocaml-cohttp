@@ -109,7 +109,7 @@ class t values =
     method modify : ('a -> 'a) -> unit = fun f -> modify f headers
   end
 
-let name (codec : #codec) = codec#name
+let name (c : #codec) = c#name
 let lname = String.lowercase_ascii
 let lname_equal (a : lname) (b : lname) = String.equal a b
 
@@ -120,6 +120,7 @@ let make_n (c : #codec) values =
     method! equal = c#equal
     method! decoder = c#decoder
     method! encoder = c#encoder
+    method! name = c#name
   end
 
 let make code = make_n code []

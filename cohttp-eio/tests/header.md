@@ -296,3 +296,79 @@ val t3 : Header.t = <obj>
 # l = (Header.to_name_values t3 :> (string * string) list) ;;
 - : bool = true
 ```
+
+User defined custom headers.
+
+```ocaml
+# type 'a Header.header += 
+    | Header1 : int Header.header 
+    | Header2: float Header.header
+    ;;
+type 'a Cohttp_eio.Header.header +=
+    Header1 : int Header.header
+  | Header2 : float Header.header
+
+# let custom_codec = object
+  inherit Header.codec as super
+
+  method! v : type a. Header.lname -> a Header.header =
+    fun nm ->
+    match (nm :> string) with
+    | "header1" -> Obj.magic Header1
+    | "header2" -> Obj.magic Header2
+    | _ -> super#v nm
+
+  method! equal: type a b. a Header.header -> b Header.header -> (a, b) Header.eq option =
+    fun a b ->
+      match a, b with
+      | Header1, Header1 -> Some Eq
+      | Header2, Header2 -> Some Eq
+      | _ -> super#equal a b
+
+  method! decoder: type a. a Header.header -> a Header.decoder = function
+    | Header1 -> int_of_string
+    | Header2 -> float_of_string
+    | hdr -> super#decoder hdr
+
+  method! encoder: type a. a Header.header -> a Header.encoder = function
+    | Header1 -> string_of_int
+    | Header2 -> string_of_float
+    | hdr -> super#encoder hdr
+
+  method name: type a. a Header.header -> Header.name =
+    fun hdr -> 
+      match hdr with
+      | Header1 -> Header.canonical_name "header1"
+      | Header2 -> Header.canonical_name "header2"
+      | hdr -> super#name hdr
+  end ;;
+val custom_codec : Header.codec = <obj>
+
+# let ch = Header.make custom_codec ;;
+val ch : Header.t = <obj>
+
+# Header.add ch Header1 1000;;
+- : unit = ()
+
+# Header.add ch Header2 100.232 ;; 
+- : unit = ()
+
+# Header.length ch ;;
+- : int = 2
+
+# Header.find ch Header2 ;;
+- : float = 100.232
+
+# Header.find ch Header1 ;;
+- : int = 1000
+
+# Header.name ch Header2 ;;
+- : Header.name = "Header2"
+
+# Header.encode ch Header1 1000 ;;
+- : string = "1000"
+
+# Header.to_name_values ch ;;
+- : (Header.name * string) list =
+[("Header2", "100.232"); ("Header1", "1000")]
+```

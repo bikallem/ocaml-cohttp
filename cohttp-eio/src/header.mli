@@ -52,7 +52,7 @@ type 'a header +=
   | Transfer_encoding : [ `chunked | `compress | `deflate | `gzip ] list header
   | H : lname -> value header  (** A generic header. *)
 
-(** [eq] is the OCaml GADT equality type. *)
+(** [eq] is the OCaml GADT equality. *)
 type (_, _) eq = Eq : ('a, 'a) eq
 
 (** [binding] represents a typed header and its corresponding undecoded value. *)

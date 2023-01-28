@@ -165,3 +165,8 @@ val fold_left :
 
 val to_seq : t -> binding Seq.t
 (** [to_seq t] returns a sequence of {!type:binding}s. *)
+
+val to_name_values : t -> (name * value) list
+(** [to_name_values t] a list of [(name,value)] tuple.
+
+    @raise exn if decoding any of the values results in an error. *)

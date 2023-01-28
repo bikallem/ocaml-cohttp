@@ -231,14 +231,19 @@ Content-Type: text/html
 - : unit = ()
 ```
 
+`to_name_values`
+
+```ocaml
+# let l = Header.to_name_values t ;;
+val l : (Header.name * string) list =
+  [("Content-Length", "2000"); ("Transfer-Encoding", "chunked");
+   ("Age", "40"); ("Content-Type", "text/html")]
+```
+
 `of_name_values`
 
 ```ocaml
-# let l =
-  [ ("Content-Length", "2000")
-  ; ("Transfer-Encoding", "chunked")
-  ; ("Age", "40")
-  ; ("Content-Type", "text/html")] ;;
+# let l = (l :> (string * string) list) ;;
 val l : (string * string) list =
   [("Content-Length", "2000"); ("Transfer-Encoding", "chunked");
    ("Age", "40"); ("Content-Type", "text/html")]
@@ -247,5 +252,8 @@ val l : (string * string) list =
 val t3 : Header.t = <obj>
 
 # Header.length t3 = List.length l ;;
+- : bool = true
+
+# l = (Header.to_name_values t3 :> (string * string) list) ;;
 - : bool = true
 ```

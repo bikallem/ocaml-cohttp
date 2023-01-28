@@ -213,3 +213,6 @@ let fold_left (t : #t) (f : < f : 'a. 'a header -> 'a undecoded -> 'b -> 'b >)
 
 let to_seq (t : #t) =
   List.map (fun (V (h, v)) -> B (h, v)) t#to_list |> List.to_seq
+
+let to_name_values (t : #t) =
+  List.map (fun (V (h, v)) -> encode t h (Lazy.force v)) t#to_list

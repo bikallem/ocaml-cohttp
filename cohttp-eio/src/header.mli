@@ -165,6 +165,11 @@ val length : t -> int
 (** {1 Find} *)
 
 val exists : t -> < f : 'a. 'a header -> 'a undecoded -> bool > -> bool
+(** [exists t f] iterates over [t] and applies [f#f h v] where [h] and [v] are
+    respectively header and undecoded value as it exists in [t]. It returns
+    [true] if any of the items in [t] returns [true] for [f#f h v].
+
+    See {!val:decode} to decode [v]. *)
 
 val find_opt : t -> 'a header -> 'a option
 (** [find_opt t h] is [Some v] if [h] exists in [t]. It is [None] if [h] doesn't
@@ -185,9 +190,17 @@ val find_all : t -> 'a header -> 'a list
 (** {1 Iter, Fold} *)
 
 val iter : t -> < f : 'a. 'a header -> 'a undecoded -> unit > -> unit
+(** [iter t f] iterates over [t] and applies [f#f h v] where [h] and [v] are
+    respectively header and undecoded value as it exists in [t].
+
+    See {!val:decode} to decode [v]. *)
 
 val fold_left :
   t -> < f : 'a. 'a header -> 'a undecoded -> 'b -> 'b > -> 'b -> 'b
+(** [fold_left t f acc] folds over [t] and applies [f#f h v acc] where [h] and
+    [v] are respectively header and undecoded value as it exists in [t].
+
+    See {!val:decode} to decode [v]. *)
 
 (** {1 Seq} *)
 

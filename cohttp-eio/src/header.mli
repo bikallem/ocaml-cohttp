@@ -89,7 +89,9 @@ class codec :
   end
 
 type t = private < codec ; .. >
-(** [t] represents a collection of HTTP headers *)
+(** [t] represents a collection of HTTP headers.
+
+    {b Note} [t] is concurrency safe. *)
 
 (** {1 Header name} *)
 
@@ -119,9 +121,19 @@ val of_name_values : #codec -> (string * string) list -> t
 (** {1 Add} *)
 
 val add_lazy : t -> 'a header -> 'a Lazy.t -> unit
+(** [add_lazy t h lazy_v] adds header [h] and its corresponding typed lazy value
+    [lazy_v] to [t]. *)
+
 val add : t -> 'a header -> 'a -> unit
+(** [add t h v] add header [h] and its corresponding typed value [v] to [t].*)
+
 val add_value : t -> 'a header -> value -> unit
+(** [add_value t h s] adds header [h] and its corresponding untyped, undecoded
+    string value to [t].*)
+
 val add_name_value : t -> name:lname -> value:value -> unit
+(** [add_name_value t ~name ~value] lazily (i.e. undecoded) add header with
+    [name] and [value] to [t]. *)
 
 (** {1 Encode, Decode} *)
 

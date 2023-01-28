@@ -124,7 +124,7 @@ val decode : 'a undecoded -> 'a
 val update : t -> < f : 'a. 'a header -> 'a undecoded -> 'a option > -> unit
 
 val remove : ?all:bool -> t -> 'a header -> unit
-(** [remove t h] removes header [h] from [t].
+(** [remove t h] removes the last added header [h] from [t].
 
     @param all
       if [true] then all headers equal to [h] are removed from [t]. Default

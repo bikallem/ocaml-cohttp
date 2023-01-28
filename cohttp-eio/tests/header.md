@@ -86,12 +86,17 @@ val f : < f : 'a. 'a Header.header -> 'a Header.undecoded -> bool > = <obj>
 - : string = "text/html"
 ```
 
-remove, length
+`length` returns the count of items in header `t`.
+
 
 ```ocaml
 # Header.length t ;;
 - : int = 4
+```
 
+`remove` with parameter `~all:false` - the default value - removes the last added header item.
+
+```ocaml
 # let blah = Header.lname "blah";;
 val blah : Header.lname = "blah"
 
@@ -108,6 +113,37 @@ val blah : Header.lname = "blah"
 - : int = 4
 ```
 
+`find_all` returns all values of a given header.
+
+
+```ocaml
+# Header.length t ;;
+- : int = 4
+
+# Header.(add t (H blah) "blah 1"; add t (H blah) "blah 2"; add t (H blah) "blah 3");;
+- : unit = ()
+
+# Header.(find_all t (H blah)) ;;
+- : string list = ["blah 3"; "blah 2"; "blah 1"]
+```
+
+`remove ~all:true` removes all occurences of a given header.
+
+
+```ocaml
+# Header.length t;;
+- : int = 7
+
+# Header.(remove ~all:true t (H blah)) ;;
+- : unit = ()
+
+# Header.(find_all t (H blah)) ;;
+- : string list = []
+
+# Header.length t ;;
+- : int = 4
+```
+
 Print Age header using `iter`.
 
 ```ocaml
@@ -115,15 +151,16 @@ Print Age header using `iter`.
   method f: type a. a Header.header -> a Header.undecoded -> unit =
     fun h v ->
       let v = Header.decode v in
-      match h with
-      | Header.H age -> print_string ("\nAge: " ^ v)
-      | _ -> ()
+      let nm,value = (Header.encode t h v :> (string * string)) in
+      Printf.printf "\n%s: %s" nm value
   end;;
 val f : < f : 'a. 'a Header.header -> 'a Header.undecoded -> unit > = <obj>
 
 # Header.iter t f ;;
+Content-Type: text/html
 Age: 20
-Age: text/html
+Transfer-Encoding: chunked
+Content-Length: 200
 - : unit = ()
 ```
 
@@ -202,7 +239,7 @@ val f :
   <obj>
 
 # Header.fold_left t f [];;
-- : (string * string) list = [("Age", "40"); ("Content-Length", "2000")]
+- : (string * string) list = [("Content-Length", "2000"); ("Age", "40")]
 ```
 
 `encode`
@@ -224,10 +261,10 @@ val headers : Header.binding Seq.t = <fun>
     Printf.printf "\n%s: %s" name value;
   ) headers
   ;;
-Content-Length: 2000
-Transfer-Encoding: chunked
-Age: 40
 Content-Type: text/html
+Age: 40
+Transfer-Encoding: chunked
+Content-Length: 2000
 - : unit = ()
 ```
 
@@ -236,8 +273,8 @@ Content-Type: text/html
 ```ocaml
 # let l = Header.to_name_values t ;;
 val l : (Header.name * string) list =
-  [("Content-Length", "2000"); ("Transfer-Encoding", "chunked");
-   ("Age", "40"); ("Content-Type", "text/html")]
+  [("Content-Type", "text/html"); ("Age", "40");
+   ("Transfer-Encoding", "chunked"); ("Content-Length", "2000")]
 ```
 
 `of_name_values`
@@ -245,8 +282,8 @@ val l : (Header.name * string) list =
 ```ocaml
 # let l = (l :> (string * string) list) ;;
 val l : (string * string) list =
-  [("Content-Length", "2000"); ("Transfer-Encoding", "chunked");
-   ("Age", "40"); ("Content-Type", "text/html")]
+  [("Content-Type", "text/html"); ("Age", "40");
+   ("Transfer-Encoding", "chunked"); ("Content-Length", "2000")]
 
 # let t3 = Header.(of_name_values (new codec) l);;
 val t3 : Header.t = <obj>

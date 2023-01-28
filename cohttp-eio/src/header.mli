@@ -181,11 +181,11 @@ val find : t -> 'a header -> 'a
     @raise Not_found if [h] is not found in [t].
     @raise exn if decoding [h] results in an error. *)
 
-val find_all : t -> 'a header -> 'a list
-(** [find_all t h] is a list of values [v] corresponding to header [h]. It is an
-    empty list if [h] doesn't exist in [t].
+val find_all : t -> 'a header -> 'a undecoded list
+(** [find_all t h] is a list of undecoded values [v] corresponding to header
+    [h]. It is an empty list if [h] doesn't exist in [t].
 
-    @raise exn if decoding one of the values results in an error. *)
+    See {!val:decode} to decode [v]. *)
 
 (** {1 Iter, Fold} *)
 

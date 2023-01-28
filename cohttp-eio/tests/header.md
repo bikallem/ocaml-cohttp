@@ -123,7 +123,7 @@ val blah : Header.lname = "blah"
 # Header.(add t (H blah) "blah 1"; add t (H blah) "blah 2"; add t (H blah) "blah 3");;
 - : unit = ()
 
-# Header.(find_all t (H blah)) ;;
+# Header.(find_all t (H blah)) |> List.map Header.decode ;;
 - : string list = ["blah 3"; "blah 2"; "blah 1"]
 ```
 
@@ -138,7 +138,7 @@ val blah : Header.lname = "blah"
 - : unit = ()
 
 # Header.(find_all t (H blah)) ;;
-- : string list = []
+- : string Header.undecoded list = []
 
 # Header.length t ;;
 - : int = 4

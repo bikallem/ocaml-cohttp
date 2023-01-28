@@ -201,12 +201,12 @@ let find (type a) (t : #t) (h : a header) =
   in
   aux t#to_list
 
-let find_all (type a) (t : #t) (h : a header) : a list =
+let find_all (type a) (t : #t) (h : a header) : a undecoded list =
   let[@tail_mod_cons] rec aux = function
     | [] -> []
     | V (h', v) :: tl -> (
         match t#equal h h' with
-        | Some Eq -> (Lazy.force v :> a) :: aux tl
+        | Some Eq -> (v :> a undecoded) :: aux tl
         | None -> aux tl)
   in
   aux t#to_list

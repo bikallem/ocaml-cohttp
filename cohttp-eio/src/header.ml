@@ -76,13 +76,22 @@ class codec =
           let err = "decoder undefined for header " ^ constructor_name hdr in
           raise @@ Invalid_argument err
 
-    method encoder : type a. a header -> name * a encoder =
+    method encoder : type a. a header -> a encoder =
       function
-      | Content_length -> ("Content-Length", int_encoder)
-      | Transfer_encoding -> ("Transfer-Encoding", te_encoder)
-      | H name -> (canonical_name name, Fun.id)
+      | Content_length -> int_encoder
+      | Transfer_encoding -> te_encoder
+      | H _ -> Fun.id
       | hdr ->
           let err = "encoder undefined for header " ^ constructor_name hdr in
+          raise @@ Invalid_argument err
+
+    method name : type a. a header -> name =
+      function
+      | Content_length -> "Content-Length"
+      | Transfer_encoding -> "Transfer-Encoding"
+      | H name -> canonical_name name
+      | hdr ->
+          let err = "name undefined for header " ^ constructor_name hdr in
           raise @@ Invalid_argument err
   end
 
@@ -100,6 +109,7 @@ class t values =
     method modify : ('a -> 'a) -> unit = fun f -> modify f headers
   end
 
+let name (codec : #codec) = codec#name
 let lname = String.lowercase_ascii
 let lname_equal (a : lname) (b : lname) = String.equal a b
 
@@ -137,11 +147,8 @@ let add_name_value (t : t) ~name ~value =
   let v = lazy (t#decoder h value) in
   add_lazy t h v
 
-let encode : type a. #codec -> a header -> a -> string * string =
- fun codec h v ->
-  let name, encode = codec#encoder h in
-  let value = encode v in
-  (name, value)
+let encode : type a. #codec -> a header -> a -> string =
+ fun codec h v -> codec#encoder h v
 
 let decode : type a. a undecoded -> a = Lazy.force
 
@@ -215,4 +222,9 @@ let to_seq (t : #t) =
   List.map (fun (V (h, v)) -> B (h, v)) t#to_list |> List.to_seq
 
 let to_name_values (t : #t) =
-  List.map (fun (V (h, v)) -> encode t h (Lazy.force v)) t#to_list
+  List.map
+    (fun (V (h, v)) ->
+      let name = name t h in
+      let value = encode t h (Lazy.force v) in
+      (name, value))
+    t#to_list

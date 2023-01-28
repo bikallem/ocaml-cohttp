@@ -151,8 +151,9 @@ Print Age header using `iter`.
   method f: type a. a Header.header -> a Header.undecoded -> unit =
     fun h v ->
       let v = Header.decode v in
-      let nm,value = (Header.encode t h v :> (string * string)) in
-      Printf.printf "\n%s: %s" nm value
+      let value = Header.encode t h v in
+      let name = (Header.name t h :> string) in
+      Printf.printf "\n%s: %s" name value
   end;;
 val f : < f : 'a. 'a Header.header -> 'a Header.undecoded -> unit > = <obj>
 
@@ -246,7 +247,7 @@ val f :
 
 ```ocaml
 # Header.(encode t Content_length 10) ;;
-- : Header.name * string = ("Content-Length", "10")
+- : string = "10"
 ```
 
 `to_seq`
@@ -257,8 +258,9 @@ val headers : Header.binding Seq.t = <fun>
 
 # Seq.iter (fun (Header.B (h, v)) ->
     let v = Header.decode v in
-    let name, value = (Header.encode t h v :> string * string) in
-    Printf.printf "\n%s: %s" name value;
+    let value = Header.encode t h v in
+    let name = (Header.name t h :> string) in
+    Printf.printf "\n%s: %s" name value
   ) headers
   ;;
 Content-Type: text/html

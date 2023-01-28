@@ -55,7 +55,8 @@ type 'a header +=
 (** [eq] is the OCaml GADT equality. *)
 type (_, _) eq = Eq : ('a, 'a) eq
 
-(** [binding] represents a typed header and its corresponding undecoded value. *)
+(** [binding] represents a typed header and its corresponding undecoded value.
+    See {!type:undecoded} and {!val:decode}. *)
 type binding = B : 'a header * 'a undecoded -> binding
 
 (** [codec] defines encoders, decoders and equality for {!type:header}.
@@ -71,15 +72,29 @@ type binding = B : 'a header * 'a undecoded -> binding
 class codec :
   object
     method v : 'a. lname -> 'a header
+    (** [v lname] converts [lname] to {!type:header}. *)
+
     method equal : 'a 'b. 'a header -> 'b header -> ('a, 'b) eq option
+    (** [equal h1 h2] if [Some Eq] if [h1] and [h2] are equal. It is [None]
+        otherwise. *)
+
     method decoder : 'a. 'a header -> 'a decoder
-    method encoder : 'a. 'a header -> name * 'a encoder
+    (** [decoder h] is decoder for header [h]. *)
+
+    method encoder : 'a. 'a header -> 'a encoder
+    (** [encoder h] is encoder for header [h]. *)
+
+    method name : 'a. 'a header -> name
+    (** [name h] is the canonical name for header [h]. *)
   end
 
 type t = private < codec ; .. >
 (** [t] represents a collection of HTTP headers *)
 
 (** {1 Header name} *)
+
+val name : #codec -> 'a header -> name
+(** [name codec h] is the canonical name for header [h]. *)
 
 val canonical_name : string -> name
 (** [canonical_name s] converts [s] to a canonical header name value. See
@@ -110,9 +125,9 @@ val add_name_value : t -> name:lname -> value:value -> unit
 
 (** {1 Encode, Decode} *)
 
-val encode : #codec -> 'a header -> 'a -> name * value
-(** [encode codec h v] uses the encoder defined in [codec] to encode header [h]
-    with corresponding value [v] to a tuple of [(name,value)]. *)
+val encode : #codec -> 'a header -> 'a -> value
+(** [encode codec h v] encodes the value of header [h]. The encoder is used as
+    defined in [codec]. *)
 
 val decode : 'a undecoded -> 'a
 (** [decode codec v] decodes [v].

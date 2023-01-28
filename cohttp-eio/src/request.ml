@@ -34,9 +34,13 @@ let header =
       function
       | Host -> host_decoder | User_agent -> Fun.id | hdr -> super#decoder hdr
 
-    method! encoder : type a. a header -> Header.name * a Header.encoder =
+    method! encoder : type a. a header -> a Header.encoder =
       function
-      | Host -> (Header.canonical_name "host", host_encoder)
-      | User_agent -> (Header.canonical_name "user-agent", Fun.id)
-      | hdr -> super#encoder hdr
+      | Host -> host_encoder | User_agent -> Fun.id | hdr -> super#encoder hdr
+
+    method! name : type a. a header -> Header.name =
+      function
+      | Host -> Header.canonical_name "host"
+      | User_agent -> Header.canonical_name "user-agent"
+      | hdr -> super#name hdr
   end

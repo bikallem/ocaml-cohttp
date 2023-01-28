@@ -114,9 +114,6 @@ let make_n (c : #codec) values =
 
 let make code = make_n code []
 
-let of_seq codec s =
-  Seq.map (fun (B (h, v)) -> V (h, v)) s |> List.of_seq |> make_n codec
-
 let of_name_values codec l =
   List.map
     (fun (name, value) ->

@@ -231,16 +231,6 @@ Content-Type: text/html
 - : unit = ()
 ```
 
-`of_seq`
-
-```ocaml
-# let t2 = Header.of_seq codec headers ;;
-val t2 : Header.t = <obj>
-
-# Header.length t2 = Seq.length headers ;;
-- : bool = true
-```
-
 `of_name_values`
 
 ```ocaml

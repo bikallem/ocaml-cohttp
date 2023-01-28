@@ -97,10 +97,6 @@ val lname_equal : lname -> lname -> bool
 val make : #codec -> t
 (** [make codec] is an empty [t]. *)
 
-val of_seq : #codec -> binding Seq.t -> t
-(** [of_seq codec seq] is [t] with header items initialized to [seq] such that
-    [Seq.length seq = Header.length t]. *)
-
 val of_name_values : #codec -> (string * string) list -> t
 (** [of_name_values codec l] is [t] with header items initialized to [l] such
     that [List.length seq = Header.length t]. *)

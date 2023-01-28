@@ -149,6 +149,12 @@ val decode : 'a undecoded -> 'a
 (** {1 Update, Remove} *)
 
 val update : t -> < f : 'a. 'a header -> 'a undecoded -> 'a option > -> unit
+(** [update t f] iterates over [t] and applies [f#f h v] where [h] and [v] are
+    respectively header and undecoded value as it exists in [t]. If
+    [f#f h v = Some v'] then the value of [h] is updated to [v']. If [None] then
+    [h] is removed from [t].
+
+    See {!val:decode} to decode [v]. *)
 
 val remove : ?all:bool -> t -> 'a header -> unit
 (** [remove t h] removes the last added header [h] from [t].

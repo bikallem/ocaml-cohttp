@@ -112,13 +112,14 @@ Print Age header using `iter`.
 
 ```ocaml
 # let f = object
-  method f: type a. a Header.header -> a -> unit =
+  method f: type a. a Header.header -> a Header.undecoded -> unit =
     fun h v ->
+      let v = Header.decode v in
       match h with
       | Header.H age -> print_string ("\nAge: " ^ v)
       | _ -> ()
   end;;
-val f : < f : 'a. 'a Header.header -> 'a -> unit > = <obj>
+val f : < f : 'a. 'a Header.header -> 'a Header.undecoded -> unit > = <obj>
 
 # Header.iter t f ;;
 Age: 20
@@ -185,8 +186,9 @@ We get a list of headers in string form using `fold_left`.
 
 ```ocaml
 # let f = object
-  method f: type a. a Header.header -> a -> 'b -> 'b = 
+  method f: type a. a Header.header -> a Header.undecoded -> 'b -> 'b =
     fun h v acc ->
+      let v = Header.decode v in
       match h with
       | Header.Content_length -> ("Content-Length", string_of_int v) :: acc
       | Header.H nm when Header.lname_equal nm age -> ("Age", v) :: acc
@@ -195,7 +197,8 @@ We get a list of headers in string form using `fold_left`.
 val f :
   < f : 'a.
           'a Header.header ->
-          'a -> (string * string) list -> (string * string) list > =
+          'a Header.undecoded ->
+          (string * string) list -> (string * string) list > =
   <obj>
 
 # Header.fold_left t f [];;
@@ -215,12 +218,17 @@ val f :
 # let headers = Header.to_seq t;;
 val headers : Header.binding Seq.t = <fun>
 
-# List.of_seq headers ;;
-- : Header.binding list =
-[Cohttp_eio.Header.B (Cohttp_eio__Header.Content_length, <poly>);
- Cohttp_eio.Header.B (Cohttp_eio__Header.Transfer_encoding, <poly>);
- Cohttp_eio.Header.B (Cohttp_eio__Header.H "age", <poly>);
- Cohttp_eio.Header.B (Cohttp_eio__Header.H "content-type", <poly>)]
+# Seq.iter (fun (Header.B (h, v)) ->
+    let v = Header.decode v in
+    let name, value = (Header.encode t h v :> string * string) in
+    Printf.printf "\n%s: %s" name value;
+  ) headers
+  ;;
+Content-Length: 2000
+Transfer-Encoding: chunked
+Age: 40
+Content-Type: text/html
+- : unit = ()
 ```
 
 `of_seq`
@@ -233,28 +241,21 @@ val t2 : Header.t = <obj>
 - : bool = true
 ```
 
-`to_name_values`
-
-```ocaml
-# let l = Header.to_name_values t ;;
-val l : (Header.name * string) list =
-  [("Content-Length", "2000"); ("Transfer-Encoding", "chunked");
-   ("Age", "40"); ("Content-Type", "text/html")]
-```
-
 `of_name_values`
 
 ```ocaml
-# let l = (l :> (string * string) list) ;;
+# let l =
+  [ ("Content-Length", "2000")
+  ; ("Transfer-Encoding", "chunked")
+  ; ("Age", "40")
+  ; ("Content-Type", "text/html")] ;;
 val l : (string * string) list =
   [("Content-Length", "2000"); ("Transfer-Encoding", "chunked");
    ("Age", "40"); ("Content-Type", "text/html")]
+
 # let t3 = Header.(of_name_values (new codec) l);;
 val t3 : Header.t = <obj>
 
 # Header.length t3 = List.length l ;;
-- : bool = true
-
-# l = (Header.to_name_values t3 :> (string * string) list) ;;
 - : bool = true
 ```

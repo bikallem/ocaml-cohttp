@@ -1,3 +1,5 @@
+(** HTTP Headers *)
+
 type name = private string
 (** [name] represents HTTP header name value in a canonical format, i.e. the
     first letter and any letter following a hypen([-]) symbol are converted to
@@ -17,7 +19,11 @@ type lname = private string
 (** {1 Encoder, Decoder} *)
 
 type 'a decoder = value -> 'a
+(** [decoder] converts {!type:value} to type ['a]. To denote an error while
+    decoding, an OCaml exception value is raised. *)
+
 type 'a encoder = 'a -> value
+(** [encoder] converts a typed value ['a] to its string representation. *)
 
 type 'a undecoded
 (** ['a undecoded] represents a lazy value that is as yet undecoded. See
@@ -26,22 +32,39 @@ type 'a undecoded
 (** {1 Headers} *)
 
 type 'a header = ..
-(** [header] represents a HTTP header. Extend the type to use custom typed
-    headers in your applications and libraries. See below for supported headers. *)
+(** [header] represents a HTTP header where individual variant represents a
+    specific HTTP header abstraction. The headers defined here are common across
+    both HTTP requests and responses. For request or response specific headers
+    please see {!val:Request.header} or {!val:Response.header} respectively.
+
+    The following common HTTP headers are defined:
+
+    - {!val:Content_length} represents [Content-Length]
+    - {!val:Transfer_encoding} represents [Transfer-Encoding].
+    - {!val:H} represents an untyped header. This is the value used if a typed
+      header for a HTTP header is not defined or found.
+
+    Extend this type if you require custom headers. Additionally see
+    {!class:codec}. *)
 
 type 'a header +=
   | Content_length : int header
   | Transfer_encoding : [ `chunked | `compress | `deflate | `gzip ] list header
   | H : lname -> value header  (** A generic header. *)
 
+(** [eq] is the OCaml GADT equality type. *)
 type (_, _) eq = Eq : ('a, 'a) eq
-type binding = B : 'a header * 'a -> binding
 
-(** Codecs - encoders/decoders - for the following HTTP headers:
+(** [binding] represents a typed header and its corresponding undecoded value. *)
+type binding = B : 'a header * 'a undecoded -> binding
 
-    - [Content-Length],
-    - [Transfer-Encoding]
-    - [H]
+(** [codec] defines encoders, decoders and equality for {!type:header}.
+
+    The class defines [codec]s for the following HTTP headers:
+
+    - {!val:Content_Length}
+    - {!val:Transfer_encoding}
+    - {!val:H}
 
     Users wishing to extend {!type:header} with own user defined custom headers
     should inherit from this class and override the class methods as required. *)
@@ -82,7 +105,7 @@ val of_name_values : #codec -> (string * string) list -> t
 (** [of_name_values codec l] is [t] with header items initialized to [l] such
     that [List.length seq = Header.length t]. *)
 
-(** {1 Add, Remove, Length} *)
+(** {1 Add} *)
 
 val add_lazy : t -> 'a header -> 'a Lazy.t -> unit
 val add : t -> 'a header -> 'a -> unit
@@ -130,13 +153,19 @@ val find : t -> 'a header -> 'a
     @raise exn if decoding [h] results in an error. *)
 
 val find_all : t -> 'a header -> 'a list
+(** [find_all t h] is a list of values [v] corresponding to header [h]. It is an
+    empty list if [h] doesn't exist in [t].
+
+    @raise exn if decoding one of the values results in an error. *)
 
 (** {1 Iter, Fold} *)
 
-val iter : t -> < f : 'a. 'a header -> 'a -> unit > -> unit
-val fold_left : t -> < f : 'a. 'a header -> 'a -> 'b -> 'b > -> 'b -> 'b
+val iter : t -> < f : 'a. 'a header -> 'a undecoded -> unit > -> unit
+
+val fold_left :
+  t -> < f : 'a. 'a header -> 'a undecoded -> 'b -> 'b > -> 'b -> 'b
 
 (** {1 Seq} *)
 
 val to_seq : t -> binding Seq.t
-val to_name_values : t -> (name * value) list
+(** [to_seq t] returns a sequence of {!type:binding}s. *)

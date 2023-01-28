@@ -39,7 +39,7 @@ let te_encoder v =
 
 type (_, _) eq = Eq : ('a, 'a) eq
 type v = V : 'a header * 'a Lazy.t -> v
-type binding = B : 'a header * 'a -> binding
+type binding = B : 'a header * 'a undecoded -> binding
 
 let canonical_name nm =
   String.split_on_char '-' nm
@@ -115,7 +115,7 @@ let make_n (c : #codec) values =
 let make code = make_n code []
 
 let of_seq codec s =
-  Seq.map (fun (B (h, v)) -> V (h, lazy v)) s |> List.of_seq |> make_n codec
+  Seq.map (fun (B (h, v)) -> V (h, v)) s |> List.of_seq |> make_n codec
 
 let of_name_values codec l =
   List.map
@@ -207,14 +207,12 @@ let find_all (type a) (t : #t) (h : a header) : a list =
   in
   aux t#to_list
 
-let iter (t : #t) (f : < f : 'a. 'a header -> 'a -> unit >) =
-  List.iter (fun (V (h, v)) -> f#f h (Lazy.force v)) t#to_list
+let iter (t : #t) (f : < f : 'a. 'a header -> 'a undecoded -> unit >) =
+  List.iter (fun (V (h, v)) -> f#f h v) t#to_list
 
-let fold_left (t : #t) (f : < f : 'a. 'a header -> 'a -> 'b -> 'b >) acc =
-  List.fold_left (fun acc (V (h, v)) -> f#f h (Lazy.force v) acc) acc t#to_list
+let fold_left (t : #t) (f : < f : 'a. 'a header -> 'a undecoded -> 'b -> 'b >)
+    acc =
+  List.fold_left (fun acc (V (h, v)) -> f#f h v acc) acc t#to_list
 
 let to_seq (t : #t) =
-  List.map (fun (V (h, v)) -> B (h, Lazy.force v)) t#to_list |> List.to_seq
-
-let to_name_values (t : #t) =
-  List.map (fun (V (h, v)) -> encode t h (Lazy.force v)) t#to_list
+  List.map (fun (V (h, v)) -> B (h, v)) t#to_list |> List.to_seq

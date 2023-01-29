@@ -31,10 +31,7 @@ val age : Header.lname = "age"
 ```
 
 ```ocaml
-# let codec = new Header.codec ;;
-val codec : Header.codec = <obj>
-
-# let t = Header.make codec ;;
+# let t = Header.(make Codec.v) ;;
 val t : Header.t = <obj>
 ```
 
@@ -287,7 +284,7 @@ val l : (string * string) list =
   [("Content-Type", "text/html"); ("Age", "40");
    ("Transfer-Encoding", "chunked"); ("Content-Length", "2000")]
 
-# let t3 = Header.(of_name_values (new codec) l);;
+# let t3 = Header.(of_name_values Header.Codec.v l);;
 val t3 : Header.t = <obj>
 
 # Header.length t3 = List.length l ;;
@@ -308,41 +305,39 @@ type 'a Cohttp_eio.Header.header +=
     Header1 : int Header.header
   | Header2 : float Header.header
 
-# let custom_codec = object
-  inherit Header.codec as super
-
-  method! v : type a. Header.lname -> a Header.header =
+# let custom_codec : Header.Codec.t = object
+  method header : type a. Header.lname -> a Header.header =
     fun nm ->
     match (nm :> string) with
     | "header1" -> Obj.magic Header1
     | "header2" -> Obj.magic Header2
-    | _ -> super#v nm
+    | _ -> Header.Codec.v#header nm
 
-  method! equal: type a b. a Header.header -> b Header.header -> (a, b) Header.eq option =
+  method equal: type a b. a Header.header -> b Header.header -> (a, b) Header.eq option =
     fun a b ->
       match a, b with
       | Header1, Header1 -> Some Eq
       | Header2, Header2 -> Some Eq
-      | _ -> super#equal a b
+      | _ -> Header.Codec.v#equal a b
 
-  method! decoder: type a. a Header.header -> a Header.decoder = function
+  method decoder: type a. a Header.header -> a Header.decoder = function
     | Header1 -> int_of_string
     | Header2 -> float_of_string
-    | hdr -> super#decoder hdr
+    | hdr -> Header.Codec.v#decoder hdr
 
-  method! encoder: type a. a Header.header -> a Header.encoder = function
+  method encoder: type a. a Header.header -> a Header.encoder = function
     | Header1 -> string_of_int
     | Header2 -> string_of_float
-    | hdr -> super#encoder hdr
+    | hdr -> Header.Codec.v#encoder hdr
 
   method name: type a. a Header.header -> Header.name =
     fun hdr -> 
       match hdr with
       | Header1 -> Header.canonical_name "header1"
       | Header2 -> Header.canonical_name "header2"
-      | hdr -> super#name hdr
+      | hdr -> Header.Codec.v#name hdr
   end ;;
-val custom_codec : Header.codec = <obj>
+val custom_codec : Header.Codec.t = <obj>
 
 # let ch = Header.make custom_codec ;;
 val ch : Header.t = <obj>

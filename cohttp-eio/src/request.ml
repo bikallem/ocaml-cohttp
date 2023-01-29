@@ -19,35 +19,37 @@ let host_encoder = function
   | host, Some port -> host ^ ":" ^ string_of_int port
   | host, None -> host
 
-let header =
+let header : Header.Codec.t =
   object
-    inherit Header.codec as super
-
-    method! v : type a. Header.lname -> a header =
+    method header : type a. Header.lname -> a header =
       fun nm ->
         match (nm :> string) with
         | "host" -> Obj.magic Host
         | "user-agent" -> Obj.magic User_agent
-        | _ -> super#v nm
+        | _ -> Header.Codec.v#header nm
 
-    method! equal : type a b. a header -> b header -> (a, b) Header.eq option =
+    method equal : type a b. a header -> b header -> (a, b) Header.eq option =
       fun a b ->
         match (a, b) with
         | Host, Host -> Some Eq
         | User_agent, User_agent -> Some Eq
-        | _ -> super#equal a b
+        | _ -> Header.Codec.v#equal a b
 
-    method! decoder : type a. a header -> a Header.decoder =
+    method decoder : type a. a header -> a Header.decoder =
       function
-      | Host -> host_decoder | User_agent -> Fun.id | hdr -> super#decoder hdr
+      | Host -> host_decoder
+      | User_agent -> Fun.id
+      | hdr -> Header.Codec.v#decoder hdr
 
-    method! encoder : type a. a header -> a Header.encoder =
+    method encoder : type a. a header -> a Header.encoder =
       function
-      | Host -> host_encoder | User_agent -> Fun.id | hdr -> super#encoder hdr
+      | Host -> host_encoder
+      | User_agent -> Fun.id
+      | hdr -> Header.Codec.v#encoder hdr
 
-    method! name : type a. a header -> Header.name =
+    method name : type a. a header -> Header.name =
       function
       | Host -> Header.canonical_name "host"
       | User_agent -> Header.canonical_name "user-agent"
-      | hdr -> super#name hdr
+      | hdr -> Header.Codec.v#name hdr
   end

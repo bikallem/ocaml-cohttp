@@ -59,7 +59,9 @@ type (_, _) eq = Eq : ('a, 'a) eq
     See {!type:undecoded} and {!val:decode}. *)
 type binding = B : 'a header * 'a undecoded -> binding
 
-(** [codec] defines encoders, decoders and equality for {!type:header}.
+(** {1 Codec}
+
+    [Codec] defines encoders, decoders and equality for {!type:header}.
 
     The class defines [codec]s for the following HTTP headers:
 
@@ -69,33 +71,37 @@ type binding = B : 'a header * 'a undecoded -> binding
 
     Users wishing to extend {!type:header} with own user defined custom headers
     should inherit from this class and override the class methods as required. *)
-class codec :
-  object
-    method v : 'a. lname -> 'a header
-    (** [v lname] converts [lname] to {!type:header}. *)
+module Codec : sig
+  class type t =
+    object
+      method header : 'a. lname -> 'a header
+      (** [header lname] converts [lname] to {!type:header}. *)
 
-    method equal : 'a 'b. 'a header -> 'b header -> ('a, 'b) eq option
-    (** [equal h1 h2] if [Some Eq] if [h1] and [h2] are equal. It is [None]
-        otherwise. *)
+      method equal : 'a 'b. 'a header -> 'b header -> ('a, 'b) eq option
+      (** [equal h1 h2] if [Some Eq] if [h1] and [h2] are equal. It is [None]
+          otherwise. *)
 
-    method decoder : 'a. 'a header -> 'a decoder
-    (** [decoder h] is decoder for header [h]. *)
+      method decoder : 'a. 'a header -> 'a decoder
+      (** [decoder h] is decoder for header [h]. *)
 
-    method encoder : 'a. 'a header -> 'a encoder
-    (** [encoder h] is encoder for header [h]. *)
+      method encoder : 'a. 'a header -> 'a encoder
+      (** [encoder h] is encoder for header [h]. *)
 
-    method name : 'a. 'a header -> name
-    (** [name h] is the canonical name for header [h]. *)
-  end
+      method name : 'a. 'a header -> name
+      (** [name h] is the canonical name for header [h]. *)
+    end
 
-type t = private < codec ; .. >
+  val v : t
+end
+
+type t = private < Codec.t ; .. >
 (** [t] represents a collection of HTTP headers.
 
     {b Note} [t] is concurrency safe. *)
 
 (** {1 Name} *)
 
-val name : #codec -> 'a header -> name
+val name : #Codec.t -> 'a header -> name
 (** [name codec h] is the canonical name for header [h]. *)
 
 val canonical_name : string -> name
@@ -111,10 +117,10 @@ val lname_equal : lname -> lname -> bool
 
 (** {1 Create} *)
 
-val make : #codec -> t
+val make : #Codec.t -> t
 (** [make codec] is an empty [t]. *)
 
-val of_name_values : #codec -> (string * string) list -> t
+val of_name_values : #Codec.t -> (string * string) list -> t
 (** [of_name_values codec l] is [t] with header items initialized to [l] such
     that [List.length seq = Header.length t]. *)
 
@@ -137,7 +143,7 @@ val add_name_value : t -> name:lname -> value:value -> unit
 
 (** {1 Encode, Decode} *)
 
-val encode : #codec -> 'a header -> 'a -> value
+val encode : #Codec.t -> 'a header -> 'a -> value
 (** [encode codec h v] encodes the value of header [h]. The encoder is used as
     defined in [codec]. *)
 

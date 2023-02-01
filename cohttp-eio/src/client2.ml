@@ -34,14 +34,9 @@ let call :
     'a ->
     response =
  fun ?pipeline_requests ~conn req body ->
-  let buf_write conn =
-    let initial_size = 0x1000 in
-    Buf_write.with_flow ~initial_size:0x1000 conn (fun writer ->
-        Request.write ?pipeline_requests req body writer;
-        let reader =
-          Eio.Buf_read.of_flow ~initial_size ~max_size:max_int conn
-        in
-        let response = response reader in
-        (response, reader))
-  in
-  buf_write conn
+  let initial_size = 0x1000 in
+  Buf_write.with_flow ~initial_size conn (fun writer ->
+      Request.write ?pipeline_requests req body writer;
+      let reader = Eio.Buf_read.of_flow ~initial_size ~max_size:max_int conn in
+      let response = response reader in
+      (response, reader))

@@ -37,6 +37,9 @@ let version (t : _ #t) = t#version
 let headers (t : _ #t) = t#headers
 let meth (t : _ #t) = t#meth
 let resource (t : _ #t) = t#resource
+
+type host_port = string * int option
+
 let client_host_port (t : _ #client_request) = (t#host, t#port)
 
 let write ?(pipeline_requests = false) (t : _ #client_request) body writer =

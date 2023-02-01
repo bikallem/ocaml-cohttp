@@ -33,7 +33,10 @@ val version : _ #t -> Http.Version.t
 val headers : _ #t -> Http.Header.t
 val meth : 'a #client_request -> 'a Method.t
 val resource : _ #t -> resource
-val client_host_port : _ #client_request -> string * int option
+
+type host_port = string * int option
+
+val client_host_port : _ #client_request -> host_port
 
 val write :
   ?pipeline_requests:bool -> 'a #client_request -> 'a -> Eio.Buf_write.t -> unit

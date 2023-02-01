@@ -6,3 +6,6 @@ val call :
   'a Request.client_request ->
   'a ->
   response
+
+val with_response_call :
+  Eio.Net.t -> 'a Request.client_request -> 'a -> (response -> 'b) -> 'b

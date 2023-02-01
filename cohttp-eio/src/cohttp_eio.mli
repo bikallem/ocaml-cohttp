@@ -26,6 +26,11 @@ module Body : sig
   val pp_chunk : Format.formatter -> chunk -> unit
 end
 
+module Body2 = Body2
+module Method = Method
+module Request = Request
+module Client2 = Client2
+
 (** [Server] is a HTTP 1.1 server. *)
 module Server : sig
   type request = Http.Request.t * Eio.Buf_read.t * Eio.Net.Sockaddr.stream

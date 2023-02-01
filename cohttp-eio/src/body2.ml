@@ -225,28 +225,8 @@ module Chunked = struct
         Buf_read.return @@ `Last_chunk (extensions, headers)
     | sz -> failwith (Format.sprintf "Invalid chunk size: %d" sz)
 
-  let reader reader headers f : Http.Header.t reader =
-    object
-      inherit [Http.Header.t] reader
-
-      method read =
-        match Http.Header.get_transfer_encoding headers with
-        | Http.Transfer.Chunked ->
-            let total_read = ref 0 in
-            let rec chunk_loop f =
-              let chunk = chunk !total_read headers reader in
-              match chunk with
-              | `Chunk (size, data, extensions) ->
-                  f (Chunk { size; data; extensions });
-                  total_read := !total_read + size;
-                  (chunk_loop [@tailcall]) f
-              | `Last_chunk (extensions, headers) ->
-                  f (Last_chunk extensions);
-                  Some headers
-            in
-            chunk_loop f
-        | _ -> None
-    end
+  type write_chunk = (t -> unit) -> unit
+  type write_trailer = (Http.Header.t -> unit) -> unit
 
   let writer ?(write_trailers = false) write_chunk write_trailer : writer =
     object
@@ -278,6 +258,29 @@ module Chunked = struct
         write_chunk write_body;
         if write_trailers then write_trailer (Rwer.write_headers writer);
         Buf_write.string writer "\r\n"
+    end
+
+  let reader buf_read headers f : Http.Header.t reader =
+    object
+      inherit [Http.Header.t] reader
+
+      method read =
+        match Http.Header.get_transfer_encoding headers with
+        | Http.Transfer.Chunked ->
+            let total_read = ref 0 in
+            let rec chunk_loop f =
+              let chunk = chunk !total_read headers buf_read in
+              match chunk with
+              | `Chunk (size, data, extensions) ->
+                  f (Chunk { size; data; extensions });
+                  total_read := !total_read + size;
+                  (chunk_loop [@tailcall]) f
+              | `Last_chunk (extensions, headers) ->
+                  f (Last_chunk extensions);
+                  Some headers
+            in
+            chunk_loop f
+        | _ -> None
     end
 end
 

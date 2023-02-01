@@ -11,7 +11,6 @@ class virtual ['a] t =
     method virtual headers : Http.Header.t
     method virtual meth : 'a Method.t
     method virtual resource : string
-    (*     method virtual update_headers : Http.Header.t -> 'b *)
   end
 
 class virtual ['a] client_request =
@@ -33,7 +32,6 @@ let client_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
     method resource = resource
     method host = host
     method port = port
-    (*     method update_headers headers = {<headers>} *)
 
     method write ?(pipeline_requests = false) body writer =
       let headers =
@@ -76,8 +74,7 @@ let version (t : _ #t) = t#version
 let headers (t : _ #t) = t#headers
 let meth (t : _ #t) = t#meth
 let resource (t : _ #t) = t#resource
-let host (client_request : _ #client_request) = client_request#host
-(* let update_headers (t : _ #t) headers = t#update_headers headers *)
+let client_host_port (t : _ #client_request) = (t#host, t#port)
 
-let write ?pipeline_requests (r : _ #client_request) =
-  r#write ?pipeline_requests
+let write ?pipeline_requests (t : _ #client_request) =
+  t#write ?pipeline_requests

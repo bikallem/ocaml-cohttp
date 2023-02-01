@@ -10,7 +10,6 @@ class virtual ['a] t :
     method virtual headers : Http.Header.t
     method virtual meth : 'a Method.t
     method virtual resource : resource
-    (*     method virtual update_headers : Http.Header.t -> 'b *)
   end
 
 (** [client_request] is HTTP client request. *)
@@ -37,8 +36,7 @@ val version : _ #t -> Http.Version.t
 val headers : _ #t -> Http.Header.t
 val meth : 'a #client_request -> 'a Method.t
 val resource : _ #t -> resource
-val host : _ #client_request -> string
-(* val update_headers : (_ #t as 'a) -> Http.Header.t -> 'a *)
+val client_host_port : _ #client_request -> string * int option
 
 val write :
   ?pipeline_requests:bool -> 'a #client_request -> 'a -> Eio.Buf_write.t -> unit

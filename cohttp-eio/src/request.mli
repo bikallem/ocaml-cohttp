@@ -3,50 +3,42 @@
 type resource = string
 
 (** [request] is a common request type. *)
-class t :
-  ?version:Http.Version.t
-  -> ?headers:Http.Header.t
-  -> resource
-  -> object ('a)
-       method version : Http.Version.t
-       method headers : Http.Header.t
-       method resource : resource
-       method update_headers : Http.Header.t -> 'a
-     end
-
-type host = string * int option
-(** [host] is a tuple of [(host,port)].
-
-    [host] represents a server host - as ip address or domain name, e.g.
-    www.example.org, www.reddit.com and 216.239.32.10.
-
-    [port] represents a tcp/ip port value. *)
+class virtual ['a] t :
+  object ('b)
+    constraint 'a = #Body2.writer
+    method virtual version : Http.Version.t
+    method virtual headers : Http.Header.t
+    method virtual meth : 'a Method.t
+    method virtual resource : resource
+    (*     method virtual update_headers : Http.Header.t -> 'b *)
+  end
 
 (** [client_request] is HTTP client request. *)
-class ['a] client_request :
-  ?version:Http.Version.t
-  -> ?headers:Http.Header.t
-  -> 'a Method.t
-  -> host
-  -> resource
-  -> object
-       constraint 'a = #Body2.writer
-       inherit t
-       method meth : 'a Method.t
-       method host : host
-     end
+class virtual ['a] client_request :
+  object
+    inherit ['a] t
+    method virtual host : string
+    method virtual port : int option
 
-val make_client_request :
+    method virtual write :
+      ?pipeline_requests:bool -> 'a -> Eio.Buf_write.t -> unit
+  end
+
+val client_request :
   ?version:Http.Version.t ->
   ?headers:Http.Header.t ->
+  ?port:int ->
   'a Method.t ->
-  host ->
+  string ->
   resource ->
   'a client_request
 
-val version : #t -> Http.Version.t
-val headers : #t -> Http.Header.t
-val resource : #t -> resource
+val version : _ #t -> Http.Version.t
+val headers : _ #t -> Http.Header.t
 val meth : 'a #client_request -> 'a Method.t
-val host : _ #client_request -> host
-val update_headers : (#t as 'a) -> Http.Header.t -> 'a
+val resource : _ #t -> resource
+val host : _ #client_request -> string
+(* val update_headers : (_ #t as 'a) -> Http.Header.t -> 'a *)
+
+val write :
+  ?pipeline_requests:bool -> 'a #client_request -> 'a -> Eio.Buf_write.t -> unit

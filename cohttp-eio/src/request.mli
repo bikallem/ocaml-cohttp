@@ -18,9 +18,6 @@ class virtual ['a] client_request :
     inherit ['a] t
     method virtual host : string
     method virtual port : int option
-
-    method virtual write :
-      ?pipeline_requests:bool -> 'a -> Eio.Buf_write.t -> unit
   end
 
 val client_request :

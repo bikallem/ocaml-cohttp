@@ -52,7 +52,8 @@ let response buf_read =
 let do_request_response t conn req body =
   Eio.Time.Timeout.run_exn t.timeout @@ fun () ->
   Buf_write.with_flow ~initial_size:t.buf_write_initial_size conn (fun writer ->
-      Request.write ~pipeline_requests:t.pipeline_requests req body writer;
+      Request.write req body writer;
+      if not t.pipeline_requests then Buf_write.flush writer;
       let reader =
         Eio.Buf_read.of_flow ~initial_size:t.buf_read_initial_size
           ~max_size:max_int conn

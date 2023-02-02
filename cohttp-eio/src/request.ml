@@ -42,7 +42,7 @@ type host_port = string * int option
 
 let client_host_port (t : _ #client_request) = (t#host, t#port)
 
-let write ?(pipeline_requests = false) (t : _ #client_request) body writer =
+let write (t : _ #client_request) body writer =
   let headers =
     if not (Http.Header.mem t#headers "Host") then
       let host =
@@ -75,8 +75,7 @@ let write ?(pipeline_requests = false) (t : _ #client_request) body writer =
   Buf_write.string writer "\r\n";
   Rwer.write_headers writer headers;
   Buf_write.string writer "\r\n";
-  Body2.write body writer;
-  if not pipeline_requests then Buf_write.flush writer
+  Body2.write body writer
 
 class virtual ['a] server_request =
   object

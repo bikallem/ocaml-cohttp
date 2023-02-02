@@ -37,9 +37,7 @@ val resource : _ #t -> resource
 type host_port = string * int option
 
 val client_host_port : _ #client_request -> host_port
-
-val write :
-  ?pipeline_requests:bool -> 'a #client_request -> 'a -> Eio.Buf_write.t -> unit
+val write : 'a #client_request -> 'a -> Eio.Buf_write.t -> unit
 
 (** {1 Server Request}*)
 

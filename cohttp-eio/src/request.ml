@@ -79,7 +79,7 @@ let write (t : _ #client_request) body writer =
 
 type url = string
 
-let get url =
+let parse_url url =
   if String.starts_with ~prefix:"https" url then
     raise @@ Invalid_argument "url: https protocol not supported";
   let url =
@@ -95,7 +95,11 @@ let get url =
     | None, _ -> raise @@ Invalid_argument "invalid url: host not defined"
     | Some host, port -> (host, port)
   in
-  client_request ?port Method.Get host (Uri.path_and_query u)
+  (host, port, Uri.path_and_query u)
+
+let get url =
+  let host, port, uri = parse_url url in
+  client_request ?port Method.Get host uri
 
 class virtual ['a] server_request =
   object

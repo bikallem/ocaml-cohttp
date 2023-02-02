@@ -1,7 +1,5 @@
 (** HTTP Request *)
 
-type url = string
-
 (** [request] is a common request type. *)
 class virtual ['a] t :
   object
@@ -44,6 +42,8 @@ val client_host_port : _ #client_request -> host_port
 val write : 'a #client_request -> 'a -> Eio.Buf_write.t -> unit
 
 (** {2 Prepared Requests} *)
+
+type url = string
 
 val get : url -> Body2.none client_request
 val head : url -> Body2.none client_request

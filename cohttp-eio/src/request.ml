@@ -10,6 +10,7 @@ class virtual ['a] t =
     method virtual headers : Http.Header.t
     method virtual meth : 'a Method.t
     method virtual resource : string
+    method virtual body : 'a
   end
 
 class virtual ['a] client_request =
@@ -18,7 +19,6 @@ class virtual ['a] client_request =
     constraint 'a = #Body2.writer
     method virtual host : string
     method virtual port : int option
-    method virtual body : 'a
   end
 
 let client_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
@@ -122,7 +122,7 @@ class virtual ['a] server_request =
   end
 
 let server_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
-    ?host (meth : ('a #Body2.reader as 'a) Method.t) resource =
+    ?host (meth : ('a #Body2.reader as 'a) Method.t) resource body =
   object
     inherit ['a #Body2.reader as 'a] server_request
     val headers = headers
@@ -132,6 +132,7 @@ let server_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
     method resource = resource
     method host = host
     method port = port
+    method body = body
   end
 
 let server_host_port (t : _ #server_request) =

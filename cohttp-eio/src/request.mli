@@ -10,6 +10,7 @@ class virtual ['a] t :
     method virtual headers : Http.Header.t
     method virtual meth : 'a Method.t
     method virtual resource : resource
+    method virtual body : 'a
   end
 
 (** {1 Client Request}
@@ -21,7 +22,6 @@ class virtual ['a] client_request :
     constraint 'a = #Body2.writer
     method virtual host : string
     method virtual port : int option
-    method virtual body : 'a
   end
 
 val client_request :
@@ -70,6 +70,7 @@ val server_request :
   ?host:string ->
   ('a Body2.reader as 'a) Method.t ->
   resource ->
+  'a ->
   'a server_request
 
 val server_host_port : _ #server_request -> host_port option

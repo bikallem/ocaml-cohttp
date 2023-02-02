@@ -57,10 +57,12 @@ let response buf_read =
   Http.Response.make ~version ~status ~headers ()
 
 let do_request_response (t : #t) conn req body =
-  let initial_size = 0x1000 in
-  Buf_write.with_flow ~initial_size conn (fun writer ->
+  Buf_write.with_flow ~initial_size:t#buf_write_initial_size conn (fun writer ->
       Request.write ~pipeline_requests:t#pipeline_requests req body writer;
-      let reader = Eio.Buf_read.of_flow ~initial_size ~max_size:max_int conn in
+      let reader =
+        Eio.Buf_read.of_flow ~initial_size:t#buf_read_initial_size
+          ~max_size:max_int conn
+      in
       let response = response reader in
       (response, reader))
 

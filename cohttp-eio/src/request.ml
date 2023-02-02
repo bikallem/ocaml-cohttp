@@ -107,6 +107,11 @@ let head url =
   let host, port, uri = parse_url url in
   client_request ?port Method.Head host uri Body2.none
 
+let post ~content_type body url =
+  let host, port, uri = parse_url url in
+  let headers = Http.Header.init_with "Content-Type" content_type in
+  client_request ~headers ?port Method.Post host uri body
+
 class virtual ['a] server_request =
   object
     inherit ['a #Body2.reader] t

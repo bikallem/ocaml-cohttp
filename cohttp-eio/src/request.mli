@@ -49,6 +49,9 @@ val write : 'a #client_request -> 'a -> Eio.Buf_write.t -> unit
 val get : url -> Body2.none client_request
 val head : url -> Body2.none client_request
 
+val post :
+  content_type:string -> (#Body2.writer as 'a) -> url -> 'a client_request
+
 (** {1 Server Request}*)
 
 class virtual ['a] server_request :

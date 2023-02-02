@@ -101,6 +101,10 @@ let get url =
   let host, port, uri = parse_url url in
   client_request ?port Method.Get host uri
 
+let head url =
+  let host, port, uri = parse_url url in
+  client_request ?port Method.Head host uri
+
 class virtual ['a] server_request =
   object
     inherit ['a #Body2.reader] t

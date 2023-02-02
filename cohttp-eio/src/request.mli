@@ -45,6 +45,7 @@ val write : 'a #client_request -> 'a -> Eio.Buf_write.t -> unit
 (** {2 Prepared requests} *)
 
 val get : url -> Body2.none client_request
+val head : url -> Body2.none client_request
 
 (** {1 Server Request}*)
 

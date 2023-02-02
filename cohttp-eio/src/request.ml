@@ -22,7 +22,7 @@ class virtual ['a] client_request =
   end
 
 let client_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
-    (meth : (#Body2.writer as 'a) Method.t) host resource body =
+    (meth : (#Body2.writer as 'a) Method.t) ~host resource body =
   object
     inherit [#Body2.writer as 'a] client_request
     val headers = headers
@@ -101,16 +101,16 @@ let parse_url url =
 
 let get url =
   let host, port, uri = parse_url url in
-  client_request ?port Method.Get host uri Body2.none
+  client_request ?port Method.Get ~host uri Body2.none
 
 let head url =
   let host, port, uri = parse_url url in
-  client_request ?port Method.Head host uri Body2.none
+  client_request ?port Method.Head ~host uri Body2.none
 
 let post ~content_type body url =
   let host, port, uri = parse_url url in
   let headers = Http.Header.init_with "Content-Type" content_type in
-  client_request ~headers ?port Method.Post host uri body
+  client_request ~headers ?port Method.Post ~host uri body
 
 class virtual ['a] server_request =
   object

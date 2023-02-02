@@ -29,7 +29,7 @@ val client_request :
   ?headers:Http.Header.t ->
   ?port:int ->
   'a Method.t ->
-  string ->
+  host:string ->
   resource ->
   'a ->
   'a client_request
@@ -44,7 +44,7 @@ type host_port = string * int option
 val client_host_port : _ #client_request -> host_port
 val write : 'a #client_request -> 'a -> Eio.Buf_write.t -> unit
 
-(** {2 Prepared requests} *)
+(** {2 Prepared Requests} *)
 
 val get : url -> Body2.none client_request
 val head : url -> Body2.none client_request

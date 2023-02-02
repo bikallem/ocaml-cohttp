@@ -9,7 +9,7 @@ class virtual ['a] reader =
 class virtual writer =
   object
     method virtual write : Eio.Buf_write.t -> unit
-    method virtual header : (string * string) option
+    method virtual headers : (string * string) list
   end
 
 type void = |
@@ -20,17 +20,19 @@ class none =
     inherit [void] reader
     method read = None
     method write _ = ()
-    method header = None
+    method headers = []
   end
 
 let none = new none
 
-let fixed_writer body =
+class fixed_writer body =
   object
     inherit writer
     method write writer = Buf_write.string writer body
-    method header = Some ("Content-Length", string_of_int @@ String.length body)
+    method headers = [ ("Content-Length", string_of_int @@ String.length body) ]
   end
+
+let fixed_writer body = new fixed_writer body
 
 let fixed_reader headers r =
   object
@@ -231,7 +233,7 @@ module Chunked = struct
   let writer ?(write_trailers = false) write_chunk write_trailer : writer =
     object
       inherit writer
-      method header = Some ("Transfer-Encoding", "chunked")
+      method headers = [ ("Transfer-Encoding", "chunked") ]
 
       method write writer =
         let write_extensions exts =
@@ -285,5 +287,5 @@ module Chunked = struct
 end
 
 let write (w : #writer) = w#write
-let header (w : #writer) = w#header
+let headers (w : #writer) = w#headers
 let read (r : _ #reader) = r#read

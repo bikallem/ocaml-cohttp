@@ -59,9 +59,9 @@ let write (t : _ #client_request) body writer =
   let headers = Http.Header.add headers "TE" "trailers" in
   let headers = Http.Header.add headers "Connection" "TE" in
   let headers =
-    match Body2.header body with
-    | Some (nm, v) -> Http.Header.add headers nm v
-    | None -> headers
+    match Body2.headers body with
+    | [] -> headers
+    | l -> Http.Header.add_list headers l
   in
   let headers = Http.Header.clean_dup headers in
   let headers = Http.Header.Private.move_to_front headers "Host" in

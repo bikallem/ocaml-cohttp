@@ -10,7 +10,7 @@ class virtual ['a] reader :
 class virtual writer :
   object
     method virtual write : Eio.Buf_write.t -> unit
-    method virtual header : (string * string) option
+    method virtual headers : (string * string) list
   end
 
 type void
@@ -72,7 +72,7 @@ end
 val write : #writer -> Eio.Buf_write.t -> unit
 (** [write writer buf_write] runs [writer] to [buf_write]. *)
 
-val header : #writer -> (string * string) option
+val headers : #writer -> (string * string) list
 (** [header writer] is [Some(header_name, header_value)] to denote the HTTP
     header the [writer] will write to request/response. It is [None] otherwise. *)
 

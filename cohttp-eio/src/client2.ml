@@ -44,8 +44,8 @@ let call :
  fun ?pipeline_requests ~conn req body ->
   do_request_response ?pipeline_requests conn req body
 
-let with_response_call net (r : (#Body2.writer as 'a) Request.client_request)
-    (body : 'a) f =
+let with_call net (r : (#Body2.writer as 'a) Request.client_request) (body : 'a)
+    f =
   let host, port = Request.client_host_port r in
   let service = match port with Some x -> string_of_int x | None -> "80" in
   Eio.Net.with_tcp_connect ~host ~service net (fun conn ->

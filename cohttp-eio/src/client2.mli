@@ -7,5 +7,5 @@ val call :
   'a ->
   response
 
-val with_response_call :
+val with_call :
   Eio.Net.t -> 'a Request.client_request -> 'a -> (response -> 'b) -> 'b

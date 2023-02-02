@@ -1,8 +1,6 @@
-(** ['request_body t] is HTTP request method.
+(** ['body t] is HTTP request method.
 
-    ['request_body] denotes the type of request body corresponsing to the
-    method. The [unit] type here denotes that the request is not allowed to have
-    a request body.
+    ['body] denotes the type of request body corresponsing to the method.
 
     Each variant represents a specific HTTP request method.
 
@@ -22,6 +20,7 @@
       https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/CONNECT *)
 
 type none = Body2.none
+(** [none] denotes the absence of a request body. *)
 
 type 'a t =
   | Get : none t
@@ -35,3 +34,4 @@ type 'a t =
   | Connect : none t
 
 val to_string : _ t -> string
+(** [to_string t] is [s] - a string representation of [t]. *)

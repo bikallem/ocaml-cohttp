@@ -12,12 +12,12 @@ class virtual writer =
     method virtual header : (string * string) option
   end
 
-type empty = |
+type void = |
 
 class none =
   object
     inherit writer
-    inherit [empty] reader
+    inherit [void] reader
     method read = None
     method write _ = ()
     method header = None

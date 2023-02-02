@@ -1,8 +1,6 @@
 module Buf_read = Eio.Buf_read
 module Buf_write = Eio.Buf_write
 
-type resource = string
-
 (** [request] is the common request object *)
 class virtual ['a] t =
   object
@@ -22,7 +20,7 @@ class virtual ['a] client_request =
   end
 
 let client_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
-    (meth : (#Body2.writer as 'a) Method.t) ~host resource body =
+    (meth : (#Body2.writer as 'a) Method.t) ~host ~resource body =
   object
     inherit [#Body2.writer as 'a] client_request
     val headers = headers
@@ -100,17 +98,17 @@ let parse_url url =
   (host, port, Uri.path_and_query u)
 
 let get url =
-  let host, port, uri = parse_url url in
-  client_request ?port Method.Get ~host uri Body2.none
+  let host, port, resource = parse_url url in
+  client_request ?port Method.Get ~host ~resource Body2.none
 
 let head url =
-  let host, port, uri = parse_url url in
-  client_request ?port Method.Head ~host uri Body2.none
+  let host, port, resource = parse_url url in
+  client_request ?port Method.Head ~host ~resource Body2.none
 
 let post ~content_type body url =
-  let host, port, uri = parse_url url in
+  let host, port, resource = parse_url url in
   let headers = Http.Header.init_with "Content-Type" content_type in
-  client_request ~headers ?port Method.Post ~host uri body
+  client_request ~headers ?port Method.Post ~host ~resource body
 
 class virtual ['a] server_request =
   object
@@ -122,7 +120,7 @@ class virtual ['a] server_request =
   end
 
 let server_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
-    ?host (meth : ('a #Body2.reader as 'a) Method.t) resource body =
+    ?host (meth : ('a #Body2.reader as 'a) Method.t) ~resource body =
   object
     inherit ['a #Body2.reader as 'a] server_request
     val headers = headers

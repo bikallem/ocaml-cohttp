@@ -1,6 +1,5 @@
 (** HTTP Request *)
 
-type resource = string
 type url = string
 
 (** [request] is a common request type. *)
@@ -9,7 +8,7 @@ class virtual ['a] t :
     method virtual version : Http.Version.t
     method virtual headers : Http.Header.t
     method virtual meth : 'a Method.t
-    method virtual resource : resource
+    method virtual resource : string
     method virtual body : 'a
   end
 
@@ -30,14 +29,14 @@ val client_request :
   ?port:int ->
   'a Method.t ->
   host:string ->
-  resource ->
+  resource:string ->
   'a ->
   'a client_request
 
 val version : _ #t -> Http.Version.t
 val headers : _ #t -> Http.Header.t
 val meth : 'a #t -> 'a Method.t
-val resource : _ #t -> resource
+val resource : _ #t -> string
 
 type host_port = string * int option
 
@@ -69,7 +68,7 @@ val server_request :
   ?port:int ->
   ?host:string ->
   ('a Body2.reader as 'a) Method.t ->
-  resource ->
+  resource:string ->
   'a ->
   'a server_request
 

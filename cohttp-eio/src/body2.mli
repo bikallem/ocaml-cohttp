@@ -36,6 +36,11 @@ val fixed_reader : Http.Header.t -> Eio.Buf_read.t -> string reader
     [Some b] using [buf_read] from a request/response if [Content-Length] exists
     in [header]. Otherwise the read result of this reader is [None]. *)
 
+val form_values_writer : (string * string) list -> writer
+(** [form_values_writer key_values] is a {!class:writer} which writes an
+    associated list [key_values] as body and adds HTTP header [Content-Length]
+    to HTTP request or response. *)
+
 (** [Chunked] implementes HTTP [chunked] Transfer-Encoding encoder and decoders. *)
 module Chunked : sig
   (** [t] is [chunked] body which can either be:

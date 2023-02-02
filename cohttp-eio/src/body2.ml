@@ -44,6 +44,17 @@ let fixed_reader headers r =
         (Http.Header.get headers "Content-Length")
   end
 
+let form_values_writer assoc_list =
+  let content =
+    List.map (fun (k, v) -> (k, [ v ])) assoc_list |> Uri.encoded_of_query
+  in
+  object
+    inherit fixed_writer content as super
+
+    method! headers =
+      ("Content-Type", "application/x-www-form-urlencoded") :: super#headers
+  end
+
 module Chunked = struct
   type t = Chunk of body | Last_chunk of extension list
   and body = { size : int; data : string; extensions : extension list }

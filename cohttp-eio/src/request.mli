@@ -21,6 +21,7 @@ class virtual ['a] client_request :
     constraint 'a = #Body2.writer
     method virtual host : string
     method virtual port : int option
+    method virtual body : 'a
   end
 
 val client_request :
@@ -30,6 +31,7 @@ val client_request :
   'a Method.t ->
   string ->
   resource ->
+  'a ->
   'a client_request
 
 val version : _ #t -> Http.Version.t

@@ -18,10 +18,11 @@ class virtual ['a] client_request =
     constraint 'a = #Body2.writer
     method virtual host : string
     method virtual port : int option
+    method virtual body : 'a
   end
 
 let client_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
-    (meth : (#Body2.writer as 'a) Method.t) host resource =
+    (meth : (#Body2.writer as 'a) Method.t) host resource body =
   object
     inherit [#Body2.writer as 'a] client_request
     val headers = headers
@@ -31,6 +32,7 @@ let client_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
     method resource = resource
     method host = host
     method port = port
+    method body = body
   end
 
 let version (t : _ #t) = t#version
@@ -99,11 +101,11 @@ let parse_url url =
 
 let get url =
   let host, port, uri = parse_url url in
-  client_request ?port Method.Get host uri
+  client_request ?port Method.Get host uri Body2.none
 
 let head url =
   let host, port, uri = parse_url url in
-  client_request ?port Method.Head host uri
+  client_request ?port Method.Head host uri Body2.none
 
 class virtual ['a] server_request =
   object

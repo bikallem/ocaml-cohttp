@@ -46,7 +46,6 @@ let reason_phrase =
 
 type response = Http.Response.t * Buf_read.t
 type 'a with_response = response -> 'a
-type url = string
 
 (* https://datatracker.ietf.org/doc/html/rfc7230#section-3.1.2 *)
 let response buf_read =
@@ -77,3 +76,7 @@ let with_call t r body f =
   let service = match port with Some x -> string_of_int x | None -> "80" in
   Eio.Net.with_tcp_connect ~host ~service t.net (fun conn ->
       f @@ do_request_response t conn r body)
+
+let get t url f =
+  let req = Request.get url in
+  with_call t req Body2.none f

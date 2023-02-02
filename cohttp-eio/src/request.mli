@@ -1,6 +1,7 @@
 (** HTTP Request *)
 
 type resource = string
+type url = string
 
 (** [request] is a common request type. *)
 class virtual ['a] t :
@@ -11,7 +12,9 @@ class virtual ['a] t :
     method virtual resource : resource
   end
 
-(** [client_request] is HTTP client request. *)
+(** {1 Client Request}
+
+    HTTP client request. *)
 class virtual ['a] client_request :
   object
     inherit ['a] t
@@ -38,6 +41,10 @@ type host_port = string * int option
 
 val client_host_port : _ #client_request -> host_port
 val write : 'a #client_request -> 'a -> Eio.Buf_write.t -> unit
+
+(** {2 Prepared requests} *)
+
+val get : url -> Body2.none client_request
 
 (** {1 Server Request}*)
 

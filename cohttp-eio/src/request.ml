@@ -77,6 +77,26 @@ let write (t : _ #client_request) body writer =
   Buf_write.string writer "\r\n";
   Body2.write body writer
 
+type url = string
+
+let get url =
+  if String.starts_with ~prefix:"https" url then
+    raise @@ Invalid_argument "url: https protocol not supported";
+  let url =
+    if
+      (not (String.starts_with ~prefix:"http" url))
+      && not (String.starts_with ~prefix:"//" url)
+    then "//" ^ url
+    else url
+  in
+  let u = Uri.of_string url in
+  let host, port =
+    match (Uri.host u, Uri.port u) with
+    | None, _ -> raise @@ Invalid_argument "invalid url: host not defined"
+    | Some host, port -> (host, port)
+  in
+  client_request ?port Method.Get host (Uri.path_and_query u)
+
 class virtual ['a] server_request =
   object
     inherit ['a #Body2.reader] t

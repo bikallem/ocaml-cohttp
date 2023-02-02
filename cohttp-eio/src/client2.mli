@@ -32,6 +32,11 @@ val call :
   t -> conn:#Eio.Flow.two_way -> 'a Request.client_request -> 'a -> response
 
 type 'a with_response = response -> 'a
-type url = string
 
 val with_call : t -> 'a Request.client_request -> 'a -> 'b with_response -> 'b
+
+val get : t -> Request.url -> 'a with_response -> 'a
+(** [get t url f] makes a HTTP GET request call to [url] and applies
+    [f response].
+
+    @raise Invalid_argument if [url] is invalid. *)

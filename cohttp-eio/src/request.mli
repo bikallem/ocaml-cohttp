@@ -31,7 +31,7 @@ val client_request :
 
 val version : _ #t -> Http.Version.t
 val headers : _ #t -> Http.Header.t
-val meth : 'a #client_request -> 'a Method.t
+val meth : 'a #t -> 'a Method.t
 val resource : _ #t -> resource
 
 type host_port = string * int option

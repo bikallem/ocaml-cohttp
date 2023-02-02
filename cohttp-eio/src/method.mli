@@ -35,3 +35,9 @@ type 'a t =
 
 val to_string : _ t -> string
 (** [to_string t] is [s] - a string representation of [t]. *)
+
+val of_string : string -> 'a t
+(** [of_string s] is [t] - a typed representation of [s]. The represenation is
+    case in-sensitive.
+
+    @raise Invalid_argument if [s] is not one of the supported HTTP methods. *)

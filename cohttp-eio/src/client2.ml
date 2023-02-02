@@ -50,6 +50,7 @@ let response buf_read =
   Http.Response.make ~version ~status ~headers ()
 
 let do_request_response t conn req body =
+  Eio.Time.Timeout.run_exn t.timeout @@ fun () ->
   Buf_write.with_flow ~initial_size:t.buf_write_initial_size conn (fun writer ->
       Request.write ~pipeline_requests:t.pipeline_requests req body writer;
       let reader =

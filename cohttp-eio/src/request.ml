@@ -5,8 +5,7 @@ type resource = string
 
 (** [request] is the common request object *)
 class virtual ['a] t =
-  object (_ : 'b)
-    constraint 'a = #Body2.writer
+  object
     method virtual version : Http.Version.t
     method virtual headers : Http.Header.t
     method virtual meth : 'a Method.t
@@ -16,6 +15,7 @@ class virtual ['a] t =
 class virtual ['a] client_request =
   object
     inherit ['a] t
+    constraint 'a = #Body2.writer
     method virtual host : string
     method virtual port : int option
   end
@@ -77,3 +77,28 @@ let write ?(pipeline_requests = false) (t : _ #client_request) body writer =
   Buf_write.string writer "\r\n";
   Body2.write body writer;
   if not pipeline_requests then Buf_write.flush writer
+
+class virtual ['a] server_request =
+  object
+    inherit ['a #Body2.reader] t
+    constraint 'a = 'a #Body2.reader
+    method virtual meth : ('a Body2.reader as 'b) Method.t
+    method virtual host : string option
+    method virtual port : int option
+  end
+
+let server_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
+    ?host (meth : ('a #Body2.reader as 'a) Method.t) resource =
+  object
+    inherit ['a #Body2.reader as 'a] server_request
+    val headers = headers
+    method version = version
+    method headers = headers
+    method meth = meth
+    method resource = resource
+    method host = host
+    method port = port
+  end
+
+let server_host_port (t : _ #server_request) =
+  Option.map (fun host -> (host, t#port)) t#host

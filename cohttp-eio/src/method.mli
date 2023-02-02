@@ -29,9 +29,9 @@ type 'a t =
   | Delete : none t
   | Options : none t
   | Trace : none t
-  | Post : #Body2.writer t
-  | Put : #Body2.writer t
-  | Patch : #Body2.writer t
+  | Post : 'a t
+  | Put : 'a t
+  | Patch : 'a t
   | Connect : none t
 
 val to_string : _ t -> string

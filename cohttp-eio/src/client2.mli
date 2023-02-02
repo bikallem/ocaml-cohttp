@@ -7,7 +7,7 @@ val make :
   ?buf_read_initial_size:int ->
   ?buf_write_initial_size:int ->
   ?pipeline_requests:bool ->
-  unit ->
+  Eio.Net.t ->
   t
 
 val buf_write_initial_size : t -> int
@@ -31,5 +31,7 @@ type response = Http.Response.t * Eio.Buf_read.t
 val call :
   t -> conn:#Eio.Flow.two_way -> 'a Request.client_request -> 'a -> response
 
-val with_call :
-  t -> Eio.Net.t -> 'a Request.client_request -> 'a -> (response -> 'b) -> 'b
+type 'a with_response = response -> 'a
+type url = string
+
+val with_call : t -> 'a Request.client_request -> 'a -> 'b with_response -> 'b

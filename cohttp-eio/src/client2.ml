@@ -11,11 +11,18 @@ type t = {
   buf_read_initial_size : int;
   buf_write_initial_size : int;
   pipeline_requests : bool;
+  net : Eio.Net.t;
 }
 
 let make ?(timeout = Eio.Time.Timeout.none) ?(buf_read_initial_size = 0x1000)
-    ?(buf_write_initial_size = 0x1000) ?(pipeline_requests = true) () =
-  { timeout; buf_read_initial_size; buf_write_initial_size; pipeline_requests }
+    ?(buf_write_initial_size = 0x1000) ?(pipeline_requests = true) net =
+  {
+    timeout;
+    buf_read_initial_size;
+    buf_write_initial_size;
+    pipeline_requests;
+    net;
+  }
 
 let buf_write_initial_size t = t.buf_write_initial_size
 let buf_read_initial_size t = t.buf_read_initial_size
@@ -37,10 +44,11 @@ let reason_phrase =
     | '\x21' .. '\x7E' | '\t' | ' ' -> true
     | _ -> false)
 
-(* https://datatracker.ietf.org/doc/html/rfc7230#section-3.1.2 *)
-
 type response = Http.Response.t * Buf_read.t
+type 'a with_response = response -> 'a
+type url = string
 
+(* https://datatracker.ietf.org/doc/html/rfc7230#section-3.1.2 *)
 let response buf_read =
   let open Buf_read.Syntax in
   let version = Rwer.(version <* space) buf_read in
@@ -61,17 +69,11 @@ let do_request_response t conn req body =
       let response = response reader in
       (response, reader))
 
-let call :
-    t ->
-    conn:#Eio.Flow.two_way ->
-    (#Body2.writer as 'a) Request.client_request ->
-    'a ->
-    response =
- fun t ~conn req body -> do_request_response t conn req body
+let call t ~conn req body = do_request_response t conn req body
 
-let with_call t net (r : (#Body2.writer as 'a) Request.client_request)
-    (body : 'a) f =
+(* TODO bikal cache/reuse connections *)
+let with_call t r body f =
   let host, port = Request.client_host_port r in
   let service = match port with Some x -> string_of_int x | None -> "80" in
-  Eio.Net.with_tcp_connect ~host ~service net (fun conn ->
+  Eio.Net.with_tcp_connect ~host ~service t.net (fun conn ->
       f @@ do_request_response t conn r body)

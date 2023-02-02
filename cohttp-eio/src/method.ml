@@ -11,4 +11,14 @@ type 'a t =
   | Patch : 'a t
   | Connect : none t
 
-let to_string (type a) (_m : a t) = failwith "not implemented"
+let to_string (type a) (m : a t) =
+  match m with
+  | Get -> "GET"
+  | Head -> "HEAD"
+  | Delete -> "DELETE"
+  | Options -> "OPTIONS"
+  | Trace -> "TRACE"
+  | Post -> "POST"
+  | Put -> "PUT"
+  | Patch -> "PATCH"
+  | Connect -> "CONNECT"

@@ -40,3 +40,5 @@ val get : t -> Request.url -> 'a with_response -> 'a
     [f response].
 
     @raise Invalid_argument if [url] is invalid. *)
+
+val head : t -> Request.url -> 'a with_response -> 'a

@@ -80,3 +80,7 @@ let with_call t r body f =
 let get t url f =
   let req = Request.get url in
   with_call t req Body2.none f
+
+let head t url f =
+  let req = Request.head url in
+  with_call t req Body2.none f

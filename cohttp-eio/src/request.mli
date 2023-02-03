@@ -10,6 +10,12 @@ class virtual ['a] t :
     method virtual body : 'a
   end
 
+val version : _ #t -> Http.Version.t
+val headers : _ #t -> Http.Header.t
+val meth : 'a #t -> 'a Method.t
+val resource : _ #t -> string
+val body : 'a #t -> 'a
+
 (** {1 Client Request}
 
     HTTP client request. *)
@@ -21,6 +27,8 @@ class virtual ['a] client_request :
     method virtual port : int option
   end
 
+type host_port = string * int option
+
 val client_request :
   ?version:Http.Version.t ->
   ?headers:Http.Header.t ->
@@ -30,13 +38,6 @@ val client_request :
   resource:string ->
   'a ->
   'a client_request
-
-val version : _ #t -> Http.Version.t
-val headers : _ #t -> Http.Header.t
-val meth : 'a #t -> 'a Method.t
-val resource : _ #t -> string
-
-type host_port = string * int option
 
 val client_host_port : _ #client_request -> host_port
 val write : 'a #client_request -> 'a -> Eio.Buf_write.t -> unit

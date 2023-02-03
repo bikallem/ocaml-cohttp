@@ -11,6 +11,12 @@ class virtual ['a] t =
     method virtual body : 'a
   end
 
+let version (t : _ #t) = t#version
+let headers (t : _ #t) = t#headers
+let meth (t : _ #t) = t#meth
+let resource (t : _ #t) = t#resource
+let body (t : _ #t) = t#body
+
 class virtual ['a] client_request =
   object
     inherit ['a] t
@@ -32,11 +38,6 @@ let client_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
     method port = port
     method body = body
   end
-
-let version (t : _ #t) = t#version
-let headers (t : _ #t) = t#headers
-let meth (t : _ #t) = t#meth
-let resource (t : _ #t) = t#resource
 
 type host_port = string * int option
 

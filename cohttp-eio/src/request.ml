@@ -45,20 +45,20 @@ let client_host_port (t : _ #client_request) = (t#host, t#port)
 
 let write (t : _ #client_request) body writer =
   let headers =
-    if not (Http.Header.mem t#headers "Host") then
+    Http.Header.add_unless_exists t#headers "User-Agent" "cohttp-eio"
+  in
+  let headers = Http.Header.add headers "TE" "trailers" in
+  let headers = Http.Header.add headers "Connection" "TE" in
+  let headers =
+    if not (Http.Header.mem headers "Host") then
       let host =
         match t#port with
         | Some port -> t#host ^ ":" ^ string_of_int port
         | None -> t#host
       in
-      Http.Header.add t#headers "Host" host
-    else t#headers
+      Http.Header.add headers "Host" host
+    else headers
   in
-  let headers =
-    Http.Header.add_unless_exists headers "User-Agent" "cohttp-eio"
-  in
-  let headers = Http.Header.add headers "TE" "trailers" in
-  let headers = Http.Header.add headers "Connection" "TE" in
   let headers =
     match Body2.headers body with
     | [] -> headers

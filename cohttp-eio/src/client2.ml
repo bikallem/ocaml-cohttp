@@ -69,7 +69,14 @@ let do_request_response t conn req =
       let response = response reader in
       (response, reader))
 
-let call t ~conn req = do_request_response t conn req
+let call ~conn req =
+  let initial_size = 0x1000 in
+  Buf_write.with_flow ~initial_size conn (fun writer ->
+      let body = Request.body req in
+      Request.write req body writer;
+      let reader = Eio.Buf_read.of_flow ~initial_size ~max_size:max_int conn in
+      let response = response reader in
+      (response, reader))
 
 (* TODO bikal cache/reuse connections *)
 let with_call t r f =

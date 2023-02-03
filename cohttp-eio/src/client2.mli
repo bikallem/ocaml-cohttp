@@ -28,7 +28,7 @@ val pipeline_requests : t -> bool
 
 type response = Http.Response.t * Eio.Buf_read.t
 
-val call : t -> conn:#Eio.Flow.two_way -> 'a Request.client_request -> response
+val call : conn:#Eio.Flow.two_way -> 'a Request.client_request -> response
 
 type 'a with_response = response -> 'a
 

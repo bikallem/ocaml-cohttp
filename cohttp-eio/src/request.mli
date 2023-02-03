@@ -10,6 +10,8 @@ class virtual ['a] t :
     method virtual body : 'a
   end
 
+type host_port = string * int option
+
 val version : _ #t -> Http.Version.t
 val headers : _ #t -> Http.Header.t
 val meth : 'a #t -> 'a Method.t
@@ -26,8 +28,6 @@ class virtual ['a] client_request :
     method virtual host : string
     method virtual port : int option
   end
-
-type host_port = string * int option
 
 val client_request :
   ?version:Http.Version.t ->

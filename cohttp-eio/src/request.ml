@@ -28,7 +28,7 @@ class virtual ['a] client_request =
   end
 
 let client_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
-    (meth : (#Body2.writer as 'a) Method.t) ~host ~resource body =
+    ~host ~resource (meth : (#Body2.writer as 'a) Method.t) body =
   object
     inherit [#Body2.writer as 'a] client_request
     val headers = headers
@@ -121,10 +121,12 @@ class virtual ['a] server_request =
     method virtual meth : ('a Body2.reader as 'b) Method.t
     method virtual host : string option
     method virtual port : int option
+    method virtual client_addr : Eio.Net.Sockaddr.stream
   end
 
 let server_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
-    ?host (meth : ('a #Body2.reader as 'a) Method.t) ~resource body =
+    ?host ~resource client_addr (meth : ('a #Body2.reader as 'a) Method.t) body
+    =
   object
     inherit ['a #Body2.reader as 'a] server_request
     val headers = headers
@@ -135,6 +137,7 @@ let server_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
     method host = host
     method port = port
     method body = body
+    method client_addr = client_addr
   end
 
 let server_host_port (t : _ #server_request) =

@@ -33,9 +33,9 @@ val client_request :
   ?version:Http.Version.t ->
   ?headers:Http.Header.t ->
   ?port:int ->
-  'a Method.t ->
   host:string ->
   resource:string ->
+  'a Method.t ->
   'a ->
   'a client_request
 
@@ -62,6 +62,7 @@ class virtual ['a] server_request :
     method virtual meth : ('a Body2.reader as 'b) Method.t
     method virtual host : string option
     method virtual port : int option
+    method virtual client_addr : Eio.Net.Sockaddr.stream
   end
 
 val server_request :
@@ -69,8 +70,9 @@ val server_request :
   ?headers:Http.Header.t ->
   ?port:int ->
   ?host:string ->
-  ('a Body2.reader as 'a) Method.t ->
   resource:string ->
+  Eio.Net.Sockaddr.stream ->
+  ('a Body2.reader as 'a) Method.t ->
   'a ->
   'a server_request
 

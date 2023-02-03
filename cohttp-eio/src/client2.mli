@@ -7,6 +7,7 @@ val make :
   ?buf_read_initial_size:int ->
   ?buf_write_initial_size:int ->
   ?batch_requests:bool ->
+  Eio.Switch.t ->
   Eio.Net.t ->
   t
 
@@ -30,18 +31,12 @@ type response = Http.Response.t * Eio.Buf_read.t
 
 val call : conn:#Eio.Flow.two_way -> 'a Request.client_request -> response
 
-type 'a with_response = response -> 'a
-
-val with_call : t -> 'a Request.client_request -> 'b with_response -> 'b
-
-val get : t -> Request.url -> 'a with_response -> 'a
+val get : t -> Request.url -> response
 (** [get t url f] makes a HTTP GET request call to [url] and applies
     [f response].
 
     @raise Invalid_argument if [url] is invalid. *)
 
-val head : t -> Request.url -> 'a with_response -> 'a
-val post : t -> #Body2.writer -> Request.url -> 'a with_response -> 'a
-
-val post_form_values :
-  t -> (string * string) list -> Request.url -> 'a with_response -> 'a
+val head : t -> Request.url -> response
+val post : t -> #Body2.writer -> Request.url -> response
+val post_form_values : t -> (string * string) list -> Request.url -> response

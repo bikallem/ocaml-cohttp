@@ -2,10 +2,11 @@
 
     It implements connection caching based on [host] and [port]. Therefore TCP
     connections for the same [host,port] are reused if one is available in the
-    cache. Alternately, the caching mechanism can be avoided by directly using
-    {!val:call}.
+    cache.
 
-    See {{!convenience} convenience} for common client use cases. *)
+    Alternately, the caching mechanism can be avoided by using {!val:call}.
+
+    See {{!common} common} for common client use cases. *)
 
 type t
 (** [t] is a HTTP client. It encapsulates client buffered reader/writer initial
@@ -15,6 +16,8 @@ type t
 
     See {!val:make}. *)
 
+type response = Http.Response.t * Eio.Buf_read.t
+
 val make :
   ?timeout:Eio.Time.Timeout.t ->
   ?buf_read_initial_size:int ->
@@ -23,6 +26,21 @@ val make :
   Eio.Switch.t ->
   Eio.Net.t ->
   t
+(** [make sw net] is [t]. [net] is used to create/establish connections to
+    server. [sw] is the client resource manager. All connections are automically
+    closed when [sw] goes out of scope or is cancelled.
+
+    @param timeout
+      total time limit for establishing connection, make a request and getting a
+      response back from the server. However, this value doesn't include reading
+      response body. Default is [Eio.Time.Timeout.none].
+    @param buf_read_initial_size
+      initial client buffered reader size. Default is [0x1000].
+    @param buf_write_initial_size
+      initial client buffered writer size. Default is [0x1000].
+    @param batch_requests
+      if [false] [Eio.Buf_write.flush] is called after writing every request to
+      connection. Default is [true]. *)
 
 val buf_write_initial_size : t -> int
 (** [buf_write_initial_size] is the buffered writer iniital size. *)
@@ -40,20 +58,9 @@ val batch_requests : t -> bool
 (** [batch_requests t] returns [true] it [t] is configured to batch requests.
     [false] otherwise. *)
 
-(** {1 Call} *)
+(** {1:common Common}
 
-type response = Http.Response.t * Eio.Buf_read.t
-
-val call : conn:#Eio.Flow.two_way -> 'a Request.client_request -> response
-(** [call conn req] makes a HTTP client call using connection [conn] and request
-    [req]. It returns a {!type:response} upon a successfull call.
-
-    {i Note} The function doesn't use connection cache or implement request
-    redirection or cookie functionality.
-
-    @raise Eio.Exn.Io in cases of connection errors. *)
-
-(** {1:convenience Convenience calls} *)
+    Common client use-cases optimized for convenience. *)
 
 val get : t -> string -> response
 (** [get t url] is [response] after making a HTTP GET request call to [url].
@@ -84,4 +91,21 @@ val post_form_values : t -> (string * string) list -> Request.url -> response
         url
     ]}
     @raise Invalid_argument if [url] is invalid.
+    @raise Eio.Exn.Io in cases of connection errors. *)
+
+(** {1 Call} *)
+
+val do_call : t -> 'a Request.client_request -> response
+(** [do_call t req] makes a HTTP request using [req] and returns
+    {!type:response}.
+
+    @raise Eio.Exn.Io in cases of connection errors. *)
+
+val call : conn:#Eio.Flow.two_way -> 'a Request.client_request -> response
+(** [call conn req] makes a HTTP client call using connection [conn] and request
+    [req]. It returns a {!type:response} upon a successfull call.
+
+    {i Note} The function doesn't use connection cache or implement request
+    redirection or cookie functionality.
+
     @raise Eio.Exn.Io in cases of connection errors. *)

@@ -67,15 +67,6 @@ let response buf_read =
   let headers = Rwer.http_headers buf_read in
   Http.Response.make ~version ~status ~headers ()
 
-let call ~conn req =
-  let initial_size = 0x1000 in
-  Buf_write.with_flow ~initial_size conn (fun writer ->
-      let body = Request.body req in
-      Request.write req body writer;
-      let reader = Eio.Buf_read.of_flow ~initial_size ~max_size:max_int conn in
-      let response = response reader in
-      (response, reader))
-
 (* Specialized version of Eio.Net.with_tcp_connect *)
 let tcp_connect sw ~host ~service net =
   match
@@ -109,7 +100,7 @@ let conn t req =
       modify (fun cache -> Cache.add (host, service) conn cache) t.cache;
       conn
 
-let do_request_response t req =
+let do_call t req =
   Eio.Time.Timeout.run_exn t.timeout @@ fun () ->
   let conn = conn t req in
   Buf_write.with_flow ~initial_size:t.buf_write_initial_size conn (fun writer ->
@@ -125,16 +116,25 @@ let do_request_response t req =
 
 let get t url =
   let req = Request.get url in
-  do_request_response t req
+  do_call t req
 
 let head t url =
   let req = Request.head url in
-  do_request_response t req
+  do_call t req
 
 let post t body url =
   let req = Request.post body url in
-  do_request_response t req
+  do_call t req
 
 let post_form_values t assoc_values url =
   let req = Request.post_form_values assoc_values url in
-  do_request_response t req
+  do_call t req
+
+let call ~conn req =
+  let initial_size = 0x1000 in
+  Buf_write.with_flow ~initial_size conn (fun writer ->
+      let body = Request.body req in
+      Request.write req body writer;
+      let reader = Eio.Buf_read.of_flow ~initial_size ~max_size:max_int conn in
+      let response = response reader in
+      (response, reader))

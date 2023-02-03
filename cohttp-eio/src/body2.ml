@@ -3,7 +3,7 @@ module Buf_write = Eio.Buf_write
 
 class virtual ['a] reader =
   object
-    method virtual read : 'a option
+    method virtual read : Eio.Buf_read.t -> 'a option
   end
 
 class virtual writer =
@@ -18,7 +18,7 @@ class none =
   object
     inherit writer
     inherit [void] reader
-    method read = None
+    method read _ = None
     method write _ = ()
     method headers = []
   end
@@ -34,15 +34,17 @@ class fixed_writer body =
 
 let fixed_writer body = new fixed_writer body
 
-let fixed_reader headers r =
+class fixed_reader headers =
   object
     inherit [string] reader
 
-    method read =
+    method read r =
       Option.map
         (fun len -> Buf_read.take (int_of_string len) r)
         (Http.Header.get headers "Content-Length")
   end
+
+let fixed_reader headers = new fixed_reader headers
 
 let form_values_writer assoc_list =
   let content =
@@ -273,11 +275,11 @@ module Chunked = struct
         Buf_write.string writer "\r\n"
     end
 
-  let reader buf_read headers f : Http.Header.t reader =
+  let reader headers f : Http.Header.t reader =
     object
       inherit [Http.Header.t] reader
 
-      method read =
+      method read buf_read =
         match Http.Header.get_transfer_encoding headers with
         | Http.Transfer.Chunked ->
             let total_read = ref 0 in
@@ -299,4 +301,4 @@ end
 
 let write (w : #writer) = w#write
 let headers (w : #writer) = w#headers
-let read (r : _ #reader) = r#read
+let read (r : _ #reader) buf_read = r#read buf_read

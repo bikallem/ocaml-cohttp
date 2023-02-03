@@ -42,8 +42,9 @@ let client_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
   end
 
 let client_host_port (t : _ #client_request) = (t#host, t#port)
+let write_headers w l = List.iter (fun (k, v) -> Rwer.write_header w k v) l
 
-let write (t : _ #client_request) body writer =
+let write (t : _ #client_request) (body : #Body2.writer) writer =
   let headers =
     Http.Header.add_unless_exists t#headers "User-Agent" "cohttp-eio"
   in
@@ -59,11 +60,6 @@ let write (t : _ #client_request) body writer =
       Http.Header.add headers "Host" host
     else headers
   in
-  let headers =
-    match Body2.headers body with
-    | [] -> headers
-    | l -> Http.Header.add_list headers l
-  in
   let headers = Http.Header.clean_dup headers in
   let headers = Http.Header.Private.move_to_front headers "Host" in
   let meth = Method.to_string t#meth in
@@ -75,8 +71,9 @@ let write (t : _ #client_request) body writer =
   Buf_write.string writer version;
   Buf_write.string writer "\r\n";
   Rwer.write_headers writer headers;
+  body#write_headers (write_headers writer);
   Buf_write.string writer "\r\n";
-  Body2.write body writer
+  body#write_body writer
 
 type url = string
 

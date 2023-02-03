@@ -6,11 +6,14 @@ class virtual ['a] reader :
     method virtual read : Eio.Buf_read.t -> 'a option
   end
 
+type header = string * string
+(** [header] is a HTTP header of [(name, value)] *)
+
 (** [writer] reads HTTP request or response body. *)
 class virtual writer :
   object
-    method virtual write : Eio.Buf_write.t -> unit
-    method virtual headers : (string * string) list
+    method virtual write_body : Eio.Buf_write.t -> unit
+    method virtual write_headers : (header list -> unit) -> unit
   end
 
 (** {1 none} *)
@@ -37,8 +40,8 @@ class fixed_writer :
   string
   -> object
        inherit writer
-       method write : Eio.Buf_write.t -> unit
-       method headers : (string * string) list
+       method write_body : Eio.Buf_write.t -> unit
+       method write_headers : (header list -> unit) -> unit
      end
 
 val fixed_writer : string -> writer
@@ -96,13 +99,6 @@ module Chunked : sig
   val pp : Format.formatter -> t -> unit
   val pp_extension : Format.formatter -> extension list -> unit
 end
-
-val write : #writer -> Eio.Buf_write.t -> unit
-(** [write writer buf_write] runs [writer] to [buf_write]. *)
-
-val headers : #writer -> (string * string) list
-(** [header writer] is [Some(header_name, header_value)] to denote the HTTP
-    header the [writer] will write to request/response. It is [None] otherwise. *)
 
 val read : 'a #reader -> Eio.Buf_read.t -> 'a option
 (** [read reader] is [Some x] if [reader] is successfully able to read from

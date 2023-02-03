@@ -6,10 +6,12 @@ class virtual ['a] reader =
     method virtual read : Eio.Buf_read.t -> 'a option
   end
 
+type header = string * string
+
 class virtual writer =
   object
-    method virtual write : Eio.Buf_write.t -> unit
-    method virtual headers : (string * string) list
+    method virtual write_body : Eio.Buf_write.t -> unit
+    method virtual write_headers : (header list -> unit) -> unit
   end
 
 type void = |
@@ -19,8 +21,8 @@ class none =
     inherit writer
     inherit [void] reader
     method read _ = None
-    method write _ = ()
-    method headers = []
+    method write_body _ = ()
+    method write_headers _ = ()
   end
 
 let none = new none
@@ -28,8 +30,10 @@ let none = new none
 class fixed_writer body =
   object
     inherit writer
-    method write writer = Buf_write.string writer body
-    method headers = [ ("Content-Length", string_of_int @@ String.length body) ]
+    method write_body w = Buf_write.string w body
+
+    method write_headers f =
+      f [ ("Content-Length", string_of_int @@ String.length body) ]
   end
 
 let fixed_writer body = new fixed_writer body
@@ -53,8 +57,9 @@ let form_values_writer assoc_list =
   object
     inherit fixed_writer content as super
 
-    method! headers =
-      ("Content-Type", "application/x-www-form-urlencoded") :: super#headers
+    method! write_headers f =
+      f [ ("Content-Type", "application/x-www-form-urlencoded") ];
+      super#write_headers f
   end
 
 module Chunked = struct
@@ -246,9 +251,9 @@ module Chunked = struct
   let writer ?(write_trailers = false) write_chunk write_trailer : writer =
     object
       inherit writer
-      method headers = [ ("Transfer-Encoding", "chunked") ]
+      method write_headers f = f [ ("Transfer-Encoding", "chunked") ]
 
-      method write writer =
+      method write_body writer =
         let write_extensions exts =
           List.iter
             (fun { name; value } ->
@@ -299,6 +304,4 @@ module Chunked = struct
     end
 end
 
-let write (w : #writer) = w#write
-let headers (w : #writer) = w#headers
 let read (r : _ #reader) buf_read = r#read buf_read

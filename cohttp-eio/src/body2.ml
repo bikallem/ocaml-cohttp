@@ -1,11 +1,6 @@
 module Buf_read = Eio.Buf_read
 module Buf_write = Eio.Buf_write
 
-class virtual ['a] reader =
-  object
-    method virtual read : Eio.Buf_read.t -> 'a option
-  end
-
 type header = string * string
 
 class virtual writer =
@@ -13,19 +8,6 @@ class virtual writer =
     method virtual write_body : Eio.Buf_write.t -> unit
     method virtual write_headers : (header list -> unit) -> unit
   end
-
-type void = |
-
-class none =
-  object
-    inherit writer
-    inherit [void] reader
-    method read _ = None
-    method write_body _ = ()
-    method write_headers _ = ()
-  end
-
-let none = new none
 
 class fixed_writer body =
   object
@@ -37,6 +19,11 @@ class fixed_writer body =
   end
 
 let fixed_writer body = new fixed_writer body
+
+class virtual ['a] reader =
+  object
+    method virtual read : Eio.Buf_read.t -> 'a option
+  end
 
 class fixed_reader headers =
   object
@@ -304,4 +291,16 @@ module Chunked = struct
     end
 end
 
+type void = |
+
+class none =
+  object
+    inherit writer
+    inherit [void] reader
+    method read _ = None
+    method write_body _ = ()
+    method write_headers _ = ()
+  end
+
+let none = new none
 let read (r : _ #reader) buf_read = r#read buf_read

@@ -1,13 +1,9 @@
 (** [Body] is HTTP request or response body. *)
 
-(** [reader] reads HTTP request or response body. *)
-class virtual ['a] reader :
-  object
-    method virtual read : Eio.Buf_read.t -> 'a option
-  end
-
 type header = string * string
 (** [header] is a HTTP header of [(name, value)] *)
+
+(** {1 Writer} *)
 
 (** [writer] reads HTTP request or response body. *)
 class virtual writer :
@@ -15,24 +11,6 @@ class virtual writer :
     method virtual write_body : Eio.Buf_write.t -> unit
     method virtual write_headers : (header list -> unit) -> unit
   end
-
-(** {1 none} *)
-
-type void
-(** represents nothing - a noop. *)
-
-(** [none] is a special type of reader and writer that represents the absence of
-    HTTP request or response body - a {!type:void}. *)
-class virtual none :
-  object
-    inherit writer
-    inherit [void] reader
-  end
-
-val none : none
-(** [none] is an instance of {!class:none}. *)
-
-(** {1 Writers} *)
 
 (** [fixed_writer s] is a {!class:writer} which writes [s] as a body and adds
     HTTP header [Content-Length] to HTTP request or response. *)
@@ -52,7 +30,13 @@ val form_values_writer : (string * string) list -> writer
     associated list [key_values] as body and adds HTTP header [Content-Length]
     to HTTP request or response. *)
 
-(** {1 Readers} *)
+(** {1 Reader} *)
+
+(** [reader] reads HTTP request or response body. *)
+class virtual ['a] reader :
+  object
+    method virtual read : Eio.Buf_read.t -> 'a option
+  end
 
 (** [fixed_reader header] is a {!class:reader} which reads bytes [Some b] from
     request/response if [Content-Length] exists in [header]. Otherwise the read
@@ -103,3 +87,19 @@ end
 val read : 'a #reader -> Eio.Buf_read.t -> 'a option
 (** [read reader] is [Some x] if [reader] is successfully able to read from
     request/response body. It is [None] otherwise. *)
+
+(** {1 none} *)
+
+type void
+(** represents nothing - a noop. *)
+
+(** [none] is a special type of reader and writer that represents the absence of
+    HTTP request or response body - a {!type:void}. *)
+class virtual none :
+  object
+    inherit writer
+    inherit [void] reader
+  end
+
+val none : none
+(** [none] is an instance of {!class:none}. *)

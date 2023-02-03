@@ -10,24 +10,24 @@ type t = {
   timeout : Eio.Time.Timeout.t;
   buf_read_initial_size : int;
   buf_write_initial_size : int;
-  pipeline_requests : bool;
+  batch_requests : bool;
   net : Eio.Net.t;
 }
 
 let make ?(timeout = Eio.Time.Timeout.none) ?(buf_read_initial_size = 0x1000)
-    ?(buf_write_initial_size = 0x1000) ?(pipeline_requests = true) net =
+    ?(buf_write_initial_size = 0x1000) ?(batch_requests = true) net =
   {
     timeout;
     buf_read_initial_size;
     buf_write_initial_size;
-    pipeline_requests;
+    batch_requests;
     net;
   }
 
 let buf_write_initial_size t = t.buf_write_initial_size
 let buf_read_initial_size t = t.buf_read_initial_size
 let timeout t = t.timeout
-let pipeline_requests t = t.pipeline_requests
+let batch_requests t = t.batch_requests
 
 (* response parser *)
 
@@ -61,7 +61,7 @@ let do_request_response t conn req =
   Buf_write.with_flow ~initial_size:t.buf_write_initial_size conn (fun writer ->
       let body = Request.body req in
       Request.write req body writer;
-      if not t.pipeline_requests then Buf_write.flush writer;
+      if not t.batch_requests then Buf_write.flush writer;
       let reader =
         Eio.Buf_read.of_flow ~initial_size:t.buf_read_initial_size
           ~max_size:max_int conn

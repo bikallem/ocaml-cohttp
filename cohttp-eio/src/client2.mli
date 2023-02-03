@@ -6,7 +6,7 @@ val make :
   ?timeout:Eio.Time.Timeout.t ->
   ?buf_read_initial_size:int ->
   ?buf_write_initial_size:int ->
-  ?pipeline_requests:bool ->
+  ?batch_requests:bool ->
   Eio.Net.t ->
   t
 
@@ -22,9 +22,9 @@ val timeout : t -> Eio.Time.Timeout.t
 
     A client request is cancelled if the specified timeout limit is exceeded. *)
 
-val pipeline_requests : t -> bool
-(** [pipeline_requests t] returns [true] it [t] is configured to pipeline
-    requests. [false] otherwise. *)
+val batch_requests : t -> bool
+(** [batch_requests t] returns [true] it [t] is configured to batch requests.
+    [false] otherwise. *)
 
 type response = Http.Response.t * Eio.Buf_read.t
 

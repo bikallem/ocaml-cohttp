@@ -24,12 +24,21 @@ class virtual none :
     inherit [void] reader
   end
 
+(** [fixed_writer s] is a {!class:writer} which writes [s] as a body and adds
+    HTTP header [Content-Length] to HTTP request or response. *)
+class fixed_writer :
+  string
+  -> object
+       inherit writer
+       method write : Eio.Buf_write.t -> unit
+       method headers : (string * string) list
+     end
+
 val none : none
 (** [none] is an instance of {!class:none}. *)
 
 val fixed_writer : string -> writer
-(** [fixed_writer s] is a {!class:writer} which writes [s] as a body and adds
-    HTTP header [Content-Length] to HTTP request or response. *)
+(** [fixed_writer s] is [new fixed_writer s]. *)
 
 val fixed_reader : Http.Header.t -> Eio.Buf_read.t -> string reader
 (** [fixed_reader header buf_read] is a {!class:reader} which reads bytes

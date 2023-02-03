@@ -49,6 +49,9 @@ val get : url -> Body2.none client_request
 val head : url -> Body2.none client_request
 val post : (#Body2.writer as 'a) -> url -> 'a client_request
 
+val post_form_values :
+  (string * string) list -> url -> Body2.writer client_request
+
 (** {1 Server Request} *)
 
 class virtual ['a] server_request :

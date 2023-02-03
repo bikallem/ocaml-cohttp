@@ -109,6 +109,10 @@ let post body url =
   let host, port, resource = parse_url url in
   client_request ?port Method.Post ~host ~resource body
 
+let post_form_values form_values url =
+  let body = Body2.form_values_writer form_values in
+  post body url
+
 class virtual ['a] server_request =
   object
     inherit ['a #Body2.reader] t

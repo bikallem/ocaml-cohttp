@@ -85,3 +85,7 @@ let get t url f =
 let head t url f =
   let req = Request.head url in
   with_call t req f
+
+let post t body url f =
+  let req = Request.post body url in
+  with_call t req f

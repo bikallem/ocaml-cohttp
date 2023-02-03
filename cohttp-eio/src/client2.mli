@@ -41,3 +41,4 @@ val get : t -> Request.url -> 'a with_response -> 'a
     @raise Invalid_argument if [url] is invalid. *)
 
 val head : t -> Request.url -> 'a with_response -> 'a
+val post : t -> #Body2.writer -> Request.url -> 'a with_response -> 'a

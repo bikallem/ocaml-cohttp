@@ -28,12 +28,11 @@ val pipeline_requests : t -> bool
 
 type response = Http.Response.t * Eio.Buf_read.t
 
-val call :
-  t -> conn:#Eio.Flow.two_way -> 'a Request.client_request -> 'a -> response
+val call : t -> conn:#Eio.Flow.two_way -> 'a Request.client_request -> response
 
 type 'a with_response = response -> 'a
 
-val with_call : t -> 'a Request.client_request -> 'a -> 'b with_response -> 'b
+val with_call : t -> 'a Request.client_request -> 'b with_response -> 'b
 
 val get : t -> Request.url -> 'a with_response -> 'a
 (** [get t url f] makes a HTTP GET request call to [url] and applies

@@ -47,9 +47,7 @@ type url = string
 
 val get : url -> Body2.none client_request
 val head : url -> Body2.none client_request
-
-val post :
-  content_type:string -> (#Body2.writer as 'a) -> url -> 'a client_request
+val post : (#Body2.writer as 'a) -> url -> 'a client_request
 
 (** {1 Server Request} *)
 

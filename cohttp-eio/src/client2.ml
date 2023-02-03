@@ -89,3 +89,7 @@ let head t url f =
 let post t body url f =
   let req = Request.post body url in
   with_call t req f
+
+let post_form_values t assoc_values url f =
+  let req = Request.post_form_values assoc_values url in
+  with_call t req f

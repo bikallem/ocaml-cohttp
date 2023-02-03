@@ -42,3 +42,6 @@ val get : t -> Request.url -> 'a with_response -> 'a
 
 val head : t -> Request.url -> 'a with_response -> 'a
 val post : t -> #Body2.writer -> Request.url -> 'a with_response -> 'a
+
+val post_form_values :
+  t -> (string * string) list -> Request.url -> 'a with_response -> 'a

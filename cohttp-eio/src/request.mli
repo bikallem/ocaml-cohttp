@@ -72,3 +72,8 @@ val server_request :
   Eio.Net.Sockaddr.stream ->
   Eio.Buf_read.t ->
   'a server_request
+
+val parse_server_request :
+  Eio.Net.Sockaddr.stream ->
+  Eio.Buf_read.t ->
+  ('a Body2.reader as 'a) server_request

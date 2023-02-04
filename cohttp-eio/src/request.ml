@@ -127,3 +127,63 @@ let server_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ())
     method client_addr = client_addr
     method buf_read = buf_read
   end
+
+open Eio.Buf_read.Syntax
+
+let take_while1 p r =
+  match Buf_read.take_while p r with "" -> raise End_of_file | x -> x
+
+let token =
+  take_while1 (function
+    | '0' .. '9'
+    | 'a' .. 'z'
+    | 'A' .. 'Z'
+    | '!' | '#' | '$' | '%' | '&' | '\'' | '*' | '+' | '-' | '.' | '^' | '_'
+    | '`' | '|' | '~' ->
+        true
+    | _ -> false)
+
+let ows = Buf_read.skip_while (function ' ' | '\t' -> true | _ -> false)
+let crlf = Buf_read.string "\r\n"
+let not_cr = function '\r' -> false | _ -> true
+let space = Buf_read.char '\x20'
+
+let http_meth =
+  let+ meth = token <* space in
+  Method.of_string meth
+
+let http_version =
+  let* v = Buf_read.string "HTTP/1." *> Buf_read.any_char in
+  match v with
+  | '1' -> Buf_read.return `HTTP_1_1
+  | '0' -> Buf_read.return `HTTP_1_0
+  | v -> failwith (Format.sprintf "Invalid HTTP version: %C" v)
+
+let http_resource = take_while1 (fun c -> c != ' ') <* space
+
+let http_header =
+  let open Eio.Buf_read.Syntax in
+  let+ key = token <* Buf_read.char ':' <* ows
+  and+ value = Buf_read.take_while not_cr <* crlf in
+  (key, value)
+
+let http_headers r =
+  let[@tail_mod_cons] rec aux () =
+    match Buf_read.peek_char r with
+    | Some '\r' ->
+        crlf r;
+        []
+    | _ ->
+        let h = http_header r in
+        h :: aux ()
+  in
+  Http.Header.of_list (aux ())
+
+let parse_server_request client_addr (r : Eio.Buf_read.t) :
+    ('a Body2.reader as 'a) server_request =
+  let open Eio.Buf_read.Syntax in
+  let meth = http_meth r in
+  let resource = http_resource r in
+  let version = (http_version <* crlf) r in
+  let headers = http_headers r in
+  server_request ~version ~headers ~resource meth client_addr r

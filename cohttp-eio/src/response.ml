@@ -1,19 +1,32 @@
-type t = {
-  version : Http.Version.t;
-  headers : Http.Header.t;
-  status : Http.Status.t;
-  body : Body2.writer;
-}
+class virtual t =
+  object
+    method virtual version : Http.Version.t
+    method virtual headers : Http.Header.t
+    method virtual status : Http.Status.t
+  end
 
-let make ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?(status = `OK)
-    (body : Body2.writer) : t =
-  { version; headers; status; body }
+let version (t : #t) = t#version
+let headers (t : #t) = t#headers
+let status (t : #t) = t#status
 
-let chunked_response ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) req
-    write_chunk write_trailer =
-  let write_trailers = Request.supports_chunked_trailers req in
-  let writer = Body2.Chunked.writer ~write_trailers write_chunk write_trailer in
-  { headers; version; status = `OK; body = writer }
+class virtual server_response =
+  object
+    inherit t
+    method virtual body : Body2.writer
+  end
+
+let server_response ?(version = `HTTP_1_1) ?(headers = Http.Header.init ())
+    ?(status = `OK) (body : Body2.writer) : server_response =
+  object
+    method version = version
+    method headers = headers
+    method status = status
+    method body = body
+  end
+
+let chunked_response ?ua_supports_trailer write_chunk write_trailer =
+  let w = Body2.Chunked.writer ?ua_supports_trailer write_chunk write_trailer in
+  server_response w
 
 let http_date clock =
   let now = Eio.Time.now clock |> Ptime.of_float_s |> Option.get in
@@ -52,30 +65,56 @@ module Buf_write = Eio.Buf_write
 
 let write_header w ~name ~value = Rwer.write_header w name value
 
-let write t (clock : #Eio.Time.clock) w =
-  let version = Http.Version.to_string t.version in
-  let status = Http.Status.to_string t.status in
+let write (t : #t) (clock : #Eio.Time.clock) w =
+  let version = Http.Version.to_string t#version in
+  let status = Http.Status.to_string t#status in
   Buf_write.string w version;
   Buf_write.char w ' ';
   Buf_write.string w status;
   Buf_write.string w "\r\n";
   (* https://www.rfc-editor.org/rfc/rfc9110#section-6.6.1 *)
-  (match t.status with
+  (match t#status with
   | #Http.Status.informational | #Http.Status.server_error -> ()
   | _ -> Rwer.write_header w "Date" (http_date clock));
-  t.body#write_header (write_header w);
-  Rwer.write_headers w t.headers;
+  t#body#write_header (write_header w);
+  Rwer.write_headers w t#headers;
   Buf_write.string w "\r\n";
-  t.body#write_body w
+  t#body#write_body w
 
 let text content =
-  make
-  @@ Body2.content_writer ~content ~content_type:"text/plain; charset=UTF-8"
+  server_response
+    (Body2.content_writer ~content ~content_type:"text/plain; charset=UTF-8")
 
 let html content =
-  make @@ Body2.content_writer ~content ~content_type:"text/html; charset=UTF-8"
+  server_response
+    (Body2.content_writer ~content ~content_type:"text/html; charset=UTF-8")
 
 let none_writer = (Body2.none :> Body2.writer)
-let not_found : t = make ~status:`Not_found none_writer
-let internal_server_error = make ~status:`Internal_server_error none_writer
-let bad_request = make ~status:`Bad_request none_writer
+let not_found = server_response ~status:`Not_found none_writer
+
+let internal_server_error =
+  server_response ~status:`Internal_server_error none_writer
+
+let bad_request = server_response ~status:`Bad_request none_writer
+
+class virtual client_response =
+  object
+    inherit t
+    method virtual buf_read : Eio.Buf_read.t
+  end
+
+let client_response version headers status buf_read =
+  object
+    method version = version
+    method headers = headers
+    method status = status
+    method buf_read = buf_read
+  end
+
+let read_content (t : #client_response) =
+  let reader = Body2.content_reader t#headers in
+  Body2.read reader t#buf_read
+
+let read_chunked (t : #client_response) f =
+  let r = Body2.Chunked.reader t#headers f in
+  Body2.read r t#buf_read

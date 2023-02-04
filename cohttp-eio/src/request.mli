@@ -81,11 +81,8 @@ val parse_server_request :
   ('a Body2.reader as 'a) server_request
 
 val read_content : _ #server_request -> string option
-(** [read_content (request, buf_read)] is [Some content], where [content] is of
-    length [n] if "Content-Length" header is a valid integer value [n] in
-    [request].
-
-    [buf_read] is updated to reflect that [n] bytes was read.
+(** [read_content request] is [Some content], where [content] is of length [n]
+    if "Content-Length" header is a valid integer value [n] in [request].
 
     If ["Content-Length"] header is missing or is an invalid value in [request]
     OR if the request http method is not one of [POST], [PUT] or [PATCH], then
@@ -99,5 +96,5 @@ val read_chunked :
     as specified by the chunked encoding algorithm in https:
     //datatracker.ietf.org/doc/html/rfc7230#section-4.1.3.
 
-    [buf_read] is updated to reflect the number of bytes read. Returns [None] if
-    [Transfer-Encoding] header in [headers] is not specified as "chunked" *)
+    Returns [None] if [Transfer-Encoding] header in [headers] is not specified
+    as "chunked" *)

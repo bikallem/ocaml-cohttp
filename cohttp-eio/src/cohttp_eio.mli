@@ -34,7 +34,7 @@ module Client2 = Client2
 
 (** [Server] is a HTTP 1.1 server. *)
 module Server : sig
-  type 'a handler = 'a Request.server_request -> Response.t
+  type 'a handler = 'a Request.server_request -> Response.server_response
 
   (** {1 Run Server} *)
 

@@ -2,7 +2,7 @@ module Buf_read = Eio.Buf_read
 module Buf_write = Eio.Buf_write
 module Switch = Eio.Switch
 
-type 'a handler = 'a Request.server_request -> Response.t
+type 'a handler = 'a Request.server_request -> Response.server_response
 type 'a middlware = 'a handler -> 'a handler
 
 type 'a env =

@@ -3,15 +3,7 @@ module Buf_write = Eio.Buf_write
 module Switch = Eio.Switch
 
 type 'a handler = 'a Request.server_request -> Response.server_response
-type 'a middlware = 'a handler -> 'a handler
-
-type 'a env =
-  < domain_mgr : Eio.Domain_manager.t
-  ; net : Eio.Net.t
-  ; clock : Eio.Time.clock
-  ; .. >
-  as
-  'a
+(* type 'a middlware = 'a handler -> 'a handler *)
 
 let rec handle_request clock client_addr reader writer flow
     (handler : 'a handler) =

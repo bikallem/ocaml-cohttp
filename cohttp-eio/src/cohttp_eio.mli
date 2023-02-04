@@ -36,21 +36,15 @@ module Client2 = Client2
 module Server : sig
   type 'a handler = 'a Request.server_request -> Response.t
 
-  type 'a env =
-    < domain_mgr : Eio.Domain_manager.t
-    ; net : Eio.Net.t
-    ; clock : Eio.Time.clock
-    ; .. >
-    as
-    'a
-
   (** {1 Run Server} *)
 
   val run :
     ?socket_backlog:int ->
     ?domains:int ->
     port:int ->
-    'a env ->
+    domain_mgr:Eio.Domain_manager.t ->
+    net:Eio.Net.t ->
+    clock:Eio.Time.clock ->
     ('b Body2.reader as 'b) handler ->
     'c
   (** [run ~socket_backlog ~domains ~port env handler] runs a HTTP/1.1 server

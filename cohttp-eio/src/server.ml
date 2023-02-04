@@ -13,13 +13,6 @@ type 'a env =
   as
   'a
 
-let read_fixed r =
-  let reader = Body2.content_reader r#headers in
-  Body2.read reader r#buf_read
-
-let read_chunked request reader f =
-  Body.read_chunked reader (Http.Request.headers request) f
-
 let rec handle_request clock client_addr reader writer flow
     (handler : 'a handler) =
   match Request.parse_server_request client_addr reader with
@@ -43,12 +36,12 @@ let connection_handler (handler : 'a handler) clock flow client_addr =
   Buf_write.with_flow flow (fun writer ->
       handle_request clock client_addr reader writer flow handler)
 
-let run_domain env ssock handler =
+let run_domain clock ssock handler =
   let on_error exn =
     Printf.fprintf stderr "Error handling connection: %s\n%!"
       (Printexc.to_string exn)
   in
-  let handler = connection_handler handler env#clock in
+  let handler = connection_handler handler clock in
   Switch.run (fun sw ->
       let rec loop () =
         Eio.Net.accept_fork ~sw ssock ~on_error handler;
@@ -56,20 +49,20 @@ let run_domain env ssock handler =
       in
       loop ())
 
-let run ?(socket_backlog = 128) ?(domains = 1) ~port env handler =
+let run ?(socket_backlog = 128) ?(domains = 1) ~port ~domain_mgr ~net ~clock
+    handler =
   Switch.run @@ fun sw ->
-  let domain_mgr = Eio.Stdenv.domain_mgr env in
   let ssock =
-    Eio.Net.listen (Eio.Stdenv.net env) ~sw ~reuse_addr:true ~reuse_port:true
+    Eio.Net.listen net ~sw ~reuse_addr:true ~reuse_port:true
       ~backlog:socket_backlog
       (`Tcp (Eio.Net.Ipaddr.V4.loopback, port))
   in
   for _ = 2 to domains do
     Eio.Std.Fiber.fork ~sw (fun () ->
         Eio.Domain_manager.run domain_mgr (fun () ->
-            run_domain env ssock handler))
+            run_domain clock ssock handler))
   done;
-  run_domain env ssock handler
+  run_domain clock ssock handler
 
 (* Basic handlers *)
 

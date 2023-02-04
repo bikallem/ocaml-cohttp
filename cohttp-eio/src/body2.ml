@@ -6,26 +6,29 @@ type header = string * string
 class virtual writer =
   object
     method virtual write_body : Eio.Buf_write.t -> unit
-    method virtual write_headers : (header list -> unit) -> unit
+    method virtual write_header : (name:string -> value:string -> unit) -> unit
   end
 
-class fixed_writer body =
+class content_writer ~content ~content_type =
+  let content_length = String.length content in
   object
     inherit writer
-    method write_body w = Buf_write.string w body
+    method write_body w = Buf_write.string w content
 
-    method write_headers f =
-      f [ ("Content-Length", string_of_int @@ String.length body) ]
+    method write_header f =
+      f ~name:"Content-Length" ~value:(string_of_int content_length);
+      f ~name:"Content-Type" ~value:content_type
   end
 
-let fixed_writer body = new fixed_writer body
+let content_writer ~content ~content_type =
+  new content_writer ~content ~content_type
 
 class virtual ['a] reader =
   object
     method virtual read : Eio.Buf_read.t -> 'a option
   end
 
-class fixed_reader headers =
+class content_reader headers =
   object
     inherit [string] reader
 
@@ -35,19 +38,13 @@ class fixed_reader headers =
         (Http.Header.get headers "Content-Length")
   end
 
-let fixed_reader headers = new fixed_reader headers
+let content_reader headers = new content_reader headers
 
 let form_values_writer assoc_list =
   let content =
     List.map (fun (k, v) -> (k, [ v ])) assoc_list |> Uri.encoded_of_query
   in
-  object
-    inherit fixed_writer content as super
-
-    method! write_headers f =
-      f [ ("Content-Type", "application/x-www-form-urlencoded") ];
-      super#write_headers f
-  end
+  new content_writer ~content ~content_type:"application/x-www-form-urlencoded"
 
 module Chunked = struct
   type t = Chunk of body | Last_chunk of extension list
@@ -238,7 +235,7 @@ module Chunked = struct
   let writer ?(write_trailers = false) write_chunk write_trailer : writer =
     object
       inherit writer
-      method write_headers f = f [ ("Transfer-Encoding", "chunked") ]
+      method write_header f = f ~name:"Transfer-Encoding" ~value:"chunked"
 
       method write_body writer =
         let write_extensions exts =
@@ -299,7 +296,7 @@ class none =
     inherit [void] reader
     method read _ = None
     method write_body _ = ()
-    method write_headers _ = ()
+    method write_header _ = ()
   end
 
 let none = new none

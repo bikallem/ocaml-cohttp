@@ -20,6 +20,13 @@ let resource (t : _ #t) = t#resource
 let supports_chunked_trailers (t : _ #t) =
   Http.Header.get_multi t#headers "TE" |> List.mem "trailers"
 
+let keep_alive (t : _ #t) =
+  match Http.Header.connection t#headers with
+  | Some `Close -> false
+  | Some `Keep_alive -> true
+  | Some (`Unknown _) -> false
+  | None -> Http.Version.compare t#version `HTTP_1_1 = 0
+
 class virtual ['a] client_request =
   object
     inherit ['a] t
@@ -45,7 +52,7 @@ let client_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
 
 let body (t : _ #client_request) = t#body
 let client_host_port (t : _ #client_request) = (t#host, t#port)
-let write_headers w l = List.iter (fun (k, v) -> Rwer.write_header w k v) l
+let write_header w ~name ~value = Rwer.write_header w name value
 
 let write (t : _ #client_request) (body : #Body2.writer) writer =
   let headers =
@@ -69,8 +76,8 @@ let write (t : _ #client_request) (body : #Body2.writer) writer =
     | None -> t#host
   in
   Rwer.write_header writer "Host" host;
+  body#write_header (write_header writer);
   Rwer.write_headers writer headers;
-  body#write_headers (write_headers writer);
   Buf_write.string writer "\r\n";
   body#write_body writer
 
@@ -190,3 +197,11 @@ let parse_server_request client_addr (r : Eio.Buf_read.t) :
   let version = (http_version <* crlf) r in
   let headers = http_headers r in
   server_request ~version ~headers ~resource meth client_addr r
+
+let read_content (t : _ #server_request) =
+  let reader = Body2.content_reader t#headers in
+  Body2.read reader t#buf_read
+
+let read_chunked (t : _ #server_request) f =
+  let reader = Body2.Chunked.reader t#headers f in
+  Body2.read reader t#buf_read

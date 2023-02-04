@@ -9,21 +9,23 @@ type header = string * string
 class virtual writer :
   object
     method virtual write_body : Eio.Buf_write.t -> unit
-    method virtual write_headers : (header list -> unit) -> unit
+    method virtual write_header : (name:string -> value:string -> unit) -> unit
   end
 
-(** [fixed_writer s] is a {!class:writer} which writes [s] as a body and adds
+(** [content_writer s] is a {!class:writer} which writes [s] as a body and adds
     HTTP header [Content-Length] to HTTP request or response. *)
-class fixed_writer :
-  string
+class content_writer :
+  content:string
+  -> content_type:string
   -> object
        inherit writer
        method write_body : Eio.Buf_write.t -> unit
-       method write_headers : (header list -> unit) -> unit
+       method write_header : (name:string -> value:string -> unit) -> unit
      end
 
-val fixed_writer : string -> writer
-(** [fixed_writer s] is [new fixed_writer s]. *)
+val content_writer : content:string -> content_type:string -> writer
+(** [content_writer ~content ~content_type] is
+    [new content_writer ~content ~content_type]. *)
 
 val form_values_writer : (string * string) list -> writer
 (** [form_values_writer key_values] is a {!class:writer} which writes an
@@ -38,18 +40,18 @@ class virtual ['a] reader :
     method virtual read : Eio.Buf_read.t -> 'a option
   end
 
-(** [fixed_reader header] is a {!class:reader} which reads bytes [Some b] from
+(** [content_reader header] is a {!class:reader} which reads bytes [Some b] from
     request/response if [Content-Length] exists in [header]. Otherwise the read
     result of this reader is [None]. *)
-class fixed_reader :
+class content_reader :
   Http.Header.t
   -> object
        inherit [string] reader
        method read : Eio.Buf_read.t -> string option
      end
 
-val fixed_reader : Http.Header.t -> string reader
-(** [fixed_reader headers] is [new fixed_reader headers] *)
+val content_reader : Http.Header.t -> string reader
+(** [content_reader headers] is [new content_reader headers] *)
 
 (** {1 Chunked Reader/Writer} *)
 

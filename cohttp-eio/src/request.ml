@@ -50,18 +50,7 @@ let write (t : _ #client_request) (body : #Body2.writer) writer =
   in
   let headers = Http.Header.add headers "TE" "trailers" in
   let headers = Http.Header.add headers "Connection" "TE" in
-  let headers =
-    if not (Http.Header.mem headers "Host") then
-      let host =
-        match t#port with
-        | Some port -> t#host ^ ":" ^ string_of_int port
-        | None -> t#host
-      in
-      Http.Header.add headers "Host" host
-    else headers
-  in
   let headers = Http.Header.clean_dup headers in
-  let headers = Http.Header.Private.move_to_front headers "Host" in
   let meth = Method.to_string t#meth in
   let version = Http.Version.to_string t#version in
   Buf_write.string writer meth;
@@ -70,6 +59,13 @@ let write (t : _ #client_request) (body : #Body2.writer) writer =
   Buf_write.char writer ' ';
   Buf_write.string writer version;
   Buf_write.string writer "\r\n";
+  (* The first header is a "Host" header. *)
+  let host =
+    match t#port with
+    | Some port -> t#host ^ ":" ^ string_of_int port
+    | None -> t#host
+  in
+  Rwer.write_header writer "Host" host;
   Rwer.write_headers writer headers;
   body#write_headers (write_headers writer);
   Buf_write.string writer "\r\n";

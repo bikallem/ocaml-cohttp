@@ -17,6 +17,9 @@ let headers (t : _ #t) = t#headers
 let meth (t : _ #t) = t#meth
 let resource (t : _ #t) = t#resource
 
+let supports_chunked_trailers (t : _ #t) =
+  Http.Header.get_multi t#headers "TE" |> List.mem "trailers"
+
 class virtual ['a] client_request =
   object
     inherit ['a] t

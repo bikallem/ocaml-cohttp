@@ -15,6 +15,7 @@ val version : _ #t -> Http.Version.t
 val headers : _ #t -> Http.Header.t
 val meth : 'a #t -> 'a Method.t
 val resource : _ #t -> string
+val supports_chunked_trailers : _ #t -> bool
 
 (** {1 Client Request}
 

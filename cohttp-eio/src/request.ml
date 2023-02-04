@@ -112,14 +112,13 @@ class virtual ['a] server_request =
     inherit ['a #Body2.reader] t
     constraint 'a = 'a #Body2.reader
     method virtual meth : ('a Body2.reader as 'b) Method.t
-    method virtual host : string option
-    method virtual port : int option
     method virtual client_addr : Eio.Net.Sockaddr.stream
+    method virtual buf_read : Eio.Buf_read.t
   end
 
-let server_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
-    ?host ~resource client_addr (meth : ('a #Body2.reader as 'a) Method.t) body
-    =
+let server_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ())
+    ~resource (meth : ('a #Body2.reader as 'a) Method.t) body client_addr
+    buf_read =
   object
     inherit ['a #Body2.reader as 'a] server_request
     val headers = headers
@@ -127,11 +126,7 @@ let server_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
     method headers = headers
     method meth = meth
     method resource = resource
-    method host = host
-    method port = port
     method body = body
     method client_addr = client_addr
+    method buf_read = buf_read
   end
-
-let server_host_port (t : _ #server_request) =
-  Option.map (fun host -> (host, t#port)) t#host

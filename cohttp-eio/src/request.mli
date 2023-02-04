@@ -60,20 +60,16 @@ class virtual ['a] server_request :
     inherit ['a #Body2.reader] t
     constraint 'a = 'a #Body2.reader
     method virtual meth : ('a Body2.reader as 'b) Method.t
-    method virtual host : string option
-    method virtual port : int option
     method virtual client_addr : Eio.Net.Sockaddr.stream
+    method virtual buf_read : Eio.Buf_read.t
   end
 
 val server_request :
   ?version:Http.Version.t ->
   ?headers:Http.Header.t ->
-  ?port:int ->
-  ?host:string ->
   resource:string ->
-  Eio.Net.Sockaddr.stream ->
   ('a Body2.reader as 'a) Method.t ->
   'a ->
+  Eio.Net.Sockaddr.stream ->
+  Eio.Buf_read.t ->
   'a server_request
-
-val server_host_port : _ #server_request -> host_port option

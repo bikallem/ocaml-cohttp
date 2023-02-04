@@ -91,6 +91,14 @@ val read : 'a #reader -> Eio.Buf_read.t -> 'a option
 (** [read reader] is [Some x] if [reader] is successfully able to read from
     request/response body. It is [None] otherwise. *)
 
+val read_content :
+  < headers : Http.Header.t ; buf_read : Eio.Buf_read.t ; .. > -> string option
+
+val read_chunked :
+  < headers : Http.Header.t ; buf_read : Eio.Buf_read.t ; .. > ->
+  (Chunked.t -> unit) ->
+  Http.Header.t option
+
 (** {1 none} *)
 
 type void

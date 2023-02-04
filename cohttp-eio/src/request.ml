@@ -198,10 +198,5 @@ let parse_server_request client_addr (r : Eio.Buf_read.t) :
   let headers = http_headers r in
   server_request ~version ~headers ~resource meth client_addr r
 
-let read_content (t : _ #server_request) =
-  let reader = Body2.content_reader t#headers in
-  Body2.read reader t#buf_read
-
-let read_chunked (t : _ #server_request) f =
-  let reader = Body2.Chunked.reader t#headers f in
-  Body2.read reader t#buf_read
+let read_content = Body2.read_content
+let read_chunked = Body2.read_chunked

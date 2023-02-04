@@ -111,10 +111,5 @@ let client_response version headers status buf_read =
     method buf_read = buf_read
   end
 
-let read_content (t : #client_response) =
-  let reader = Body2.content_reader t#headers in
-  Body2.read reader t#buf_read
-
-let read_chunked (t : #client_response) f =
-  let r = Body2.Chunked.reader t#headers f in
-  Body2.read r t#buf_read
+let read_content = Body2.read_content
+let read_chunked = Body2.read_chunked

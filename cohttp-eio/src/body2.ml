@@ -301,3 +301,13 @@ class none =
 
 let none = new none
 let read (r : _ #reader) buf_read = r#read buf_read
+
+let read_content
+    (t : < headers : Http.Header.t ; buf_read : Eio.Buf_read.t ; .. >) =
+  let r = content_reader t#headers in
+  r#read t#buf_read
+
+let read_chunked
+    (t : < headers : Http.Header.t ; buf_read : Eio.Buf_read.t ; .. >) f =
+  let r = Chunked.reader t#headers f in
+  r#read t#buf_read

@@ -1,31 +1,19 @@
-class virtual t =
-  object
-    method virtual version : Http.Version.t
-    method virtual headers : Http.Header.t
-    method virtual status : Http.Status.t
-    method virtual body : Body2.writer
-  end
+type t = {
+  version : Http.Version.t;
+  headers : Http.Header.t;
+  status : Http.Status.t;
+  body : Body2.writer;
+}
 
 let make ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?(status = `OK)
     (body : Body2.writer) : t =
-  object
-    method version = version
-    method headers = headers
-    method status = status
-    method body = body
-  end
+  { version; headers; status; body }
 
 let chunked_response ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) req
     write_chunk write_trailer =
   let write_trailers = Request.supports_chunked_trailers req in
   let writer = Body2.Chunked.writer ~write_trailers write_chunk write_trailer in
-  object
-    inherit t
-    method headers = headers
-    method version = version
-    method status = `OK
-    method body = writer
-  end
+  { headers; version; status = `OK; body = writer }
 
 let http_date clock =
   let now = Eio.Time.now clock |> Ptime.of_float_s |> Option.get in
@@ -64,21 +52,21 @@ module Buf_write = Eio.Buf_write
 
 let write_header w ~name ~value = Rwer.write_header w name value
 
-let write (t : #t) (clock : #Eio.Time.clock) w =
-  let version = Http.Version.to_string t#version in
-  let status = Http.Status.to_string t#status in
+let write t (clock : #Eio.Time.clock) w =
+  let version = Http.Version.to_string t.version in
+  let status = Http.Status.to_string t.status in
   Buf_write.string w version;
   Buf_write.char w ' ';
   Buf_write.string w status;
   Buf_write.string w "\r\n";
   (* https://www.rfc-editor.org/rfc/rfc9110#section-6.6.1 *)
-  (match t#status with
+  (match t.status with
   | #Http.Status.informational | #Http.Status.server_error -> ()
   | _ -> Rwer.write_header w "Date" (http_date clock));
-  t#body#write_header (write_header w);
-  Rwer.write_headers w t#headers;
+  t.body#write_header (write_header w);
+  Rwer.write_headers w t.headers;
   Buf_write.string w "\r\n";
-  t#body#write_body w
+  t.body#write_body w
 
 let text content =
   make

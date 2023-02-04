@@ -1,12 +1,6 @@
 (** A HTTP Response. *)
 
-class virtual t :
-  object
-    method virtual version : Http.Version.t
-    method virtual headers : Http.Header.t
-    method virtual status : Http.Status.t
-    method virtual body : Body2.writer
-  end
+type t
 
 val make :
   ?version:Http.Version.t ->
@@ -23,7 +17,7 @@ val chunked_response :
   Body2.Chunked.write_trailer ->
   t
 
-val write : #t -> #Eio.Time.clock -> Eio.Buf_write.t -> unit
+val write : t -> #Eio.Time.clock -> Eio.Buf_write.t -> unit
 
 val text : string -> t
 (** [text s] returns a HTTP/1.1, 200 status response with "Content-Type" header

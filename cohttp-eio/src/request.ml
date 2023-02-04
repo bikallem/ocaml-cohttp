@@ -8,7 +8,6 @@ class virtual ['a] t =
     method virtual headers : Http.Header.t
     method virtual meth : 'a Method.t
     method virtual resource : string
-    method virtual body : 'a
   end
 
 type host_port = string * int option
@@ -17,12 +16,12 @@ let version (t : _ #t) = t#version
 let headers (t : _ #t) = t#headers
 let meth (t : _ #t) = t#meth
 let resource (t : _ #t) = t#resource
-let body (t : _ #t) = t#body
 
 class virtual ['a] client_request =
   object
     inherit ['a] t
     constraint 'a = #Body2.writer
+    method virtual body : 'a
     method virtual host : string
     method virtual port : int option
   end
@@ -41,6 +40,7 @@ let client_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
     method body = body
   end
 
+let body (t : _ #client_request) = t#body
 let client_host_port (t : _ #client_request) = (t#host, t#port)
 let write_headers w l = List.iter (fun (k, v) -> Rwer.write_header w k v) l
 
@@ -117,16 +117,13 @@ class virtual ['a] server_request =
   end
 
 let server_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ())
-    ~resource (meth : ('a #Body2.reader as 'a) Method.t) body client_addr
-    buf_read =
+    ~resource (meth : ('a #Body2.reader as 'a) Method.t) client_addr buf_read =
   object
     inherit ['a #Body2.reader as 'a] server_request
-    val headers = headers
     method version = version
     method headers = headers
     method meth = meth
     method resource = resource
-    method body = body
     method client_addr = client_addr
     method buf_read = buf_read
   end

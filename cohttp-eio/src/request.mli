@@ -7,7 +7,6 @@ class virtual ['a] t :
     method virtual headers : Http.Header.t
     method virtual meth : 'a Method.t
     method virtual resource : string
-    method virtual body : 'a
   end
 
 type host_port = string * int option
@@ -16,7 +15,6 @@ val version : _ #t -> Http.Version.t
 val headers : _ #t -> Http.Header.t
 val meth : 'a #t -> 'a Method.t
 val resource : _ #t -> string
-val body : 'a #t -> 'a
 
 (** {1 Client Request}
 
@@ -25,6 +23,7 @@ class virtual ['a] client_request :
   object
     inherit ['a] t
     constraint 'a = #Body2.writer
+    method virtual body : 'a
     method virtual host : string
     method virtual port : int option
   end
@@ -39,6 +38,7 @@ val client_request :
   'a ->
   'a client_request
 
+val body : (#Body2.writer as 'a) #client_request -> 'a
 val client_host_port : _ #client_request -> host_port
 val write : 'a #client_request -> 'a -> Eio.Buf_write.t -> unit
 
@@ -69,7 +69,6 @@ val server_request :
   ?headers:Http.Header.t ->
   resource:string ->
   ('a Body2.reader as 'a) Method.t ->
-  'a ->
   Eio.Net.Sockaddr.stream ->
   Eio.Buf_read.t ->
   'a server_request

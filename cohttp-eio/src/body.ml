@@ -40,8 +40,6 @@ let content headers buf_read =
 
 let content_reader headers buf_read =
   object
-    method headers = headers
-    method buf_read = buf_read
     method read = content headers buf_read
   end
 
@@ -49,9 +47,6 @@ let ( let* ) o f = Option.bind o f
 
 let form_values_reader headers buf_read =
   object
-    method headers = headers
-    method buf_read = buf_read
-
     method read =
       let* content = content headers buf_read in
       match Http.Header.get headers "Content-Type" with

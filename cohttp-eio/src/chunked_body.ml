@@ -192,9 +192,6 @@ let writer ~ua_supports_trailer write_chunk write_trailer : Body.writer =
 
 let reader headers buf_read f =
   object
-    method headers = headers
-    method buf_read = buf_read
-
     method read =
       match Http.Header.get_transfer_encoding headers with
       | Http.Transfer.Chunked ->

@@ -1,59 +1,45 @@
 module Buf_read = Eio.Buf_read
 module Buf_write = Eio.Buf_write
 
-type response = Http.Response.t * Buf_read.t
-type host = string
-type port = int
-type resource_path = string
-type 'a env = < net : Eio.Net.t ; .. > as 'a
+(* TODO bikal implement redirect functionality
+   TODO bikal implement cookie jar functionality
+   TODO bikal allow user to override redirection
+   TODO bikal connection caching - idle connection time limit? *)
 
-type ('a, 'b) body_disallowed_call =
-  ?pipeline_requests:bool ->
-  ?version:Http.Version.t ->
-  ?headers:Http.Header.t ->
-  ?conn:(#Eio.Flow.two_way as 'a) ->
-  ?port:port ->
-  'b env ->
-  host:host ->
-  resource_path ->
-  response
-(** [body_disallowed_call] denotes HTTP client calls where a request is not
-    allowed to have a request body. *)
+module Cache = Map.Make (struct
+  type t = string * string (* (host,port) *)
 
-type ('a, 'b) body_allowed_call =
-  ?pipeline_requests:bool ->
-  ?version:Http.Version.t ->
-  ?headers:Http.Header.t ->
-  ?body:Body.t ->
-  ?conn:(#Eio.Flow.two_way as 'a) ->
-  ?port:port ->
-  'b env ->
-  host:host ->
-  resource_path ->
-  response
+  let compare (a : t) (b : t) = Stdlib.compare a b
+end)
 
-(* Request line https://datatracker.ietf.org/doc/html/rfc7230#section-3.1.1 *)
-let write_request pipeline_requests request writer body =
-  let headers =
-    Body.add_content_length
-      (Http.Request.requires_content_length request)
-      (Http.Request.headers request)
-      body
-  in
-  let headers = Http.Header.clean_dup headers in
-  let headers = Http.Header.Private.move_to_front headers "Host" in
-  let meth = Http.Method.to_string @@ Http.Request.meth request in
-  let version = Http.Version.to_string @@ Http.Request.version request in
-  Buf_write.string writer meth;
-  Buf_write.char writer ' ';
-  Buf_write.string writer @@ Http.Request.resource request;
-  Buf_write.char writer ' ';
-  Buf_write.string writer version;
-  Buf_write.string writer "\r\n";
-  Rwer.write_headers writer headers;
-  Buf_write.string writer "\r\n";
-  Body.write_body ~write_chunked_trailers:true writer body;
-  if not pipeline_requests then Buf_write.flush writer
+type conn = < Eio.Net.stream_socket ; Eio.Flow.close >
+
+type t = {
+  timeout : Eio.Time.Timeout.t;
+  buf_read_initial_size : int;
+  buf_write_initial_size : int;
+  batch_requests : bool;
+  sw : Eio.Switch.t;
+  net : Eio.Net.t;
+  cache : conn Cache.t Atomic.t;
+}
+
+let make ?(timeout = Eio.Time.Timeout.none) ?(buf_read_initial_size = 0x1000)
+    ?(buf_write_initial_size = 0x1000) ?(batch_requests = true) sw net =
+  {
+    timeout;
+    buf_read_initial_size;
+    buf_write_initial_size;
+    batch_requests;
+    sw;
+    net;
+    cache = Atomic.make Cache.empty;
+  }
+
+let buf_write_initial_size t = t.buf_write_initial_size
+let buf_read_initial_size t = t.buf_read_initial_size
+let timeout t = t.timeout
+let batch_requests t = t.batch_requests
 
 (* response parser *)
 
@@ -70,6 +56,8 @@ let reason_phrase =
     | '\x21' .. '\x7E' | '\t' | ' ' -> true
     | _ -> false)
 
+type response = Http.Response.t * Buf_read.t
+
 (* https://datatracker.ietf.org/doc/html/rfc7230#section-3.1.2 *)
 let response buf_read =
   let open Buf_read.Syntax in
@@ -79,67 +67,74 @@ let response buf_read =
   let headers = Rwer.http_headers buf_read in
   Http.Response.make ~version ~status ~headers ()
 
-(* Generic HTTP call *)
+(* Specialized version of Eio.Net.with_tcp_connect *)
+let tcp_connect sw ~host ~service net =
+  match
+    let rec aux = function
+      | [] -> raise @@ Eio.Net.(err (Connection_failure No_matching_addresses))
+      | addr :: addrs -> (
+          try Eio.Net.connect ~sw net addr
+          with Eio.Exn.Io _ when addrs <> [] -> aux addrs)
+    in
+    Eio.Net.getaddrinfo_stream ~service net host
+    |> List.filter_map (function `Tcp _ as x -> Some x | `Unix _ -> None)
+    |> aux
+  with
+  | conn -> conn
+  | exception (Eio.Exn.Io _ as ex) ->
+      let bt = Printexc.get_raw_backtrace () in
+      Eio.Exn.reraise_with_context ex bt "connecting to %S:%s" host service
 
-let call ?(pipeline_requests = false) ?meth ?version
-    ?(headers = Http.Header.init ()) ?(body = Body.Empty) ?conn ?port env ~host
-    resource_path =
-  let headers =
-    if not (Http.Header.mem headers "Host") then
-      let host =
-        match port with
-        | Some port -> host ^ ":" ^ string_of_int port
-        | None -> host
-      in
-      Http.Header.add headers "Host" host
-    else headers
-  in
-  let headers =
-    Http.Header.add_unless_exists headers "User-Agent" "cohttp-eio"
-  in
-  let buf_write conn =
-    let initial_size = 0x1000 in
-    Buf_write.with_flow ~initial_size:0x1000 conn (fun writer ->
-        let request = Http.Request.make ?meth ?version ~headers resource_path in
-        let request = Http.Request.add_te_trailers request in
-        write_request pipeline_requests request writer body;
-        let reader =
-          Eio.Buf_read.of_flow ~initial_size ~max_size:max_int conn
-        in
-        let response = response reader in
-        (response, reader))
-  in
-  match conn with
+let rec modify f r =
+  let v_old = Atomic.get r in
+  let v_new = f v_old in
+  if Atomic.compare_and_set r v_old v_new then () else modify f r
+
+let conn t req =
+  let host, port = Request.client_host_port req in
+  let service = match port with Some x -> string_of_int x | None -> "80" in
+  match Cache.find_opt (host, service) (Atomic.get t.cache) with
+  | Some conn -> conn
   | None ->
-      let service =
-        match port with Some p -> string_of_int p | None -> "80"
+      let conn = tcp_connect t.sw ~host ~service t.net in
+      modify (fun cache -> Cache.add (host, service) conn cache) t.cache;
+      conn
+
+let do_call t req =
+  Eio.Time.Timeout.run_exn t.timeout @@ fun () ->
+  let conn = conn t req in
+  Buf_write.with_flow ~initial_size:t.buf_write_initial_size conn (fun writer ->
+      let body = Request.body req in
+      Request.write req body writer;
+      if not t.batch_requests then Buf_write.flush writer;
+      let reader =
+        Eio.Buf_read.of_flow ~initial_size:t.buf_read_initial_size
+          ~max_size:max_int conn
       in
-      Eio.Net.with_tcp_connect ~host ~service env#net (fun conn ->
-          buf_write conn)
-  | Some conn -> buf_write conn
+      let response = response reader in
+      (response, reader))
 
-(*  HTTP Calls with Body Disallowed *)
-let call_without_body ?pipeline_requests ?meth ?version ?headers ?conn ?port env
-    ~host resource_path =
-  call ?pipeline_requests ?meth ?version ?headers ?conn ?port env ~host
-    resource_path
+let get t url =
+  let req = Request.get url in
+  do_call t req
 
-let get = call_without_body ~meth:`GET
-let head = call_without_body ~meth:`HEAD
-let delete = call_without_body ~meth:`DELETE
+let head t url =
+  let req = Request.head url in
+  do_call t req
 
-(*  HTTP Calls with Body Allowed *)
+let post t body url =
+  let req = Request.post body url in
+  do_call t req
 
-let post = call ~meth:`POST
-let put = call ~meth:`PUT
-let patch = call ~meth:`PATCH
+let post_form_values t assoc_values url =
+  let req = Request.post_form_values assoc_values url in
+  do_call t req
 
-(* Response Body *)
-
-let read_fixed ((response, reader) : Http.Response.t * Buf_read.t) =
-  match Http.Response.content_length response with
-  | Some content_length -> Buf_read.take content_length reader
-  | None -> Buf_read.take_all reader
-
-let read_chunked : response -> (Body.chunk -> unit) -> Http.Header.t option =
- fun (response, reader) f -> Body.read_chunked reader response.headers f
+let call ~conn req =
+  let initial_size = 0x1000 in
+  Buf_write.with_flow ~initial_size conn (fun writer ->
+      let body = Request.body req in
+      Request.write req body writer;
+      let reader = Eio.Buf_read.of_flow ~initial_size ~max_size:max_int conn in
+      let response = response reader in
+      (response, reader))

@@ -190,9 +190,9 @@ let writer ~ua_supports_trailer write_chunk write_trailer : Body.writer =
       Buf_write.string writer "\r\n"
   end
 
-let reader headers f : Http.Header.t Body.reader =
+let reader headers buf_read f : Http.Header.t Body.reader =
   object
-    method read buf_read =
+    method read =
       match Http.Header.get_transfer_encoding headers with
       | Http.Transfer.Chunked ->
           let total_read = ref 0 in
@@ -211,10 +211,9 @@ let reader headers f : Http.Header.t Body.reader =
       | _ -> None
   end
 
-let read_chunked
-    (t : < headers : Http.Header.t ; buf_read : Eio.Buf_read.t ; .. >) f =
-  let r = reader t#headers f in
-  r#read t#buf_read
+let read_chunked (t : #Body.buffered) f =
+  let r = reader t#headers t#buf_read f in
+  r#read
 
 let pp_extension fmt =
   Fmt.(

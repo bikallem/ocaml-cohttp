@@ -19,31 +19,39 @@ let content_writer ~content ~content_type =
 
 class type ['a] reader =
   object
-    method read : Eio.Buf_read.t -> 'a option
+    method read : 'a option
   end
 
-let read (r : _ #reader) buf_read = r#read buf_read
-
-class content_reader headers =
+class type buffered =
   object
-    method read r =
+    method headers : Http.Header.t
+    method buf_read : Eio.Buf_read.t
+  end
+
+class type ['a] buffered_reader =
+  object
+    inherit buffered
+    inherit ['a] reader
+  end
+
+let read (r : _ #reader) = r#read
+
+class content_reader headers buf_read =
+  object
+    method headers = headers
+    method buf_read = buf_read
+
+    method read =
       Option.map
-        (fun len -> Buf_read.take (int_of_string len) r)
+        (fun len -> Buf_read.take (int_of_string len) buf_read)
         (Http.Header.get headers "Content-Length")
   end
 
 let content_reader headers = new content_reader headers
 
-class virtual buffered_reader =
-  object
-    method virtual headers : Http.Header.t
-    method virtual buf_read : Eio.Buf_read.t
-  end
-
-let read_content
-    (t : < headers : Http.Header.t ; buf_read : Eio.Buf_read.t ; .. >) =
-  let r = content_reader t#headers in
-  r#read t#buf_read
+let read_content (t : #buffered) =
+  let r = content_reader t#headers t#buf_read in
+  r#read
 
 let form_values_writer assoc_list =
   let content =
@@ -55,7 +63,7 @@ type void = |
 
 class none =
   object
-    method read : Buf_read.t -> void option = fun _ -> None
+    method read : void option = None
     method write_body : Buf_write.t -> unit = fun _ -> ()
 
     method write_header : (name:string -> value:string -> unit) -> unit =

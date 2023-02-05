@@ -123,6 +123,9 @@ class virtual ['a] server_request =
     method virtual buf_read : Eio.Buf_read.t
   end
 
+let buf_read (t : _ #server_request) = t#buf_read
+let client_addr (t : _ #server_request) = t#client_addr
+
 let server_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ())
     ~resource (meth : ('a #Body.reader as 'a) Method.t) client_addr buf_read =
   object

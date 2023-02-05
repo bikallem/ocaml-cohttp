@@ -60,12 +60,14 @@ val post_form_values :
 class virtual ['a] server_request :
   object
     inherit ['a #Body.reader] t
-    inherit Body.buffered_reader
     constraint 'a = 'a #Body.reader
     method virtual meth : ('a Body.reader as 'b) Method.t
     method virtual client_addr : Eio.Net.Sockaddr.stream
     method virtual buf_read : Eio.Buf_read.t
   end
+
+val buf_read : 'a #server_request -> Eio.Buf_read.t
+val client_addr : 'a #server_request -> Eio.Net.Sockaddr.stream
 
 val server_request :
   ?version:Http.Version.t ->

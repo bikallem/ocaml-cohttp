@@ -22,11 +22,13 @@ val writer :
 
 (** {1 Reader} *)
 
-val reader : Http.Header.t -> (t -> unit) -> Http.Header.t Body.reader
-(** [reader header chunk_reader] is the HTPP [chunked] transfer decoder. *)
+val reader :
+  Http.Header.t -> Eio.Buf_read.t -> (t -> unit) -> Http.Header.t Body.reader
+(** [reader header buf_read chunk_reader] is the HTPP [chunked] transfer
+    decoder. *)
 
-val read_chunked : #Body.buffered_reader -> (t -> unit) -> Http.Header.t option
-(** [read_chunked reader chunk_handler] is [Some updated_headers] if
+val read_chunked : #Body.buffered -> (t -> unit) -> Http.Header.t option
+(** [read_chunked buffered chunk_handler] is [Some updated_headers] if
     "Transfer-Encoding" header value is "chunked" in [request] and all chunks in
     [buf_read] are read successfully. [updated_headers] is the updated headers
     as specified by the chunked encoding algorithm in https:

@@ -4,7 +4,7 @@ class type writer =
     method write_header : (name:string -> value:string -> unit) -> unit
   end
 
-class content_writer ~content ~content_type =
+let content_writer ~content ~content_type =
   let content_length = String.length content in
   object
     method write_body w = Buf_write.string w content
@@ -14,14 +14,11 @@ class content_writer ~content ~content_type =
       f ~name:"Content-Type" ~value:content_type
   end
 
-let content_writer ~content ~content_type =
-  new content_writer ~content ~content_type
-
 let form_values_writer assoc_list =
   let content =
     List.map (fun (k, v) -> (k, [ v ])) assoc_list |> Uri.encoded_of_query
   in
-  new content_writer ~content ~content_type:"application/x-www-form-urlencoded"
+  content_writer ~content ~content_type:"application/x-www-form-urlencoded"
 
 class type ['a] reader =
   object

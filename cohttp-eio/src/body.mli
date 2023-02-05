@@ -9,15 +9,6 @@ class type writer =
     method write_header : (name:string -> value:string -> unit) -> unit
   end
 
-(** [content_writer s] is a {!class:writer} which writes [s] as a body and adds
-    HTTP header [Content-Length] to HTTP request or response. *)
-class content_writer :
-  content:string
-  -> content_type:string
-  -> object
-       inherit writer
-     end
-
 val content_writer : content:string -> content_type:string -> writer
 (** [content_writer ~content ~content_type] is
     [new content_writer ~content ~content_type]. *)

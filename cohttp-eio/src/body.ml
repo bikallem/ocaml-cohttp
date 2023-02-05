@@ -24,6 +24,8 @@ class type ['a] reader =
     method read : Eio.Buf_read.t -> 'a option
   end
 
+let read (r : _ #reader) buf_read = r#read buf_read
+
 class content_reader headers =
   object
     method read r =
@@ -33,6 +35,11 @@ class content_reader headers =
   end
 
 let content_reader headers = new content_reader headers
+
+let read_content
+    (t : < headers : Http.Header.t ; buf_read : Eio.Buf_read.t ; .. >) =
+  let r = content_reader t#headers in
+  r#read t#buf_read
 
 let form_values_writer assoc_list =
   let content =
@@ -52,9 +59,3 @@ class none =
   end
 
 let none = new none
-let read (r : _ #reader) buf_read = r#read buf_read
-
-let read_content
-    (t : < headers : Http.Header.t ; buf_read : Eio.Buf_read.t ; .. >) =
-  let r = content_reader t#headers in
-  r#read t#buf_read

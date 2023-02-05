@@ -1,5 +1,3 @@
-(** {1 Chunked Reader/Writer} *)
-
 (** [Chunked] implementes HTTP [chunked] Transfer-Encoding encoder and decoders. *)
 
 (** [t] is [chunked] body which can either be:

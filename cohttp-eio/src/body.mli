@@ -38,6 +38,10 @@ class type ['a] reader =
     method read : Eio.Buf_read.t -> 'a option
   end
 
+val read : 'a #reader -> Eio.Buf_read.t -> 'a option
+(** [read reader] is [Some x] if [reader] is successfully able to read from
+    request/response body. It is [None] otherwise. *)
+
 (** [content_reader header] is a {!class:reader} which reads bytes [Some b] from
     request/response if [Content-Length] exists in [header]. Otherwise the read
     result of this reader is [None]. *)
@@ -49,10 +53,6 @@ class content_reader :
 
 val content_reader : Http.Header.t -> string reader
 (** [content_reader headers] is [new content_reader headers] *)
-
-val read : 'a #reader -> Eio.Buf_read.t -> 'a option
-(** [read reader] is [Some x] if [reader] is successfully able to read from
-    request/response body. It is [None] otherwise. *)
 
 val read_content :
   < headers : Http.Header.t ; buf_read : Eio.Buf_read.t ; .. > -> string option

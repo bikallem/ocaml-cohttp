@@ -48,8 +48,7 @@ class content_reader headers buf_read =
   end
 
 let read_content (t : #buffered) =
-  let r = new content_reader t#headers t#buf_read in
-  r#read
+  read (new content_reader t#headers t#buf_read)
 
 let form_values_writer assoc_list =
   let content =

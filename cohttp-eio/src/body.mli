@@ -46,6 +46,8 @@ class type buffered =
     method buf_read : Eio.Buf_read.t
   end
 
+(** [buffered_reader] is a body that can read from a buffered read source
+    [Eio.Buf_read.t]. *)
 class type ['a] buffered_reader =
   object
     inherit buffered

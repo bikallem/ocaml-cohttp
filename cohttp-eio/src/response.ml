@@ -131,6 +131,3 @@ let parse_client_response buf_read =
   Buf_read.(reason_phrase *> crlf *> return ()) buf_read;
   let headers = Buf_read.http_headers buf_read in
   client_response version headers status buf_read
-
-let read_content = Body.read_content
-let read_chunked = Chunked_body.read_chunked

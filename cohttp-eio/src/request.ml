@@ -194,6 +194,3 @@ let parse_server_request client_addr (r : Eio.Buf_read.t) :
   let version = (http_version <* crlf) r in
   let headers = http_headers r in
   server_request ~version ~headers ~resource meth client_addr r
-
-let read_content = Body.read_content
-let read_chunked = Chunked_body.read_chunked

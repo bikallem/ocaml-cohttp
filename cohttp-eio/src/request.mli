@@ -80,22 +80,3 @@ val parse_server_request :
   Eio.Net.Sockaddr.stream ->
   Eio.Buf_read.t ->
   ('a Body.reader as 'a) server_request
-
-val read_content : _ #server_request -> string option
-(** [read_content request] is [Some content], where [content] is of length [n]
-    if "Content-Length" header is a valid integer value [n] in [request].
-
-    If ["Content-Length"] header is missing or is an invalid value in [request]
-    OR if the request http method is not one of [POST], [PUT] or [PATCH], then
-    [None] is returned. *)
-
-val read_chunked :
-  _ #server_request -> (Chunked_body.t -> unit) -> Http.Header.t option
-(** [read_chunked request chunk_handler] is [Some updated_headers] if
-    "Transfer-Encoding" header value is "chunked" in [request] and all chunks in
-    [buf_read] are read successfully. [updated_headers] is the updated headers
-    as specified by the chunked encoding algorithm in https:
-    //datatracker.ietf.org/doc/html/rfc7230#section-4.1.3.
-
-    Returns [None] if [Transfer-Encoding] header in [headers] is not specified
-    as "chunked" *)

@@ -13,7 +13,7 @@ let () =
       let conn = Net.connect ~sw env#net addr in
       let req = Request.get "www.example.org" in
       let res = Client.call ~conn req in
-      Option.to_result ~none:`No_body (Response.read_content res))
+      Option.to_result ~none:`No_body (Body.read_content res))
   |> function
   | Ok s -> print_string s
   | Error `No_body -> ()

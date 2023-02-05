@@ -5,6 +5,6 @@ let () =
   Eio.Switch.run @@ fun sw ->
   let client = Client.make sw env#net in
   let res = Client.get client "www.example.org" in
-  match Response.read_content res with
+  match Body.read_content res with
   | Some body -> print_string body
   | None -> print_string "no body"

@@ -63,6 +63,12 @@ class virtual buffered_reader :
   end
 
 val read_content : #buffered_reader -> string option
+(** [read_content reader] is [Some content], where [content] is of length [n] if
+    "Content-Length" header is a valid integer value [n] in [request].
+
+    If ["Content-Length"] header is missing or is an invalid value in [request]
+    OR if the request http method is not one of [POST], [PUT] or [PATCH], then
+    [None] is returned. *)
 
 (** {1 none} *)
 

@@ -25,8 +25,8 @@ val make :
   Eio.Net.t ->
   t
 (** [make sw net] is [t]. [net] is used to create/establish connections to
-    server. [sw] is the client resource manager. All connections are automically
-    closed when [sw] goes out of scope or is cancelled.
+    server. [sw] is the client resource manager. All connections are
+    automatically closed when [sw] goes out of scope or is cancelled.
 
     @param timeout
       total time limit for establishing connection, make a request and getting a
@@ -39,22 +39,6 @@ val make :
     @param batch_requests
       if [false] [Eio.Buf_write.flush] is called after writing every request to
       connection. Default is [true]. *)
-
-val buf_write_initial_size : t -> int
-(** [buf_write_initial_size] is the buffered writer iniital size. *)
-
-val buf_read_initial_size : t -> int
-(** [buf_read_initial_size] is the buffered reader initial size. *)
-
-val timeout : t -> Eio.Time.Timeout.t
-(** [timeout] specifies total time limit for establishing a connection, calling
-    a request and getting a response back.
-
-    A client request is cancelled if the specified timeout limit is exceeded. *)
-
-val batch_requests : t -> bool
-(** [batch_requests t] returns [true] it [t] is configured to batch requests.
-    [false] otherwise. *)
 
 (** {1:common Common}
 
@@ -111,3 +95,21 @@ val call :
     redirection or cookie functionality.
 
     @raise Eio.Exn.Io in cases of connection errors. *)
+
+(** {1 Client Configuration} *)
+
+val buf_write_initial_size : t -> int
+(** [buf_write_initial_size] is the buffered writer iniital size. *)
+
+val buf_read_initial_size : t -> int
+(** [buf_read_initial_size] is the buffered reader initial size. *)
+
+val timeout : t -> Eio.Time.Timeout.t
+(** [timeout] specifies total time limit for establishing a connection, calling
+    a request and getting a response back.
+
+    A client request is cancelled if the specified timeout limit is exceeded. *)
+
+val batch_requests : t -> bool
+(** [batch_requests t] returns [true] it [t] is configured to batch requests.
+    [false] otherwise. *)

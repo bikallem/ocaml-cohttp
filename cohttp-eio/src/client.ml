@@ -36,11 +36,6 @@ let make ?(timeout = Eio.Time.Timeout.none) ?(buf_read_initial_size = 0x1000)
     cache = Atomic.make Cache.empty;
   }
 
-let buf_write_initial_size t = t.buf_write_initial_size
-let buf_read_initial_size t = t.buf_read_initial_size
-let timeout t = t.timeout
-let batch_requests t = t.batch_requests
-
 (* Specialized version of Eio.Net.with_tcp_connect *)
 let tcp_connect sw ~host ~service net =
   match
@@ -110,3 +105,8 @@ let call ~conn req =
       Request.write req body writer;
       let reader = Eio.Buf_read.of_flow ~initial_size ~max_size:max_int conn in
       Response.parse_client_response reader)
+
+let buf_write_initial_size t = t.buf_write_initial_size
+let buf_read_initial_size t = t.buf_read_initial_size
+let timeout t = t.timeout
+let batch_requests t = t.batch_requests

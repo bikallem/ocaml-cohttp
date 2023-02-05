@@ -73,8 +73,9 @@ module Chunked : sig
   type write_trailer = (Http.Header.t -> unit) -> unit
 
   val writer :
-    ?ua_supports_trailer:bool -> write_chunk -> write_trailer -> writer
-  (** [writer write_chunk write_trailer] is the HTTP [chunked] transfer encoder. *)
+    ua_supports_trailer:bool -> write_chunk -> write_trailer -> writer
+  (** [writer ~ua_supports_trailer write_chunk write_trailer] is the HTTP
+      [chunked] transfer encoder. *)
 
   (** {1 Reader} *)
 

@@ -229,7 +229,7 @@ module Chunked = struct
   type write_chunk = (t -> unit) -> unit
   type write_trailer = (Http.Header.t -> unit) -> unit
 
-  let writer ?(ua_supports_trailer = false) write_chunk write_trailer : writer =
+  let writer ~ua_supports_trailer write_chunk write_trailer : writer =
     object
       inherit writer
       method write_header f = f ~name:"Transfer-Encoding" ~value:"chunked"

@@ -27,7 +27,7 @@ val server_response :
   server_response
 
 val chunked_response :
-  ?ua_supports_trailer:bool ->
+  ua_supports_trailer:bool ->
   Body.Chunked.write_chunk ->
   Body.Chunked.write_trailer ->
   server_response

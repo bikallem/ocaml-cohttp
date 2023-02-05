@@ -24,8 +24,8 @@ let server_response ?(version = `HTTP_1_1) ?(headers = Http.Header.init ())
     method body = body
   end
 
-let chunked_response ?ua_supports_trailer write_chunk write_trailer =
-  let w = Body.Chunked.writer ?ua_supports_trailer write_chunk write_trailer in
+let chunked_response ~ua_supports_trailer write_chunk write_trailer =
+  let w = Body.Chunked.writer ~ua_supports_trailer write_chunk write_trailer in
   server_response w
 
 let http_date clock =

@@ -25,12 +25,9 @@ val writer :
 val reader : Http.Header.t -> (t -> unit) -> Http.Header.t Body.reader
 (** [reader header chunk_reader] is the HTPP [chunked] transfer decoder. *)
 
+val read_chunked : #Body.buffered_reader -> (t -> unit) -> Http.Header.t option
+
 (** {1 Pretty Printers} *)
 
 val pp : Format.formatter -> t -> unit
 val pp_extension : Format.formatter -> extension list -> unit
-
-val read_chunked :
-  < headers : Http.Header.t ; buf_read : Eio.Buf_read.t ; .. > ->
-  (t -> unit) ->
-  Http.Header.t option

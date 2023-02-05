@@ -36,6 +36,12 @@ class content_reader headers =
 
 let content_reader headers = new content_reader headers
 
+class virtual buffered_reader =
+  object
+    method virtual headers : Http.Header.t
+    method virtual buf_read : Eio.Buf_read.t
+  end
+
 let read_content
     (t : < headers : Http.Header.t ; buf_read : Eio.Buf_read.t ; .. >) =
   let r = content_reader t#headers in

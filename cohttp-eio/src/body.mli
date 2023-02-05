@@ -54,8 +54,15 @@ class content_reader :
 val content_reader : Http.Header.t -> string reader
 (** [content_reader headers] is [new content_reader headers] *)
 
-val read_content :
-  < headers : Http.Header.t ; buf_read : Eio.Buf_read.t ; .. > -> string option
+(** {1 Buffered Reader} *)
+
+class virtual buffered_reader :
+  object
+    method virtual headers : Http.Header.t
+    method virtual buf_read : Eio.Buf_read.t
+  end
+
+val read_content : #buffered_reader -> string option
 
 (** {1 none} *)
 

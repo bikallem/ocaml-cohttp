@@ -2,29 +2,6 @@ type t = Chunk of body | Last_chunk of extension list
 and body = { size : int; data : string; extensions : extension list }
 and extension = { name : string; value : string option }
 
-let pp_extension fmt =
-  Fmt.(
-    vbox
-    @@ list ~sep:Fmt.semi
-    @@ record
-         [
-           Fmt.field "name" (fun ext -> ext.name) Fmt.string;
-           Fmt.field "value" (fun ext -> ext.value) Fmt.(option string);
-         ])
-    fmt
-
-let pp fmt = function
-  | Chunk chunk ->
-      Fmt.(
-        record
-          [
-            Fmt.field "size" (fun _t -> chunk.size) Fmt.int;
-            Fmt.field "data" (fun _t -> chunk.data) Fmt.string;
-            Fmt.field "extensions" (fun t -> t.extensions) pp_extension;
-          ])
-        fmt chunk
-  | Last_chunk extensions -> pp_extension fmt extensions
-
 (* Chunked encoding parser *)
 
 let hex_digit = function
@@ -238,3 +215,26 @@ let read_chunked
     (t : < headers : Http.Header.t ; buf_read : Eio.Buf_read.t ; .. >) f =
   let r = reader t#headers f in
   r#read t#buf_read
+
+let pp_extension fmt =
+  Fmt.(
+    vbox
+    @@ list ~sep:Fmt.semi
+    @@ record
+         [
+           Fmt.field "name" (fun ext -> ext.name) Fmt.string;
+           Fmt.field "value" (fun ext -> ext.value) Fmt.(option string);
+         ])
+    fmt
+
+let pp fmt = function
+  | Chunk chunk ->
+      Fmt.(
+        record
+          [
+            Fmt.field "size" (fun _t -> chunk.size) Fmt.int;
+            Fmt.field "data" (fun _t -> chunk.data) Fmt.string;
+            Fmt.field "extensions" (fun t -> t.extensions) pp_extension;
+          ])
+        fmt chunk
+  | Last_chunk extensions -> pp_extension fmt extensions

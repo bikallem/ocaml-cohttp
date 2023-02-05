@@ -49,7 +49,7 @@ val read_content : #buffered -> string option
     OR if the request http method is not one of [POST], [PUT] or [PATCH], then
     [None] is returned. *)
 
-val read_form_values : #buffered -> (string * string list) list option
+val read_form_values : #buffered -> (string * string list) list
 
 (** {1 none} *)
 

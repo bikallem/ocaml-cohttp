@@ -63,7 +63,9 @@ let form_values_reader headers buf_read =
 let read_content (t : #buffered) = read @@ content_reader t#headers t#buf_read
 
 let read_form_values (t : #buffered) =
-  read @@ form_values_reader t#headers t#buf_read
+  match read (form_values_reader t#headers t#buf_read) with
+  | Some l -> l
+  | None -> []
 
 type void = |
 

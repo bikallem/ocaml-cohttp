@@ -111,5 +111,29 @@ let client_response version headers status buf_read =
     method buf_read = buf_read
   end
 
+(* https://datatracker.ietf.org/doc/html/rfc7230#section-3.1.2 *)
+module Buf_read = Eio.Buf_read
+
+let is_digit = function '0' .. '9' -> true | _ -> false
+
+let status_code =
+  let open Rwer in
+  let open Buf_read.Syntax in
+  let+ status = take_while1 is_digit in
+  Http.Status.of_int (int_of_string status)
+
+let reason_phrase =
+  Buf_read.take_while (function
+    | '\x21' .. '\x7E' | '\t' | ' ' -> true
+    | _ -> false)
+
+let parse_client_response buf_read =
+  let open Eio.Buf_read.Syntax in
+  let version = Rwer.(version <* space) buf_read in
+  let status = Rwer.(status_code <* space) buf_read in
+  let () = Rwer.(reason_phrase *> crlf *> Buf_read.return ()) buf_read in
+  let headers = Rwer.http_headers buf_read in
+  client_response version headers status buf_read
+
 let read_content = Body2.read_content
 let read_chunked = Body2.read_chunked

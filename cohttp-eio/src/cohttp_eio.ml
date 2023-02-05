@@ -5,4 +5,3 @@ module Request = Request
 module Response = Response
 module Server = Server
 module Client = Client
-module Client2 = Client2

@@ -9,11 +9,12 @@ let () =
     Request.client_request ~host:"docker" ~resource:"/version" Method.Get
       Body2.none
   in
-  let res = Client2.call ~conn req in
-  let code = fst res |> Http.Response.status |> Http.Status.to_int in
+  let res = Client.call ~conn req in
+  let code = Response.status res |> Http.Status.to_int in
   Printf.printf "Response code: %d\n" code;
-  Printf.printf "Headers: %s\n"
-    (fst res |> Http.Response.headers |> Http.Header.to_string);
-  let body = Client.read_fixed res in
-  Printf.printf "Body of length: %d\n" (String.length body);
-  print_endline ("Received body\n" ^ body)
+  Printf.printf "Headers: %s\n" (Response.headers res |> Http.Header.to_string);
+  match Response.read_content res with
+  | Some body ->
+      Printf.printf "Body of length: %d\n" (String.length body);
+      print_endline ("Received body\n" ^ body)
+  | None -> print_string "no body"

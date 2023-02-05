@@ -66,6 +66,8 @@ val client_response :
   Eio.Buf_read.t ->
   client_response
 
+val parse_client_response : Eio.Buf_read.t -> client_response
+
 val read_content : #client_response -> string option
 (** [read_content response] is [Some content], where [content] is of length [n]
     if "Content-Length" header is a valid integer value [n] in [request].

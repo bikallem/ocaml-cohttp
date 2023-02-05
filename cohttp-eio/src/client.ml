@@ -41,32 +41,6 @@ let buf_read_initial_size t = t.buf_read_initial_size
 let timeout t = t.timeout
 let batch_requests t = t.batch_requests
 
-(* response parser *)
-
-let is_digit = function '0' .. '9' -> true | _ -> false
-
-let status_code =
-  let open Rwer in
-  let open Buf_read.Syntax in
-  let+ status = take_while1 is_digit in
-  Http.Status.of_int (int_of_string status)
-
-let reason_phrase =
-  Buf_read.take_while (function
-    | '\x21' .. '\x7E' | '\t' | ' ' -> true
-    | _ -> false)
-
-type response = Http.Response.t * Buf_read.t
-
-(* https://datatracker.ietf.org/doc/html/rfc7230#section-3.1.2 *)
-let response buf_read =
-  let open Buf_read.Syntax in
-  let version = Rwer.(version <* space) buf_read in
-  let status = Rwer.(status_code <* space) buf_read in
-  let () = Rwer.(reason_phrase *> crlf *> Buf_read.return ()) buf_read in
-  let headers = Rwer.http_headers buf_read in
-  Http.Response.make ~version ~status ~headers ()
-
 (* Specialized version of Eio.Net.with_tcp_connect *)
 let tcp_connect sw ~host ~service net =
   match
@@ -108,11 +82,10 @@ let do_call t req =
       Request.write req body writer;
       if not t.batch_requests then Buf_write.flush writer;
       let reader =
-        Eio.Buf_read.of_flow ~initial_size:t.buf_read_initial_size
-          ~max_size:max_int conn
+        Buf_read.of_flow ~initial_size:t.buf_read_initial_size ~max_size:max_int
+          conn
       in
-      let response = response reader in
-      (response, reader))
+      Response.parse_client_response reader)
 
 let get t url =
   let req = Request.get url in
@@ -136,5 +109,4 @@ let call ~conn req =
       let body = Request.body req in
       Request.write req body writer;
       let reader = Eio.Buf_read.of_flow ~initial_size ~max_size:max_int conn in
-      let response = response reader in
-      (response, reader))
+      Response.parse_client_response reader)

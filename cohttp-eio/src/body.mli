@@ -1,8 +1,5 @@
 (** [Body] is HTTP request or response body. *)
 
-type header = string * string
-(** [header] is a HTTP header of [(name, value)] *)
-
 (** {1 Writer} *)
 
 (** [writer] reads HTTP request or response body. *)

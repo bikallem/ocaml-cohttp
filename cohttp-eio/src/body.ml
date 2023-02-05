@@ -1,5 +1,3 @@
-type header = string * string
-
 class type writer =
   object
     method write_body : Eio.Buf_write.t -> unit

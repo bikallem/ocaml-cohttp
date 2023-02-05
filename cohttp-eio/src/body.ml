@@ -27,10 +27,10 @@ class type ['a] reader =
 
 let read (r : _ #reader) = r#read
 
-class type buffered =
+class virtual buffered =
   object
-    method headers : Http.Header.t
-    method buf_read : Eio.Buf_read.t
+    method virtual headers : Http.Header.t
+    method virtual buf_read : Eio.Buf_read.t
   end
 
 let content headers buf_read =
@@ -62,15 +62,10 @@ let read_form_values (t : #buffered) =
   | Some l -> l
   | None -> []
 
-type void = |
-
-class none =
+class none : writer =
   object
-    method read : void option = None
-    method write_body : Buf_write.t -> unit = fun _ -> ()
-
-    method write_header : (name:string -> value:string -> unit) -> unit =
-      fun _ -> ()
+    method write_body _ = ()
+    method write_header _ = ()
   end
 
 let none = new none

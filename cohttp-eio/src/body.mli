@@ -18,28 +18,18 @@ val form_values_writer : (string * string) list -> writer
     associated list [key_values] as body and adds HTTP header [Content-Length]
     to HTTP request or response. *)
 
-(** {1 Reader} *)
-
-(** [reader] is a body that can be read. *)
-class type ['a] reader =
-  object
-    method read : 'a option
-  end
-
-val read : 'a #reader -> 'a option
-(** [read reader] is [Some x] if [reader] is successfully able to read
-    request/response body. It is [None] otherwise. *)
-
 (** [buffered] is a body that is buffered.
 
     {!class:Request.server_request} and {!class:Response.client_response} are
     both [buffered] body types. As such both of them can be used with functions
     that accept [#buffered] instances. *)
-class type buffered =
+class virtual buffered :
   object
-    method headers : Http.Header.t
-    method buf_read : Eio.Buf_read.t
+    method virtual headers : Http.Header.t
+    method virtual buf_read : Eio.Buf_read.t
   end
+
+(** {1 Readers} *)
 
 val read_content : #buffered -> string option
 (** [read_content reader] is [Some content], where [content] is of length [n] if
@@ -53,15 +43,11 @@ val read_form_values : #buffered -> (string * string list) list
 
 (** {1 none} *)
 
-type void
-(** represents nothing - a noop. *)
-
 (** [none] is a special type of reader and writer that represents the absence of
-    HTTP request or response body - a {!type:void}. *)
+    HTTP request or response body. It is a no-op. *)
 class virtual none :
   object
     inherit writer
-    inherit [void] reader
   end
 
 val none : none

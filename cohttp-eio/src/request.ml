@@ -114,22 +114,23 @@ let post_form_values form_values url =
   let body = Body.form_values_writer form_values in
   post body url
 
-class virtual ['a] server_request =
+type void = |
+
+class virtual server_request =
   object
-    inherit ['a #Body.reader] t
-    constraint 'a = 'a #Body.reader
-    method virtual meth : ('a Body.reader as 'b) Method.t
+    inherit [void] t
+    method virtual meth : void Method.t
     method virtual client_addr : Eio.Net.Sockaddr.stream
     method virtual buf_read : Eio.Buf_read.t
   end
 
-let buf_read (t : _ #server_request) = t#buf_read
-let client_addr (t : _ #server_request) = t#client_addr
+let buf_read (t : #server_request) = t#buf_read
+let client_addr (t : #server_request) = t#client_addr
 
 let server_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ())
-    ~resource (meth : ('a #Body.reader as 'a) Method.t) client_addr buf_read =
+    ~resource meth client_addr buf_read : server_request =
   object
-    inherit ['a #Body.reader as 'a] server_request
+    inherit server_request
     method version = version
     method headers = headers
     method meth = meth
@@ -189,8 +190,7 @@ let http_headers r =
   in
   Http.Header.of_list (aux ())
 
-let parse_server_request client_addr (r : Eio.Buf_read.t) :
-    ('a Body.reader as 'a) server_request =
+let parse_server_request client_addr (r : Eio.Buf_read.t) : server_request =
   let open Eio.Buf_read.Syntax in
   let meth = http_meth r in
   let resource = http_resource r in

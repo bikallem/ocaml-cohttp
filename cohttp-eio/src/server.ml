@@ -2,11 +2,10 @@ module Buf_read = Eio.Buf_read
 module Buf_write = Eio.Buf_write
 module Switch = Eio.Switch
 
-type 'a handler = 'a Request.server_request -> Response.server_response
+type handler = Request.server_request -> Response.server_response
 (* type 'a middlware = 'a handler -> 'a handler *)
 
-let rec handle_request clock client_addr reader writer flow
-    (handler : 'a handler) =
+let rec handle_request clock client_addr reader writer flow handler =
   match Request.parse_server_request client_addr reader with
   | request ->
       let response = handler request in
@@ -23,7 +22,7 @@ let rec handle_request clock client_addr reader writer flow
       Response.(write internal_server_error clock writer);
       raise ex
 
-let connection_handler (handler : 'a handler) clock flow client_addr =
+let connection_handler handler clock flow client_addr =
   let reader = Buf_read.of_flow ~initial_size:0x1000 ~max_size:max_int flow in
   Buf_write.with_flow flow (fun writer ->
       handle_request clock client_addr reader writer flow handler)

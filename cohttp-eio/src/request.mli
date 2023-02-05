@@ -57,28 +57,26 @@ val post_form_values :
 
 (** {1 Server Request} *)
 
-class virtual ['a] server_request :
+type void
+
+class virtual server_request :
   object
-    inherit ['a #Body.reader] t
-    constraint 'a = 'a #Body.reader
-    method virtual meth : ('a Body.reader as 'b) Method.t
+    inherit [void] t
     method virtual client_addr : Eio.Net.Sockaddr.stream
     method virtual buf_read : Eio.Buf_read.t
   end
 
-val buf_read : 'a #server_request -> Eio.Buf_read.t
-val client_addr : 'a #server_request -> Eio.Net.Sockaddr.stream
+val buf_read : #server_request -> Eio.Buf_read.t
+val client_addr : #server_request -> Eio.Net.Sockaddr.stream
 
 val server_request :
   ?version:Http.Version.t ->
   ?headers:Http.Header.t ->
   resource:string ->
-  ('a Body.reader as 'a) Method.t ->
+  void Method.t ->
   Eio.Net.Sockaddr.stream ->
   Eio.Buf_read.t ->
-  'a server_request
+  server_request
 
 val parse_server_request :
-  Eio.Net.Sockaddr.stream ->
-  Eio.Buf_read.t ->
-  ('a Body.reader as 'a) server_request
+  Eio.Net.Sockaddr.stream -> Eio.Buf_read.t -> server_request

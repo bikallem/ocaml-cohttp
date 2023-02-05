@@ -211,8 +211,7 @@ let reader headers buf_read f =
       | _ -> None
   end
 
-let read_chunked (t : #Body.buffered) f =
-  Body.read @@ reader t#headers t#buf_read f
+let read_chunked (t : #Body.buffered) f = (reader t#headers t#buf_read f)#read
 
 let pp_extension fmt =
   Fmt.(

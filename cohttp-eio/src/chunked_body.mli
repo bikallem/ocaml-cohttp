@@ -23,7 +23,10 @@ val writer :
 (** {1 Reader} *)
 
 val reader :
-  Http.Header.t -> Eio.Buf_read.t -> (t -> unit) -> Http.Header.t Body.reader
+  Http.Header.t ->
+  Eio.Buf_read.t ->
+  (t -> unit) ->
+  Http.Header.t Body.buffered_reader
 (** [reader header buf_read chunk_reader] is the HTPP [chunked] transfer
     decoder. *)
 

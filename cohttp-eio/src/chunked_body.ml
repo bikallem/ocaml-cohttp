@@ -190,8 +190,11 @@ let writer ~ua_supports_trailer write_chunk write_trailer : Body.writer =
       Buf_write.string writer "\r\n"
   end
 
-let reader headers buf_read f : Http.Header.t Body.reader =
+let reader headers buf_read f : Http.Header.t Body.buffered_reader =
   object
+    method headers = headers
+    method buf_read = buf_read
+
     method read =
       match Http.Header.get_transfer_encoding headers with
       | Http.Transfer.Chunked ->

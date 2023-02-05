@@ -47,10 +47,8 @@ class content_reader headers buf_read =
         (Http.Header.get headers "Content-Length")
   end
 
-let content_reader headers = new content_reader headers
-
 let read_content (t : #buffered) =
-  let r = content_reader t#headers t#buf_read in
+  let r = new content_reader t#headers t#buf_read in
   r#read
 
 let form_values_writer assoc_list =

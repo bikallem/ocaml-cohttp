@@ -62,21 +62,6 @@ class content_reader :
        inherit [string] buffered_reader
      end
 
-val content_reader : Http.Header.t -> Eio.Buf_read.t -> string buffered_reader
-(** [content_reader headers buf_read] is [new content_reader headers buf_read].
-
-    Use the reader with {!val:read}. For [headers] parameter
-    {!val:Request.headers} or {!val:Response.headers} for headers.
-
-    {[
-      let headers = Request.headers req in
-      let buf_read = Request.
-      let r = Body.content_reader headers in
-      Body.read r
-    ]}
-
-    Alternately see {!val:read_content}. *)
-
 val read : 'a #reader -> 'a option
 (** [read reader] is [Some x] if [reader] is successfully able to read
     request/response body. It is [None] otherwise. *)

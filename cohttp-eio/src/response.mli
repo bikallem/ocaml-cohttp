@@ -56,6 +56,7 @@ val bad_request : server_response
 class virtual client_response :
   object
     inherit t
+    inherit Body.buffered_reader
     method virtual buf_read : Eio.Buf_read.t
   end
 

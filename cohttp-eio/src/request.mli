@@ -89,7 +89,7 @@ val read_content : _ #server_request -> string option
     [None] is returned. *)
 
 val read_chunked :
-  _ #server_request -> (Body.Chunked.t -> unit) -> Http.Header.t option
+  _ #server_request -> (Chunked_body.t -> unit) -> Http.Header.t option
 (** [read_chunked request chunk_handler] is [Some updated_headers] if
     "Transfer-Encoding" header value is "chunked" in [request] and all chunks in
     [buf_read] are read successfully. [updated_headers] is the updated headers

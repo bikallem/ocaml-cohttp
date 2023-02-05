@@ -62,6 +62,7 @@ type void
 class virtual server_request :
   object
     inherit [void] t
+    inherit Body.buffered
     method virtual client_addr : Eio.Net.Sockaddr.stream
     method virtual buf_read : Eio.Buf_read.t
   end

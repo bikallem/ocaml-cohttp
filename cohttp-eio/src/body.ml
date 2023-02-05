@@ -20,45 +20,29 @@ let form_values_writer assoc_list =
   in
   content_writer ~content ~content_type:"application/x-www-form-urlencoded"
 
-class type ['a] reader =
-  object
-    method read : 'a option
-  end
-
-let read (r : _ #reader) = r#read
-
 class virtual buffered =
   object
     method virtual headers : Http.Header.t
     method virtual buf_read : Eio.Buf_read.t
   end
 
-let content headers buf_read =
-  Option.map
-    (fun len -> Buf_read.take (int_of_string len) buf_read)
-    (Http.Header.get headers "Content-Length")
-
-let content_reader headers buf_read =
-  object
-    method read = content headers buf_read
-  end
-
 let ( let* ) o f = Option.bind o f
 
-let form_values_reader headers buf_read =
-  object
-    method read =
-      let* content = content headers buf_read in
-      match Http.Header.get headers "Content-Type" with
-      | Some "application/x-www-form-urlencoded" ->
-          Some (Uri.query_of_encoded content)
-      | Some _ | None -> None
-  end
-
-let read_content (t : #buffered) = read @@ content_reader t#headers t#buf_read
+let read_content (t : #buffered) =
+  Option.map
+    (fun len -> Buf_read.take (int_of_string len) t#buf_read)
+    (Http.Header.get t#headers "Content-Length")
 
 let read_form_values (t : #buffered) =
-  match read (form_values_reader t#headers t#buf_read) with
+  match
+    let* content = read_content t in
+    let* content_type = Http.Header.get t#headers "Content-Type" in
+    if
+      String.(
+        equal (lowercase_ascii content_type) "application/x-www-form-urlencoded")
+    then Some (Uri.query_of_encoded content)
+    else None
+  with
   | Some l -> l
   | None -> []
 

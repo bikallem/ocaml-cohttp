@@ -190,28 +190,23 @@ let writer ~ua_supports_trailer write_chunk write_trailer : Body.writer =
       Buf_write.string writer "\r\n"
   end
 
-let reader headers buf_read f =
-  object
-    method read =
-      match Http.Header.get_transfer_encoding headers with
-      | Http.Transfer.Chunked ->
-          let total_read = ref 0 in
-          let rec chunk_loop f =
-            let chunk = chunk !total_read headers buf_read in
-            match chunk with
-            | `Chunk (size, data, extensions) ->
-                f (Chunk { size; data; extensions });
-                total_read := !total_read + size;
-                (chunk_loop [@tailcall]) f
-            | `Last_chunk (extensions, headers) ->
-                f (Last_chunk extensions);
-                Some headers
-          in
-          chunk_loop f
-      | _ -> None
-  end
-
-let read_chunked (t : #Body.buffered) f = (reader t#headers t#buf_read f)#read
+let read_chunked (t : #Body.buffered) f =
+  match Http.Header.get_transfer_encoding t#headers with
+  | Http.Transfer.Chunked ->
+      let total_read = ref 0 in
+      let rec chunk_loop f =
+        let chunk = chunk !total_read t#headers t#buf_read in
+        match chunk with
+        | `Chunk (size, data, extensions) ->
+            f (Chunk { size; data; extensions });
+            total_read := !total_read + size;
+            (chunk_loop [@tailcall]) f
+        | `Last_chunk (extensions, headers) ->
+            f (Last_chunk extensions);
+            Some headers
+      in
+      chunk_loop f
+  | _ -> None
 
 let pp_extension fmt =
   Fmt.(

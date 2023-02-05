@@ -6,10 +6,10 @@ type header = string * string
 (** {1 Writer} *)
 
 (** [writer] reads HTTP request or response body. *)
-class virtual writer :
+class type writer =
   object
-    method virtual write_body : Eio.Buf_write.t -> unit
-    method virtual write_header : (name:string -> value:string -> unit) -> unit
+    method write_body : Eio.Buf_write.t -> unit
+    method write_header : (name:string -> value:string -> unit) -> unit
   end
 
 (** [content_writer s] is a {!class:writer} which writes [s] as a body and adds
@@ -19,8 +19,6 @@ class content_writer :
   -> content_type:string
   -> object
        inherit writer
-       method write_body : Eio.Buf_write.t -> unit
-       method write_header : (name:string -> value:string -> unit) -> unit
      end
 
 val content_writer : content:string -> content_type:string -> writer
@@ -35,9 +33,9 @@ val form_values_writer : (string * string) list -> writer
 (** {1 Reader} *)
 
 (** [reader] reads HTTP request or response body. *)
-class virtual ['a] reader :
+class type ['a] reader =
   object
-    method virtual read : Eio.Buf_read.t -> 'a option
+    method read : Eio.Buf_read.t -> 'a option
   end
 
 (** [content_reader header] is a {!class:reader} which reads bytes [Some b] from
@@ -47,7 +45,6 @@ class content_reader :
   Http.Header.t
   -> object
        inherit [string] reader
-       method read : Eio.Buf_read.t -> string option
      end
 
 val content_reader : Http.Header.t -> string reader

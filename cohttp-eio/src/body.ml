@@ -1,15 +1,14 @@
 type header = string * string
 
-class virtual writer =
+class type writer =
   object
-    method virtual write_body : Eio.Buf_write.t -> unit
-    method virtual write_header : (name:string -> value:string -> unit) -> unit
+    method write_body : Eio.Buf_write.t -> unit
+    method write_header : (name:string -> value:string -> unit) -> unit
   end
 
 class content_writer ~content ~content_type =
   let content_length = String.length content in
   object
-    inherit writer
     method write_body w = Buf_write.string w content
 
     method write_header f =
@@ -20,15 +19,13 @@ class content_writer ~content ~content_type =
 let content_writer ~content ~content_type =
   new content_writer ~content ~content_type
 
-class virtual ['a] reader =
+class type ['a] reader =
   object
-    method virtual read : Eio.Buf_read.t -> 'a option
+    method read : Eio.Buf_read.t -> 'a option
   end
 
 class content_reader headers =
   object
-    inherit [string] reader
-
     method read r =
       Option.map
         (fun len -> Buf_read.take (int_of_string len) r)
@@ -231,7 +228,6 @@ module Chunked = struct
 
   let writer ~ua_supports_trailer write_chunk write_trailer : writer =
     object
-      inherit writer
       method write_header f = f ~name:"Transfer-Encoding" ~value:"chunked"
 
       method write_body writer =
@@ -264,8 +260,6 @@ module Chunked = struct
 
   let reader headers f : Http.Header.t reader =
     object
-      inherit [Http.Header.t] reader
-
       method read buf_read =
         match Http.Header.get_transfer_encoding headers with
         | Http.Transfer.Chunked ->
@@ -290,11 +284,11 @@ type void = |
 
 class none =
   object
-    inherit writer
-    inherit [void] reader
-    method read _ = None
-    method write_body _ = ()
-    method write_header _ = ()
+    method read : Buf_read.t -> void option = fun _ -> None
+    method write_body : Buf_write.t -> unit = fun _ -> ()
+
+    method write_header : (name:string -> value:string -> unit) -> unit =
+      fun _ -> ()
   end
 
 let none = new none

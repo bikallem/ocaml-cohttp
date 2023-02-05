@@ -17,10 +17,18 @@ class content_writer ~content ~content_type =
 let content_writer ~content ~content_type =
   new content_writer ~content ~content_type
 
+let form_values_writer assoc_list =
+  let content =
+    List.map (fun (k, v) -> (k, [ v ])) assoc_list |> Uri.encoded_of_query
+  in
+  new content_writer ~content ~content_type:"application/x-www-form-urlencoded"
+
 class type ['a] reader =
   object
     method read : 'a option
   end
+
+let read (r : _ #reader) = r#read
 
 class type buffered =
   object
@@ -28,36 +36,37 @@ class type buffered =
     method buf_read : Eio.Buf_read.t
   end
 
-class type ['a] buffered_reader =
+let content headers buf_read =
+  Option.map
+    (fun len -> Buf_read.take (int_of_string len) buf_read)
+    (Http.Header.get headers "Content-Length")
+
+let content_reader headers buf_read =
   object
-    inherit buffered
-    inherit ['a] reader
+    method headers = headers
+    method buf_read = buf_read
+    method read = content headers buf_read
   end
 
-let read (r : _ #reader) = r#read
+let ( let* ) o f = Option.bind o f
 
-class content_reader headers buf_read =
+let form_values_reader headers buf_read =
   object
     method headers = headers
     method buf_read = buf_read
 
     method read =
-      Option.map
-        (fun len -> Buf_read.take (int_of_string len) buf_read)
-        (Http.Header.get headers "Content-Length")
+      let* content = content headers buf_read in
+      match Http.Header.get headers "Content-Type" with
+      | Some "application/x-www-form-urlencoded" ->
+          Some (Uri.query_of_encoded content)
+      | Some _ | None -> None
   end
 
-let content_reader headers buf_read = new content_reader headers buf_read
+let read_content (t : #buffered) = read @@ content_reader t#headers t#buf_read
 
-let read_content (t : #buffered) =
-  let r = content_reader t#headers t#buf_read in
-  r#read
-
-let form_values_writer assoc_list =
-  let content =
-    List.map (fun (k, v) -> (k, [ v ])) assoc_list |> Uri.encoded_of_query
-  in
-  new content_writer ~content ~content_type:"application/x-www-form-urlencoded"
+let read_form_values (t : #buffered) =
+  read @@ form_values_reader t#headers t#buf_read
 
 type void = |
 

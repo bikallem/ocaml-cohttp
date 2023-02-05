@@ -35,6 +35,10 @@ class type ['a] reader =
     method read : 'a option
   end
 
+val read : 'a #reader -> 'a option
+(** [read reader] is [Some x] if [reader] is successfully able to read
+    request/response body. It is [None] otherwise. *)
+
 (** [buffered] is a body that is buffered.
 
     {!class:Request.server_request} and {!class:Response.client_response} are
@@ -46,23 +50,6 @@ class type buffered =
     method buf_read : Eio.Buf_read.t
   end
 
-(** [buffered_reader] is a body that can read from a buffered read source
-    [Eio.Buf_read.t]. *)
-class type ['a] buffered_reader =
-  object
-    inherit buffered
-    inherit ['a] reader
-  end
-
-val read : 'a #reader -> 'a option
-(** [read reader] is [Some x] if [reader] is successfully able to read
-    request/response body. It is [None] otherwise. *)
-
-val content_reader : Http.Header.t -> Eio.Buf_read.t -> string buffered_reader
-(** [content_reader headers buf_read] is a {!class:reader} which reads bytes
-    [Some b] from request/response if [Content-Length] exists and is a valid
-    value in [headers]. Otherwise it is [None]. *)
-
 val read_content : #buffered -> string option
 (** [read_content reader] is [Some content], where [content] is of length [n] if
     "Content-Length" header is a valid integer value [n] in [request].
@@ -70,6 +57,8 @@ val read_content : #buffered -> string option
     If ["Content-Length"] header is missing or is an invalid value in [request]
     OR if the request http method is not one of [POST], [PUT] or [PATCH], then
     [None] is returned. *)
+
+val read_form_values : #buffered -> (string * string list) list option
 
 (** {1 none} *)
 

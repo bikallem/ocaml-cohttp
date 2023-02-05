@@ -22,14 +22,6 @@ val writer :
 
 (** {1 Reader} *)
 
-val reader :
-  Http.Header.t ->
-  Eio.Buf_read.t ->
-  (t -> unit) ->
-  Http.Header.t Body.buffered_reader
-(** [reader header buf_read chunk_reader] is the HTPP [chunked] transfer
-    decoder. *)
-
 val read_chunked : #Body.buffered -> (t -> unit) -> Http.Header.t option
 (** [read_chunked buffered chunk_handler] is [Some updated_headers] if
     "Transfer-Encoding" header value is "chunked" in [request] and all chunks in

@@ -190,7 +190,7 @@ let writer ~ua_supports_trailer write_chunk write_trailer : Body.writer =
       Buf_write.string writer "\r\n"
   end
 
-let reader headers buf_read f : Http.Header.t Body.buffered_reader =
+let reader headers buf_read f =
   object
     method headers = headers
     method buf_read = buf_read
@@ -215,8 +215,7 @@ let reader headers buf_read f : Http.Header.t Body.buffered_reader =
   end
 
 let read_chunked (t : #Body.buffered) f =
-  let r = reader t#headers t#buf_read f in
-  r#read
+  Body.read @@ reader t#headers t#buf_read f
 
 let pp_extension fmt =
   Fmt.(

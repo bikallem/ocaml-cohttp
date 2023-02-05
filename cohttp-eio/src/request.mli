@@ -24,7 +24,7 @@ val keep_alive : _ #t -> bool
 class virtual ['a] client_request :
   object
     inherit ['a] t
-    constraint 'a = #Body2.writer
+    constraint 'a = #Body.writer
     method virtual body : 'a
     method virtual host : string
     method virtual port : int option
@@ -40,7 +40,7 @@ val client_request :
   'a ->
   'a client_request
 
-val body : (#Body2.writer as 'a) #client_request -> 'a
+val body : (#Body.writer as 'a) #client_request -> 'a
 val client_host_port : _ #client_request -> host_port
 val write : 'a #client_request -> 'a -> Eio.Buf_write.t -> unit
 
@@ -48,20 +48,20 @@ val write : 'a #client_request -> 'a -> Eio.Buf_write.t -> unit
 
 type url = string
 
-val get : url -> Body2.none client_request
-val head : url -> Body2.none client_request
-val post : (#Body2.writer as 'a) -> url -> 'a client_request
+val get : url -> Body.none client_request
+val head : url -> Body.none client_request
+val post : (#Body.writer as 'a) -> url -> 'a client_request
 
 val post_form_values :
-  (string * string) list -> url -> Body2.writer client_request
+  (string * string) list -> url -> Body.writer client_request
 
 (** {1 Server Request} *)
 
 class virtual ['a] server_request :
   object
-    inherit ['a #Body2.reader] t
-    constraint 'a = 'a #Body2.reader
-    method virtual meth : ('a Body2.reader as 'b) Method.t
+    inherit ['a #Body.reader] t
+    constraint 'a = 'a #Body.reader
+    method virtual meth : ('a Body.reader as 'b) Method.t
     method virtual client_addr : Eio.Net.Sockaddr.stream
     method virtual buf_read : Eio.Buf_read.t
   end
@@ -70,7 +70,7 @@ val server_request :
   ?version:Http.Version.t ->
   ?headers:Http.Header.t ->
   resource:string ->
-  ('a Body2.reader as 'a) Method.t ->
+  ('a Body.reader as 'a) Method.t ->
   Eio.Net.Sockaddr.stream ->
   Eio.Buf_read.t ->
   'a server_request
@@ -78,7 +78,7 @@ val server_request :
 val parse_server_request :
   Eio.Net.Sockaddr.stream ->
   Eio.Buf_read.t ->
-  ('a Body2.reader as 'a) server_request
+  ('a Body.reader as 'a) server_request
 
 val read_content : _ #server_request -> string option
 (** [read_content request] is [Some content], where [content] is of length [n]
@@ -89,7 +89,7 @@ val read_content : _ #server_request -> string option
     [None] is returned. *)
 
 val read_chunked :
-  _ #server_request -> (Body2.Chunked.t -> unit) -> Http.Header.t option
+  _ #server_request -> (Body.Chunked.t -> unit) -> Http.Header.t option
 (** [read_chunked request chunk_handler] is [Some updated_headers] if
     "Transfer-Encoding" header value is "chunked" in [request] and all chunks in
     [buf_read] are read successfully. [updated_headers] is the updated headers

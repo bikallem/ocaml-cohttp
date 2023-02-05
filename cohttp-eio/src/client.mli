@@ -72,14 +72,15 @@ val head : t -> string -> Response.client_response
     @raise Invalid_argument if [url] is invalid.
     @raise Eio.Exn.Io in cases of connection errors. *)
 
-val post : t -> #Body2.writer -> string -> Response.client_response
+val post : t -> #Body.writer -> string -> Response.client_response
 (** [post t body url] is [response] after making a HTTP POST request call with
     body [body] to [url].
 
     @raise Invalid_argument if [url] is invalid.
     @raise Eio.Exn.Io in cases of connection errors. *)
 
-val post_form_values : t -> (string * string) list -> Request.url -> Response.client_response
+val post_form_values :
+  t -> (string * string) list -> Request.url -> Response.client_response
 (** [post_form_values t form_values url] is [response] after making a HTTP POST
     request call to [url] with form values [form_values].
 
@@ -99,7 +100,10 @@ val do_call : t -> 'a Request.client_request -> Response.client_response
 
     @raise Eio.Exn.Io in cases of connection errors. *)
 
-val call : conn:#Eio.Flow.two_way -> 'a Request.client_request -> Response.client_response
+val call :
+  conn:#Eio.Flow.two_way ->
+  'a Request.client_request ->
+  Response.client_response
 (** [call conn req] makes a HTTP client call using connection [conn] and request
     [req]. It returns a {!type:response} upon a successfull call.
 

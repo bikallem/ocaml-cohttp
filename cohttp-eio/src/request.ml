@@ -1,6 +1,3 @@
-module Buf_read = Eio.Buf_read
-module Buf_write = Eio.Buf_write
-
 (** [request] is the common request object *)
 class virtual ['a] t =
   object
@@ -30,16 +27,16 @@ let keep_alive (t : _ #t) =
 class virtual ['a] client_request =
   object
     inherit ['a] t
-    constraint 'a = #Body2.writer
+    constraint 'a = #Body.writer
     method virtual body : 'a
     method virtual host : string
     method virtual port : int option
   end
 
 let client_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
-    ~host ~resource (meth : (#Body2.writer as 'a) Method.t) body =
+    ~host ~resource (meth : (#Body.writer as 'a) Method.t) body =
   object
-    inherit [#Body2.writer as 'a] client_request
+    inherit [#Body.writer as 'a] client_request
     val headers = headers
     method version = version
     method headers = headers
@@ -52,9 +49,9 @@ let client_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
 
 let body (t : _ #client_request) = t#body
 let client_host_port (t : _ #client_request) = (t#host, t#port)
-let write_header w ~name ~value = Rwer.write_header w name value
+let write_header w ~name ~value = Buf_write.write_header w name value
 
-let write (t : _ #client_request) (body : #Body2.writer) writer =
+let write (t : _ #client_request) (body : #Body.writer) writer =
   let headers =
     Http.Header.add_unless_exists t#headers "User-Agent" "cohttp-eio"
   in
@@ -75,9 +72,9 @@ let write (t : _ #client_request) (body : #Body2.writer) writer =
     | Some port -> t#host ^ ":" ^ string_of_int port
     | None -> t#host
   in
-  Rwer.write_header writer "Host" host;
+  Buf_write.write_header writer "Host" host;
   body#write_header (write_header writer);
-  Rwer.write_headers writer headers;
+  Buf_write.write_headers writer headers;
   Buf_write.string writer "\r\n";
   body#write_body writer
 
@@ -103,33 +100,33 @@ let parse_url url =
 
 let get url =
   let host, port, resource = parse_url url in
-  client_request ?port Method.Get ~host ~resource Body2.none
+  client_request ?port Method.Get ~host ~resource Body.none
 
 let head url =
   let host, port, resource = parse_url url in
-  client_request ?port Method.Head ~host ~resource Body2.none
+  client_request ?port Method.Head ~host ~resource Body.none
 
 let post body url =
   let host, port, resource = parse_url url in
   client_request ?port Method.Post ~host ~resource body
 
 let post_form_values form_values url =
-  let body = Body2.form_values_writer form_values in
+  let body = Body.form_values_writer form_values in
   post body url
 
 class virtual ['a] server_request =
   object
-    inherit ['a #Body2.reader] t
-    constraint 'a = 'a #Body2.reader
-    method virtual meth : ('a Body2.reader as 'b) Method.t
+    inherit ['a #Body.reader] t
+    constraint 'a = 'a #Body.reader
+    method virtual meth : ('a Body.reader as 'b) Method.t
     method virtual client_addr : Eio.Net.Sockaddr.stream
     method virtual buf_read : Eio.Buf_read.t
   end
 
 let server_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ())
-    ~resource (meth : ('a #Body2.reader as 'a) Method.t) client_addr buf_read =
+    ~resource (meth : ('a #Body.reader as 'a) Method.t) client_addr buf_read =
   object
-    inherit ['a #Body2.reader as 'a] server_request
+    inherit ['a #Body.reader as 'a] server_request
     method version = version
     method headers = headers
     method meth = meth
@@ -190,7 +187,7 @@ let http_headers r =
   Http.Header.of_list (aux ())
 
 let parse_server_request client_addr (r : Eio.Buf_read.t) :
-    ('a Body2.reader as 'a) server_request =
+    ('a Body.reader as 'a) server_request =
   let open Eio.Buf_read.Syntax in
   let meth = http_meth r in
   let resource = http_resource r in
@@ -198,5 +195,5 @@ let parse_server_request client_addr (r : Eio.Buf_read.t) :
   let headers = http_headers r in
   server_request ~version ~headers ~resource meth client_addr r
 
-let read_content = Body2.read_content
-let read_chunked = Body2.read_chunked
+let read_content = Body.read_content
+let read_chunked = Body.read_chunked

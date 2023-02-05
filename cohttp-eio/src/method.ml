@@ -1,4 +1,4 @@
-type none = Body2.none
+type none = Body.none
 
 type 'a t =
   | Get : none t

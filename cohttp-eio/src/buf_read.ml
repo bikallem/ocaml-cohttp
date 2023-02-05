@@ -1,11 +1,4 @@
-(* This modules encapsulates refactored - common - readers and writers
-   used by the Client and Server modules.
-
-    rwer.ml => (R)eader (W)riter + er
-*)
-
-(* TODO Move these functions to specific modules after https://github.com/mirage/ocaml-cohttp/pull/966 is merged. *)
-
+include Eio.Buf_read
 module Buf_read = Eio.Buf_read
 module Buf_write = Eio.Buf_write
 
@@ -52,13 +45,3 @@ let http_headers r =
         h :: aux ()
   in
   Http.Header.of_list (aux ())
-
-let write_header w k v =
-  Buf_write.string w k;
-  Buf_write.string w ": ";
-  Buf_write.string w v;
-  Buf_write.string w "\r\n"
-
-let write_headers w headers =
-  let headers = Http.Header.clean_dup headers in
-  Http.Header.iter (write_header w) headers

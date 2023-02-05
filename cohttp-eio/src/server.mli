@@ -9,7 +9,7 @@ val run :
   domain_mgr:Eio.Domain_manager.t ->
   net:Eio.Net.t ->
   clock:Eio.Time.clock ->
-  ('b Body2.reader as 'b) handler ->
+  ('b Body.reader as 'b) handler ->
   'c
 (** [run ~socket_backlog ~domains ~port env handler] runs a HTTP/1.1 server
     executing [handler] and listening on [port]. [env] corresponds to
@@ -23,7 +23,7 @@ val run :
     configure a multicore capable server. *)
 
 val connection_handler :
-  ('a Body2.reader as 'a) handler ->
+  ('a Body.reader as 'a) handler ->
   #Eio.Time.clock ->
   #Eio.Net.stream_socket ->
   Eio.Net.Sockaddr.stream ->
@@ -33,5 +33,5 @@ val connection_handler :
 
 (** {1 Basic Handlers} *)
 
-val not_found_handler : ('a Body2.reader as 'a) handler
+val not_found_handler : ('a Body.reader as 'a) handler
 (** [not_found_handler] return HTTP 404 response. *)

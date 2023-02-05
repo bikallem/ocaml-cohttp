@@ -16,20 +16,20 @@ val status : #t -> Http.Status.t
 class virtual server_response :
   object
     inherit t
-    method virtual body : Body2.writer
+    method virtual body : Body.writer
   end
 
 val server_response :
   ?version:Http.Version.t ->
   ?headers:Http.Header.t ->
   ?status:Http.Status.t ->
-  Body2.writer ->
+  Body.writer ->
   server_response
 
 val chunked_response :
   ?ua_supports_trailer:bool ->
-  Body2.Chunked.write_chunk ->
-  Body2.Chunked.write_trailer ->
+  Body.Chunked.write_chunk ->
+  Body.Chunked.write_trailer ->
   server_response
 
 val write : #server_response -> #Eio.Time.clock -> Eio.Buf_write.t -> unit
@@ -76,7 +76,7 @@ val read_content : #client_response -> string option
     , then [None] is returned. *)
 
 val read_chunked :
-  #client_response -> (Body2.Chunked.t -> unit) -> Http.Header.t option
+  #client_response -> (Body.Chunked.t -> unit) -> Http.Header.t option
 (** [read_chunked response chunk_handler] is [Some updated_headers] if
     "Transfer-Encoding" header value is "chunked" in [request] and all chunks in
     [buf_read] are read successfully. [updated_headers] is the updated headers

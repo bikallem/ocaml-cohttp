@@ -19,7 +19,7 @@
     - {!val:Connect}
       https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/CONNECT *)
 
-type none = Body2.none
+type none = Body.none
 (** [none] denotes the absence of a request body. *)
 
 type 'a t =

@@ -12,11 +12,11 @@ let status (t : #t) = t#status
 class virtual server_response =
   object
     inherit t
-    method virtual body : Body2.writer
+    method virtual body : Body.writer
   end
 
 let server_response ?(version = `HTTP_1_1) ?(headers = Http.Header.init ())
-    ?(status = `OK) (body : Body2.writer) : server_response =
+    ?(status = `OK) (body : Body.writer) : server_response =
   object
     method version = version
     method headers = headers
@@ -25,7 +25,7 @@ let server_response ?(version = `HTTP_1_1) ?(headers = Http.Header.init ())
   end
 
 let chunked_response ?ua_supports_trailer write_chunk write_trailer =
-  let w = Body2.Chunked.writer ?ua_supports_trailer write_chunk write_trailer in
+  let w = Body.Chunked.writer ?ua_supports_trailer write_chunk write_trailer in
   server_response w
 
 let http_date clock =
@@ -61,9 +61,7 @@ let http_date clock =
   Format.sprintf "%s, %02d %s %04d %02d:%02d:%02d GMT" weekday dd month year hh
     min ss
 
-module Buf_write = Eio.Buf_write
-
-let write_header w ~name ~value = Rwer.write_header w name value
+let write_header w ~name ~value = Buf_write.write_header w name value
 
 let write (t : #t) (clock : #Eio.Time.clock) w =
   let version = Http.Version.to_string t#version in
@@ -75,27 +73,27 @@ let write (t : #t) (clock : #Eio.Time.clock) w =
   (* https://www.rfc-editor.org/rfc/rfc9110#section-6.6.1 *)
   (match t#status with
   | #Http.Status.informational | #Http.Status.server_error -> ()
-  | _ -> Rwer.write_header w "Date" (http_date clock));
+  | _ -> Buf_write.write_header w "Date" (http_date clock));
   t#body#write_header (write_header w);
-  Rwer.write_headers w t#headers;
+  Buf_write.write_headers w t#headers;
   Buf_write.string w "\r\n";
   t#body#write_body w
 
 let text content =
   server_response
-    (Body2.content_writer ~content ~content_type:"text/plain; charset=UTF-8")
+    (Body.content_writer ~content ~content_type:"text/plain; charset=UTF-8")
 
 let html content =
   server_response
-    (Body2.content_writer ~content ~content_type:"text/html; charset=UTF-8")
+    (Body.content_writer ~content ~content_type:"text/html; charset=UTF-8")
 
-let none_writer = (Body2.none :> Body2.writer)
-let not_found = server_response ~status:`Not_found none_writer
+let none_body_response status =
+  let headers = Http.Header.init_with "Content-Length" "0" in
+  server_response ~headers ~status (Body.none :> Body.writer)
 
-let internal_server_error =
-  server_response ~status:`Internal_server_error none_writer
-
-let bad_request = server_response ~status:`Bad_request none_writer
+let not_found = none_body_response `Not_found
+let internal_server_error = none_body_response `Internal_server_error
+let bad_request = none_body_response `Bad_request
 
 class virtual client_response =
   object
@@ -112,14 +110,13 @@ let client_response version headers status buf_read =
   end
 
 (* https://datatracker.ietf.org/doc/html/rfc7230#section-3.1.2 *)
-module Buf_read = Eio.Buf_read
+
+open Buf_read.Syntax
 
 let is_digit = function '0' .. '9' -> true | _ -> false
 
 let status_code =
-  let open Rwer in
-  let open Buf_read.Syntax in
-  let+ status = take_while1 is_digit in
+  let+ status = Buf_read.take_while1 is_digit in
   Http.Status.of_int (int_of_string status)
 
 let reason_phrase =
@@ -129,11 +126,11 @@ let reason_phrase =
 
 let parse_client_response buf_read =
   let open Eio.Buf_read.Syntax in
-  let version = Rwer.(version <* space) buf_read in
-  let status = Rwer.(status_code <* space) buf_read in
-  let () = Rwer.(reason_phrase *> crlf *> Buf_read.return ()) buf_read in
-  let headers = Rwer.http_headers buf_read in
+  let version = Buf_read.(version <* space) buf_read in
+  let status = Buf_read.(status_code <* space) buf_read in
+  Buf_read.(reason_phrase *> crlf *> return ()) buf_read;
+  let headers = Buf_read.http_headers buf_read in
   client_response version headers status buf_read
 
-let read_content = Body2.read_content
-let read_chunked = Body2.read_chunked
+let read_content = Body.read_content
+let read_chunked = Body.read_chunked

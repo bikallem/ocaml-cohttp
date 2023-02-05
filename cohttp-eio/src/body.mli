@@ -54,19 +54,14 @@ class type ['a] buffered_reader =
     inherit ['a] reader
   end
 
-(** [content_reader headers] is a {!class:reader} which reads bytes [Some b]
-    from request/response if [Content-Length] exists and is a valid value in
-    [headers]. Otherwise it is [None]. *)
-class content_reader :
-  Http.Header.t
-  -> Eio.Buf_read.t
-  -> object
-       inherit [string] buffered_reader
-     end
-
 val read : 'a #reader -> 'a option
 (** [read reader] is [Some x] if [reader] is successfully able to read
     request/response body. It is [None] otherwise. *)
+
+val content_reader : Http.Header.t -> Eio.Buf_read.t -> string buffered_reader
+(** [content_reader headers buf_read] is a {!class:reader} which reads bytes
+    [Some b] from request/response if [Content-Length] exists and is a valid
+    value in [headers]. Otherwise it is [None]. *)
 
 val read_content : #buffered -> string option
 (** [read_content reader] is [Some content], where [content] is of length [n] if

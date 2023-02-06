@@ -73,8 +73,7 @@ let do_call t req =
   Eio.Time.Timeout.run_exn t.timeout @@ fun () ->
   let conn = conn t req in
   Buf_write.with_flow ~initial_size:t.buf_write_initial_size conn (fun writer ->
-      let body = Request.body req in
-      Request.write req body writer;
+      Request.write req writer;
       if not t.batch_requests then Buf_write.flush writer;
       let reader =
         Buf_read.of_flow ~initial_size:t.buf_read_initial_size ~max_size:max_int
@@ -101,8 +100,7 @@ let post_form_values t assoc_values url =
 let call ~conn req =
   let initial_size = 0x1000 in
   Buf_write.with_flow ~initial_size conn (fun writer ->
-      let body = Request.body req in
-      Request.write req body writer;
+      Request.write req writer;
       let reader = Eio.Buf_read.of_flow ~initial_size ~max_size:max_int conn in
       Response.parse_client_response reader)
 

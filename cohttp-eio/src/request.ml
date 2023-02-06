@@ -51,7 +51,7 @@ let body (t : _ #client_request) = t#body
 let client_host_port (t : _ #client_request) = (t#host, t#port)
 let write_header w ~name ~value = Buf_write.write_header w name value
 
-let write (t : _ #client_request) (body : #Body.writer) writer =
+let write (t : _ #client_request) writer =
   let headers =
     Http.Header.add_unless_exists t#headers "User-Agent" "cohttp-eio"
   in
@@ -73,6 +73,7 @@ let write (t : _ #client_request) (body : #Body.writer) writer =
     | None -> t#host
   in
   Buf_write.write_header writer "Host" host;
+  let body = t#body in
   body#write_header (write_header writer);
   Buf_write.write_headers writer headers;
   Buf_write.string writer "\r\n";

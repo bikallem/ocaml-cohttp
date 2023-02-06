@@ -42,7 +42,7 @@ val client_request :
 
 val body : (#Body.writer as 'a) #client_request -> 'a
 val client_host_port : _ #client_request -> host_port
-val write : 'a #client_request -> 'a -> Eio.Buf_write.t -> unit
+val write : 'a #client_request -> Eio.Buf_write.t -> unit
 
 (** {2 Prepared Requests} *)
 

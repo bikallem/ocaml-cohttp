@@ -59,8 +59,8 @@ val read_content : #reader -> string option
 val read_form_values : #reader -> (string * string list) list
 (** [read_form_values reader] is [form_values] if [reader] body [Content-Type]
     is ["application/x-www-form-urlencoded"] and [Content-Length] is a valid
-    integaer value.
+    integer value.
 
-    [form_values] is list of tuple of form [(name, values)] where [name] is the
-    name of the form field and [values] is a list of values corresponding to the
-    [name]. *)
+    [form_values] is a list of tuple of form [(name, values)] where [name] is
+    the name of the form field and [values] is a list of values corresponding to
+    the [name]. *)

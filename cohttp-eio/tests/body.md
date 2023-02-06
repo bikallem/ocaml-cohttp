@@ -28,6 +28,7 @@ let sink () =
 ```
 
 ## form_values_writer
+
 ```ocaml
 # Eio_main.run @@ fun env ->
   let b, s = sink () in
@@ -78,6 +79,9 @@ None if 'Content-Length' is not valid.
 
 ## read_form_values 
 
+The reader below has both "Content-Length" and "Content-Type" header set correctly, so we are able
+to parse the body correctly.
+
 ```ocaml
 # Eio_main.run @@ fun env ->
   let s = "name1=val%20a,val%20b,val%20c&name2=val%20c,val%20d,val%20e" in
@@ -93,4 +97,21 @@ None if 'Content-Length' is not valid.
 - : (string * string list) list =
 [("name1", ["val a"; "val b"; "val c"]);
  ("name2", ["val c"; "val d"; "val e"])]
+```
+
+However, note that the reader below doesn't have "Content-Type" header. Thus `read_form_values` returns am empty list.
+
+```ocaml
+# Eio_main.run @@ fun env ->
+  let s = "name1=val%20a,val%20b,val%20c&name2=val%20c,val%20d,val%20e" in
+  let len = String.length s in
+  let buf_read = Eio.Buf_read.of_string s in
+  let headers = Http.Header.init_with "Content-Length" (string_of_int len) in
+  let r = object
+      method headers = headers
+      method buf_read = buf_read
+    end
+  in
+  Body.read_form_values r;;
+- : (string * string list) list = []
 ```

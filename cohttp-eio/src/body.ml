@@ -4,6 +4,14 @@ class type writer =
     method write_header : (name:string -> value:string -> unit) -> unit
   end
 
+class none : writer =
+  object
+    method write_body _ = ()
+    method write_header _ = ()
+  end
+
+let none = new none
+
 let content_writer ~content ~content_type =
   let content_length = String.length content in
   object
@@ -44,11 +52,3 @@ let read_form_values (t : #reader) =
   with
   | Some l -> l
   | None -> []
-
-class none : writer =
-  object
-    method write_body _ = ()
-    method write_header _ = ()
-  end
-
-let none = new none

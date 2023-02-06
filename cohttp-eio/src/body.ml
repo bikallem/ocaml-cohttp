@@ -27,9 +27,10 @@ class virtual reader =
 let ( let* ) o f = Option.bind o f
 
 let read_content (t : #reader) =
-  Option.map
-    (fun len -> Buf_read.take (int_of_string len) t#buf_read)
-    (Http.Header.get t#headers "Content-Length")
+  match Http.Header.get t#headers "Content-Length" with
+  | Some l -> (
+      try Some (Buf_read.take (int_of_string l) t#buf_read) with _ -> None)
+  | None -> None
 
 let read_form_values (t : #reader) =
   match

@@ -53,7 +53,7 @@ val head : url -> Body.none client_request
 val post : (#Body.writer as 'a) -> url -> 'a client_request
 
 val post_form_values :
-  (string * string) list -> url -> Body.writer client_request
+  (string * string list) list -> url -> Body.writer client_request
 
 (** {1 Server Request} *)
 

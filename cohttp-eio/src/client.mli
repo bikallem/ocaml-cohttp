@@ -64,13 +64,13 @@ val post : t -> #Body.writer -> string -> Response.client_response
     @raise Eio.Exn.Io in cases of connection errors. *)
 
 val post_form_values :
-  t -> (string * string) list -> Request.url -> Response.client_response
+  t -> (string * string list) list -> Request.url -> Response.client_response
 (** [post_form_values t form_values url] is [response] after making a HTTP POST
     request call to [url] with form values [form_values].
 
     {[
       Client.post_form_values t
-        [ ("field_a", "val a"); ("field_b", "val b") ]
+        [ ("field_a", [ "val a1"; "val a2" ]); ("field_b", [ "val b" ]) ]
         url
     ]}
     @raise Invalid_argument if [url] is invalid.

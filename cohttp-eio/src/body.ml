@@ -15,9 +15,7 @@ let content_writer ~content ~content_type =
   end
 
 let form_values_writer assoc_list =
-  let content =
-    List.map (fun (k, v) -> (k, [ v ])) assoc_list |> Uri.encoded_of_query
-  in
+  let content = Uri.encoded_of_query assoc_list in
   content_writer ~content ~content_type:"application/x-www-form-urlencoded"
 
 class virtual reader =

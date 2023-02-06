@@ -18,12 +18,14 @@ val form_values_writer : (string * string) list -> writer
     associated list [key_values] as body and adds HTTP header [Content-Length]
     to HTTP request or response. *)
 
-(** [buffered] is a body that is buffered.
+(** [reader] is a body that can be read.
 
     {!class:Request.server_request} and {!class:Response.client_response} are
-    both [buffered] body types. As such both of them can be used with functions
-    that accept [#buffered] instances. *)
-class virtual buffered :
+    both [reader] body types. As such both of them can be used with functions
+    that accept [#reader] instances.
+
+    See {!val:read_content} and {!val:read_form_values}. *)
+class virtual reader :
   object
     method virtual headers : Http.Header.t
     method virtual buf_read : Eio.Buf_read.t
@@ -31,15 +33,14 @@ class virtual buffered :
 
 (** {1 Readers} *)
 
-val read_content : #buffered -> string option
+val read_content : #reader -> string option
 (** [read_content reader] is [Some content], where [content] is of length [n] if
-    "Content-Length" header is a valid integer value [n] in [request].
+    "Content-Length" header is a valid integer value [n] in [reader].
 
-    If ["Content-Length"] header is missing or is an invalid value in [request]
-    OR if the request http method is not one of [POST], [PUT] or [PATCH], then
-    [None] is returned. *)
+    If ["Content-Length"] header is missing or is an invalid value in [reader]
+    then [None] is returned. *)
 
-val read_form_values : #buffered -> (string * string list) list
+val read_form_values : #reader -> (string * string list) list
 
 (** {1 none} *)
 

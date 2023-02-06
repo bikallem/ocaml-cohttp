@@ -22,11 +22,11 @@ val writer :
 
 (** {1 Reader} *)
 
-val read_chunked : #Body.buffered -> (t -> unit) -> Http.Header.t option
-(** [read_chunked buffered chunk_handler] is [Some updated_headers] if
+val read_chunked : #Body.reader -> (t -> unit) -> Http.Header.t option
+(** [read_chunked reader chunk_handler] is [Some updated_headers] if
     "Transfer-Encoding" header value is "chunked" in [request] and all chunks in
-    [buf_read] are read successfully. [updated_headers] is the updated headers
-    as specified by the chunked encoding algorithm in https:
+    [reader] are read successfully. [updated_headers] is the updated headers as
+    specified by the chunked encoding algorithm in https:
     //datatracker.ietf.org/doc/html/rfc7230#section-4.1.3.
 
     Returns [None] if [Transfer-Encoding] header in [headers] is not specified

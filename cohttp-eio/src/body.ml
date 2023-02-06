@@ -20,7 +20,7 @@ let form_values_writer assoc_list =
   in
   content_writer ~content ~content_type:"application/x-www-form-urlencoded"
 
-class virtual buffered =
+class virtual reader =
   object
     method virtual headers : Http.Header.t
     method virtual buf_read : Eio.Buf_read.t
@@ -28,12 +28,12 @@ class virtual buffered =
 
 let ( let* ) o f = Option.bind o f
 
-let read_content (t : #buffered) =
+let read_content (t : #reader) =
   Option.map
     (fun len -> Buf_read.take (int_of_string len) t#buf_read)
     (Http.Header.get t#headers "Content-Length")
 
-let read_form_values (t : #buffered) =
+let read_form_values (t : #reader) =
   match
     let* content = read_content t in
     let* content_type = Http.Header.get t#headers "Content-Type" in

@@ -36,7 +36,8 @@ val keep_alive : _ #t -> bool
 
 (** {1 Client Request}
 
-    A HTTP client request. *)
+    A HTTP client request that is primarily constructed and used by
+    {!module:Client}. *)
 class virtual ['a] client_request :
   object
     inherit ['a] t
@@ -55,7 +56,8 @@ val client_request :
   'a Method.t ->
   'a ->
   'a client_request
-(** [client_request ~host ~resource meth body] is a [client_request]. *)
+(** [client_request ~host ~resource meth body] is an instance of
+    {!class:client_request} where [body] is a {!class:Body.writer}. *)
 
 val body : (#Body.writer as 'a) #client_request -> 'a
 (** [body r] is request body for client_request [r]. *)
@@ -108,7 +110,12 @@ val post_form_values :
 (** {1 Server Request} *)
 
 type void
+(** [void] represents no-op values. *)
 
+(** [server_request] is a request that is primarily constructed and used in
+    {!module:Server}.
+
+    A [server_request] is also a sub-type of {!class:Body.reader}.*)
 class virtual server_request :
   object
     inherit [void] t
@@ -118,7 +125,10 @@ class virtual server_request :
   end
 
 val buf_read : #server_request -> Eio.Buf_read.t
+(** [buf_read r] is a buffered reader that can read request [r] body. *)
+
 val client_addr : #server_request -> Eio.Net.Sockaddr.stream
+(** [client_addr r] is the remove client address for request [r]. *)
 
 val server_request :
   ?version:Http.Version.t ->
@@ -128,6 +138,10 @@ val server_request :
   Eio.Net.Sockaddr.stream ->
   Eio.Buf_read.t ->
   server_request
+(** [server_request meth client_addr buf_read] is an instance of
+    {!class:server_request}. *)
 
 val parse_server_request :
   Eio.Net.Sockaddr.stream -> Eio.Buf_read.t -> server_request
+(** [parse_server_request client_addr buf_read] parses a server request [r]
+    given a buffered reader [buf_read]. *)

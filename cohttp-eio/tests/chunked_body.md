@@ -100,21 +100,16 @@ header list.
       body
       ["Trailer", "Expires, Header1"; "Transfer-Encoding", "chunked"]
       (Chunked_body.read_chunked f);;
-size: 7
- data: Mozilla
- extensions:
-  name: ext1
-  value: ext1_v;
-  name: ext2
-  value: ext2_v;
-  name: ext3
-  value:
-size: 9
-          data: Developer
-          extensions:
-size: 7
-                       data: Network
-                       extensions:
+[ Chunk: size = 7; ext1="ext1_v" ext2="ext2_v" ext3
+Mozilla
+]
+[ Chunk: size = 9
+Developer
+]
+[ Chunk: size = 7
+Network
+]
+[ Chunk: size = 0 ]
 val headers : Http.Header.t option = Some <abstr>
 
 # Http.Header.pp_hum Format.std_formatter (Option.get headers) ;;
@@ -131,23 +126,16 @@ Returns `Header2` since it is specified in the request `Trailer` header.
       body
       ["Trailer", "Expires, Header1, Header2"; "Transfer-Encoding", "chunked"]
       (Chunked_body.read_chunked f);;
-size: 7
- data: Mozilla
- extensions:
-  name: ext1
-  value: ext1_v;
-  name: ext2
-  value: ext2_v;
-  name: ext3
-  value:
-
-size: 9
-data: Developer
-extensions:
-
-size: 7
-data: Network
-extensions:
+[ Chunk: size = 7; ext1="ext1_v" ext2="ext2_v" ext3
+Mozilla
+]
+[ Chunk: size = 9
+Developer
+]
+[ Chunk: size = 7
+Network
+]
+[ Chunk: size = 0 ]
 val headers : Http.Header.t option = Some <abstr>
 
 # Http.Header.pp_hum Format.std_formatter (Option.get headers) ;;

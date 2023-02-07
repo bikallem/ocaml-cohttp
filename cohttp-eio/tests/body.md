@@ -68,6 +68,13 @@ None if 'Content-Length' is not valid.
 - : string option = None
 ```
 
+Or if it is missing.
+
+```ocaml
+# test_reader "hello world" [] Body.read_content ;;
+- : string option = None
+```
+
 ## read_form_values 
 
 The reader below has both "Content-Length" and "Content-Type" header set correctly, so we are able

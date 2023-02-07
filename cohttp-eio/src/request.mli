@@ -1,6 +1,7 @@
-(** HTTP Request *)
+(** [Request] is a HTTP Request. *)
 
-(** [request] is a common request type. *)
+(** [t] is a common request abstraction for {!type:server_request} and
+    {!type:client_request}. *)
 class virtual ['a] t :
   object
     method virtual version : Http.Version.t
@@ -10,17 +11,32 @@ class virtual ['a] t :
   end
 
 type host_port = string * int option
+(** [host_port] is a tuple of [(host, Some port)]. *)
 
 val version : _ #t -> Http.Version.t
+(** [version t] is the HTTP version of request [t]. *)
+
 val headers : _ #t -> Http.Header.t
+(** [headers t] is headers associated with request [t]. *)
+
 val meth : 'a #t -> 'a Method.t
+(** [meth t] is request method for [t].*)
+
 val resource : _ #t -> string
+(** [resource] is request resource uri for [t], e.g. "/home/products/123". *)
+
 val supports_chunked_trailers : _ #t -> bool
+(** [supports_chunked_trailers t] is [true] is request [t] has header "TE:
+    trailers". It is [false] otherwise. *)
+
 val keep_alive : _ #t -> bool
+(** [keep_alive t] is [true] if [t] has header "Connection: keep-alive" or if
+    "Connection" header is missing and the HTTP version is 1.1. It is [false] if
+    header "Connection: close" exists. *)
 
 (** {1 Client Request}
 
-    HTTP client request. *)
+    A HTTP client request. *)
 class virtual ['a] client_request :
   object
     inherit ['a] t
@@ -39,21 +55,55 @@ val client_request :
   'a Method.t ->
   'a ->
   'a client_request
+(** [client_request ~host ~resource meth body] is a [client_request]. *)
 
 val body : (#Body.writer as 'a) #client_request -> 'a
+(** [body r] is request body for client_request [r]. *)
+
 val client_host_port : _ #client_request -> host_port
+(** [client_host_port r] is the [host] and [port] for client request [r]. *)
+
 val write : 'a #client_request -> Eio.Buf_write.t -> unit
+(** [write r buf_write] writes client request [r] using [buf_write]. *)
 
-(** {2 Prepared Requests} *)
+val get : string -> Body.none client_request
+(** [get url] is a client request [r] configured with HTTP request method
+    {!val:Method.Get}.
 
-type url = string
+    {[
+      let r = Request.get "/products/a/"
+    ]} *)
 
-val get : url -> Body.none client_request
-val head : url -> Body.none client_request
-val post : (#Body.writer as 'a) -> url -> 'a client_request
+val head : string -> Body.none client_request
+(** [head url] is a client request [r] configured with HTTP request method
+    {!val:Method.Head}.
+
+    {[
+      let r = Request.header "/products/"
+    ]} *)
+
+val post : (#Body.writer as 'a) -> string -> 'a client_request
+(** [post body url] is a client request [r] configured with HTTP request method
+    {!val:Method.Post} and with request body [body]. A header "Content-Length"
+    is added with suitable value in the request header.
+
+    {[
+      let body = Body.conten_writer ~content:"Hello, World!" ~content_type:"text/plain" in
+      let r = Request.post body "/product/purchase/123"
+    ]} *)
 
 val post_form_values :
-  (string * string list) list -> url -> Body.writer client_request
+  (string * string list) list -> string -> Body.writer client_request
+(** [post_form_values form_fields url] is a client request [r] configured with
+    HTTP request method {!val:Method.Post}. The body [form_fields] is a list of
+    form fields [(name, values)]. [form_fields] is percent encoded before being
+    transmitted. Two HTTP headers are added to the request: "Content-Length" and
+    "Content-Type" with value "application/x-www-form-urlencoded".
+
+    {[
+      let r =
+        Request.post_form_values [ ("field1", [ "a"; "b" ]) ] "/product/update"
+    ]} *)
 
 (** {1 Server Request} *)
 

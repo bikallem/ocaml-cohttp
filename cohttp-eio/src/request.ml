@@ -79,8 +79,6 @@ let write (t : _ #client_request) w =
   Buf_write.string w "\r\n";
   body#write_body w
 
-type url = string
-
 let parse_url url =
   if String.starts_with ~prefix:"https" url then
     raise @@ Invalid_argument "url: https protocol not supported";

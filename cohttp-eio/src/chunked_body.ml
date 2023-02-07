@@ -1,5 +1,5 @@
 type t = Chunk of body | Last_chunk of extension list
-and body = { size : int; data : string; extensions : extension list }
+and body = { data : string; extensions : extension list }
 and extension = { name : string; value : string option }
 
 (* Chunked encoding parser *)
@@ -174,7 +174,8 @@ let writer ~ua_supports_trailer write_chunk write_trailer : Body.writer =
           exts
       in
       let write_body = function
-        | Chunk { size; data; extensions = exts } ->
+        | Chunk { data; extensions = exts } ->
+            let size = String.length data in
             Buf_write.string writer (Printf.sprintf "%X" size);
             write_extensions exts;
             Buf_write.string writer "\r\n";
@@ -198,7 +199,7 @@ let read_chunked (t : #Body.reader) f =
         let chunk = chunk !total_read t#headers t#buf_read in
         match chunk with
         | `Chunk (size, data, extensions) ->
-            f (Chunk { size; data; extensions });
+            f (Chunk { data; extensions });
             total_read := !total_read + size;
             (chunk_loop [@tailcall]) f
         | `Last_chunk (extensions, headers) ->
@@ -224,7 +225,7 @@ let pp fmt = function
       Fmt.(
         record
           [
-            Fmt.field "size" (fun _t -> chunk.size) Fmt.int;
+            Fmt.field "size" (fun _t -> String.length chunk.data) Fmt.int;
             Fmt.field "data" (fun _t -> chunk.data) Fmt.string;
             Fmt.field "extensions" (fun t -> t.extensions) pp_extension;
           ])

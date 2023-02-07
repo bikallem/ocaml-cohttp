@@ -8,7 +8,7 @@
       signalling the end of transmission. *)
 type t = Chunk of body | Last_chunk of extension list
 
-and body = { size : int; data : string; extensions : extension list }
+and body = { data : string; extensions : extension list }
 and extension = { name : string; value : string option }
 
 (** {1 Writer} *)
@@ -22,8 +22,8 @@ type write_chunk = (t -> unit) -> unit
 
     {[
       let write_chunk f =
-        f (Chunk {size = 7; data="Hello, "; extensions = []);
-        f (Chunk {size = 6; data="world!"; extension = []);
+        f (Chunk {data="Hello, "; extensions = []);
+        f (Chunk {data="world!"; extension = []);
         f (Last_chunk {extensions = []);
     ]} *)
 

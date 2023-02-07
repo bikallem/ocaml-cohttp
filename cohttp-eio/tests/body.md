@@ -84,13 +84,24 @@ to parse the body correctly.
  ("name2", ["val c"; "val d"; "val e"])]
 ```
 
-However, note that the reader below doesn't have "Content-Type" header. Thus `read_form_values` returns am empty list.
+Note that the reader below doesn't have "Content-Type" header. Thus `read_form_values` returns am empty list.
 
 ```ocaml
 # let body = "name1=val%20a,val%20b,val%20c&name2=val%20c,val%20d,val%20e" in
   test_reader
     body
     [("Content-Length", (string_of_int (String.length body)))]
+    Body.read_form_values ;;
+- : (string * string list) list = []
+```
+
+Note that the reader below doesn't have "Content-Length" header. Thus `read_form_values` returns am empty list.
+
+```ocaml
+# let body = "name1=val%20a,val%20b,val%20c&name2=val%20c,val%20d,val%20e" in
+  test_reader
+    body
+    [("Content-Type", "application/x-www-form-urlencoded")]
     Body.read_form_values ;;
 - : (string * string list) list = []
 ```

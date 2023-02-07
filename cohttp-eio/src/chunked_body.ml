@@ -209,25 +209,40 @@ let read_chunked f (t : #Body.reader) =
       chunk_loop f
   | _ -> None
 
-let pp_extension fmt =
-  Fmt.(
-    vbox
-    @@ list ~sep:Fmt.semi
-    @@ record
-         [
-           Fmt.field "name" (fun ext -> ext.name) Fmt.string;
-           Fmt.field "value" (fun ext -> ext.value) Fmt.(option string);
-         ])
-    fmt
+let pp_extension fmt ext =
+  let open Format in
+  pp_print_string fmt ext.name;
+  match ext.value with Some v -> fprintf fmt "=%S" v | None -> ()
 
-let pp fmt = function
-  | Chunk chunk ->
-      Fmt.(
-        record
-          [
-            Fmt.field "size" (fun _t -> String.length chunk.data) Fmt.int;
-            Fmt.field "data" (fun _t -> chunk.data) Fmt.string;
-            Fmt.field "extensions" (fun t -> t.extensions) pp_extension;
-          ])
-        fmt chunk
-  | Last_chunk extensions -> pp_extension fmt extensions
+let pp fmt t =
+  let open Format in
+  let pp_chunk data extensions =
+    pp_open_vbox fmt 0;
+    pp_print_break fmt 0 0;
+
+    pp_open_hbox fmt ();
+    pp_print_string fmt "[ Chunk: size = ";
+    pp_print_int fmt (String.length data);
+    if List.length extensions > 0 then pp_print_string fmt "; ";
+    pp_print_list ~pp_sep:pp_print_space
+      (fun fmt ext -> pp_extension fmt ext)
+      fmt extensions;
+    pp_close_box fmt ();
+
+    if String.length data > 0 then (
+      pp_print_break fmt 0 0;
+      pp_print_string fmt data;
+      pp_print_break fmt 0 0;
+      pp_print_string fmt "]")
+    else pp_print_string fmt " ]";
+
+    pp_close_box fmt ()
+  in
+
+  let old = pp_get_margin fmt () in
+  pp_set_margin fmt 11;
+  (match t with
+  | Chunk { data; extensions } -> pp_chunk data extensions
+  | Last_chunk extensions -> pp_chunk "" extensions);
+  pp_print_flush fmt ();
+  pp_set_margin fmt old

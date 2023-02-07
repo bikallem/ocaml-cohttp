@@ -68,4 +68,3 @@ val read_chunked : (t -> unit) -> #Body.reader -> Http.Header.t option
 (** {1 Pretty Printers} *)
 
 val pp : Format.formatter -> t -> unit
-val pp_extension : Format.formatter -> extension list -> unit

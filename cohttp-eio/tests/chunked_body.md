@@ -15,6 +15,8 @@ let sink () =
 
 ## Chunked_body.writer
 
+Writes both chunked body and trailer since `ua_supports_trailer = true`.
+
 ```ocaml
 # let write_chunk f =
     f (Chunked_body.Chunk {data="Hello, "; extensions = [{name="ext1"; value=Some "ext1_v"}]});
@@ -51,6 +53,29 @@ val write_trailer : (Http.Header.t -> 'a) -> 'a = <fun>
 +Header2: Header2 value text
 +Header1: Header1 value text
 +Expires: Wed, 21 Oct 2015 07:28:00 GMT
++
++
+- : unit = ()
+```
+
+Writes only chunked body and not the trailers since `ua_supports_trailer = false`.
+
+```ocaml
+# Eio_main.run @@ fun env ->
+  let b, s = sink () in
+  let w = Chunked_body.writer ~ua_supports_trailer:false write_chunk write_trailer in
+  let f ~name ~value = Buffer.add_string b (name ^ ": " ^ value ^ "\n") in
+  Eio.Buf_write.with_flow s (fun bw ->
+    w#write_header f;
+    w#write_body bw;
+  );
+  Eio.traceln "%s" (Buffer.contents b);;
++Transfer-Encoding: chunked
++7;ext1=ext1_v
++Hello, 
++6;ext2=ext2_v
++world!
++0
 +
 +
 - : unit = ()

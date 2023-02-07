@@ -158,3 +158,31 @@ val headers : Http.Header.t option = None
 # headers = None;;
 - : bool = true
 ```
+
+reader works okay even if there are no trailers.
+
+```ocaml
+let body = "7;ext1=ext1_v;ext2=ext2_v;ext3\r\nMozilla\r\n9\r\nDeveloper\r\n7\r\nNetwork\r\n0\r\n\r\n"
+```
+
+```ocaml
+# let headers = 
+    test_reader
+      body
+      ["Trailer", "Expires, Header1, Header2"; "Transfer-Encoding", "chunked"]
+      (Chunked_body.read_chunked f);;
+[ Chunk: size = 7; ext1="ext1_v" ext2="ext2_v" ext3
+Mozilla
+]
+[ Chunk: size = 9
+Developer
+]
+[ Chunk: size = 7
+Network
+]
+[ Chunk: size = 0 ]
+val headers : Http.Header.t option = Some <abstr>
+
+# headers = None;;
+- : bool = false
+```

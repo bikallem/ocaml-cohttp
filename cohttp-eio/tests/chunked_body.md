@@ -25,10 +25,10 @@ Writes both chunked body and trailer since `ua_supports_trailer:true`.
 
 ```ocaml
 # let write_chunk f =
-    f (Chunked_body.Chunk {data="Hello, "; extensions = [{name="ext1"; value=Some "ext1_v"}]});
-    f (Chunked_body.Chunk {data="world!" ; extensions = [{name="ext2"; value=None}]});
-    f (Chunked_body.Chunk {data="Again!" ; extensions = []});
-    f (Chunked_body.Last_chunk []);;
+    f @@ Chunked_body.make ~data:"Hello, " ~extensions:["ext1",Some "ext1_v"] ();
+    f @@ Chunked_body.make ~data:"world!" ~extensions:["ext2",None] ();
+    f @@ Chunked_body.make ~data:"Again!" ();
+    f @@ Chunked_body.make ();;
 val write_chunk : (Chunked_body.t -> 'a) -> 'a = <fun>
 # let write_trailer f =
     let trailer_headers =

@@ -1,15 +1,28 @@
 (** [Chunked_body] is HTTP [chunked] Transfer-Encoding encoder and decoders as
     described in https://datatracker.ietf.org/doc/html/rfc7230#section-4.1.3. *)
 
-(** [t] is a HTTP [chunked] body which can either be:
+type t
+(** [t] is a HTTP chunk *)
 
-    - {!val:Chunk} represents a chunk body which contains data
-    - {!val:Last_chunk} represents the last item in chunked transfer encoding
-      signalling the end of transmission. *)
-type t = Chunk of body | Last_chunk of extension list
+val make :
+  ?extensions:(string * string option) list -> ?data:string -> unit -> t
+(** [chunk ()] creates a chunk [t] that can be read and/or written.
 
-and body = { data : string; extensions : extension list }
-and extension = { name : string; value : string option }
+    @param data
+      is the chunk data in bytes. If [String.length data = 0] or if it is not
+      given, then the transmission of chunked transfer-encoding is ended. The
+      default value is [""].
+    @param extensions
+      is a list of extensions associted with [t]. Chunk extension encodes
+      additional information about [data] in [t]. An extension is a tuple of
+      [(name, value)] where [value] is optional. *)
+
+val data : t -> string option
+(** [data t] is [Some data] if a chunk [t] holds data. Otherwise it is [None]. A
+    [None] data denotes an end of the chunked transfer encoding. *)
+
+val extensions : t -> (string * string option) list
+(** [extensions t] is a list of extensions associated with chunk [t].*)
 
 (** {1 Writer} *)
 

@@ -2,6 +2,21 @@ type t = Chunk of body | Last_chunk of extension list
 and body = { data : string; extensions : extension list }
 and extension = { name : string; value : string option }
 
+let make ?(extensions = []) ?(data = "") () =
+  let extensions = List.map (fun (name, value) -> { name; value }) extensions in
+  let len = String.length data in
+  if len = 0 then Last_chunk extensions else Chunk { data; extensions }
+
+let data = function Chunk { data; _ } -> Some data | Last_chunk _ -> None
+
+let extensions t =
+  let extensions =
+    match t with
+    | Chunk { extensions; _ } -> extensions
+    | Last_chunk extensions -> extensions
+  in
+  List.map (fun { name; value } -> (name, value)) extensions
+
 (* Chunked encoding parser *)
 
 let hex_digit = function
@@ -98,7 +113,7 @@ let request_trailer_headers headers =
 
 (* Chunk decoding algorithm is explained at
    https://datatracker.ietf.org/doc/html/rfc7230#section-4.1.3 *)
-let chunk (total_read : int) (headers : Http.Header.t) =
+let parse_chunk (total_read : int) (headers : Http.Header.t) =
   let open Buf_read.Syntax in
   let* sz = chunk_size in
   match sz with
@@ -196,7 +211,7 @@ let read_chunked f (t : #Body.reader) =
   | Http.Transfer.Chunked ->
       let total_read = ref 0 in
       let rec chunk_loop f =
-        let chunk = chunk !total_read t#headers t#buf_read in
+        let chunk = parse_chunk !total_read t#headers t#buf_read in
         match chunk with
         | `Chunk (size, data, extensions) ->
             f (Chunk { data; extensions });

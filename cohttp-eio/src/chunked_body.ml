@@ -2,7 +2,7 @@ type t = Chunk of body | Last_chunk of extension list
 and body = { data : string; extensions : extension list }
 and extension = { name : string; value : string option }
 
-let make ?(extensions = []) ?(data = "") () =
+let make ?(extensions = []) data =
   let extensions = List.map (fun (name, value) -> { name; value }) extensions in
   let len = String.length data in
   if len = 0 then Last_chunk extensions else Chunk { data; extensions }

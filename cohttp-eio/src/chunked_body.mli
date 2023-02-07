@@ -2,16 +2,13 @@
     described in https://datatracker.ietf.org/doc/html/rfc7230#section-4.1.3. *)
 
 type t
-(** [t] is a HTTP chunk *)
+(** [t] is a HTTP chunk. *)
 
-val make :
-  ?extensions:(string * string option) list -> ?data:string -> unit -> t
-(** [chunk ()] creates a chunk [t] that can be read and/or written.
+val make : ?extensions:(string * string option) list -> string -> t
+(** [chunk data] is a chunk [t]. [t] encapsulates data [data]. If
+    [String.length data = 0], then the chunk [t] denotes an end of chunked
+    transfer-encoding transmission.
 
-    @param data
-      is the chunk data in bytes. If [String.length data = 0] or if it is not
-      given, then the transmission of chunked transfer-encoding is ended. The
-      default value is [""].
     @param extensions
       is a list of extensions associted with [t]. Chunk extension encodes
       additional information about [data] in [t]. An extension is a tuple of

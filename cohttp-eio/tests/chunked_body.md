@@ -11,11 +11,22 @@ let sink () =
   let buf = Buffer.create 10 in
   let sink = Eio.Flow.buffer_sink buf in
   buf, sink
+
+let test_writer w =
+  Eio_main.run @@ fun env ->
+  let b, s = sink () in
+  let f ~name ~value = Buffer.add_string b (name ^ ": " ^ value ^ "\n") in
+  Eio.Buf_write.with_flow s (fun bw ->
+    w#write_header f;
+    w#write_body bw;
+  );
+  Eio.traceln "%s" (Buffer.contents b);;
+
 ```
 
 ## Chunked_body.writer
 
-Writes both chunked body and trailer since `ua_supports_trailer = true`.
+Writes both chunked body and trailer since `ua_supports_trailer:true`.
 
 ```ocaml
 # let write_chunk f =
@@ -35,15 +46,7 @@ val write_chunk : (Chunked_body.t -> 'a) -> 'a = <fun>
     f trailer_headers;;
 val write_trailer : (Http.Header.t -> 'a) -> 'a = <fun>
 
-# Eio_main.run @@ fun env ->
-  let b, s = sink () in
-  let w = Chunked_body.writer ~ua_supports_trailer:true write_chunk write_trailer in
-  let f ~name ~value = Buffer.add_string b (name ^ ": " ^ value ^ "\n") in
-  Eio.Buf_write.with_flow s (fun bw ->
-    w#write_header f;
-    w#write_body bw;
-  );
-  Eio.traceln "%s" (Buffer.contents b);;
+# test_writer (Chunked_body.writer ~ua_supports_trailer:true write_chunk write_trailer) ;;
 +Transfer-Encoding: chunked
 +7;ext1=ext1_v
 +Hello, 
@@ -58,18 +61,10 @@ val write_trailer : (Http.Header.t -> 'a) -> 'a = <fun>
 - : unit = ()
 ```
 
-Writes only chunked body and not the trailers since `ua_supports_trailer = false`.
+Writes only chunked body and not the trailers since `ua_supports_trailer:false`.
 
 ```ocaml
-# Eio_main.run @@ fun env ->
-  let b, s = sink () in
-  let w = Chunked_body.writer ~ua_supports_trailer:false write_chunk write_trailer in
-  let f ~name ~value = Buffer.add_string b (name ^ ": " ^ value ^ "\n") in
-  Eio.Buf_write.with_flow s (fun bw ->
-    w#write_header f;
-    w#write_body bw;
-  );
-  Eio.traceln "%s" (Buffer.contents b);;
+# test_writer (Chunked_body.writer ~ua_supports_trailer:false write_chunk write_trailer) ;;
 +Transfer-Encoding: chunked
 +7;ext1=ext1_v
 +Hello, 

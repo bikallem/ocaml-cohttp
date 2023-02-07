@@ -238,7 +238,6 @@ let pp fmt t =
 
     pp_close_box fmt ()
   in
-
   let old = pp_get_margin fmt () in
   pp_set_margin fmt 11;
   (match t with

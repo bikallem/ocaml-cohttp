@@ -49,35 +49,6 @@ let client_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
 
 let body (t : _ #client_request) = t#body
 let client_host_port (t : _ #client_request) = (t#host, t#port)
-let write_header w ~name ~value = Buf_write.write_header w name value
-
-let write (t : _ #client_request) w =
-  let headers =
-    Http.Header.add_unless_exists t#headers "User-Agent" "cohttp-eio"
-  in
-  let headers = Http.Header.add headers "TE" "trailers" in
-  let headers = Http.Header.add headers "Connection" "TE" in
-  let headers = Http.Header.clean_dup headers in
-  let meth = Method.to_string t#meth in
-  let version = Http.Version.to_string t#version in
-  Buf_write.string w meth;
-  Buf_write.char w ' ';
-  Buf_write.string w t#resource;
-  Buf_write.char w ' ';
-  Buf_write.string w version;
-  Buf_write.string w "\r\n";
-  (* The first header is a "Host" header. *)
-  let host =
-    match t#port with
-    | Some port -> t#host ^ ":" ^ string_of_int port
-    | None -> t#host
-  in
-  Buf_write.write_header w "Host" host;
-  let body = t#body in
-  body#write_header (write_header w);
-  Buf_write.write_headers w headers;
-  Buf_write.string w "\r\n";
-  body#write_body w
 
 let parse_url url =
   if String.starts_with ~prefix:"https" url then
@@ -112,6 +83,36 @@ let post body url =
 let post_form_values form_values url =
   let body = Body.form_values_writer form_values in
   post body url
+
+let write_header w ~name ~value = Buf_write.write_header w name value
+
+let write (t : _ #client_request) w =
+  let headers =
+    Http.Header.add_unless_exists t#headers "User-Agent" "cohttp-eio"
+  in
+  let headers = Http.Header.add headers "TE" "trailers" in
+  let headers = Http.Header.add headers "Connection" "TE" in
+  let headers = Http.Header.clean_dup headers in
+  let meth = Method.to_string t#meth in
+  let version = Http.Version.to_string t#version in
+  Buf_write.string w meth;
+  Buf_write.char w ' ';
+  Buf_write.string w t#resource;
+  Buf_write.char w ' ';
+  Buf_write.string w version;
+  Buf_write.string w "\r\n";
+  (* The first header is a "Host" header. *)
+  let host =
+    match t#port with
+    | Some port -> t#host ^ ":" ^ string_of_int port
+    | None -> t#host
+  in
+  Buf_write.write_header w "Host" host;
+  let body = t#body in
+  body#write_header (write_header w);
+  Buf_write.write_headers w headers;
+  Buf_write.string w "\r\n";
+  body#write_body w
 
 type void = |
 

@@ -65,9 +65,6 @@ val body : (#Body.writer as 'a) #client_request -> 'a
 val client_host_port : _ #client_request -> host_port
 (** [client_host_port r] is the [host] and [port] for client request [r]. *)
 
-val write : 'a #client_request -> Eio.Buf_write.t -> unit
-(** [write r buf_write] writes client request [r] using [buf_write]. *)
-
 val get : string -> Body.none client_request
 (** [get url] is a client request [r] configured with HTTP request method
     {!val:Method.Get}.
@@ -106,6 +103,9 @@ val post_form_values :
       let r =
         Request.post_form_values [ ("field1", [ "a"; "b" ]) ] "/product/update"
     ]} *)
+
+val write : 'a #client_request -> Eio.Buf_write.t -> unit
+(** [write r buf_write] writes client request [r] using [buf_write]. *)
 
 (** {1 Server Request} *)
 

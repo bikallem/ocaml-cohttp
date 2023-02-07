@@ -236,7 +236,7 @@ let pp fmt t =
     pp_print_break fmt 0 0;
 
     pp_open_hbox fmt ();
-    pp_print_string fmt "[ Chunk: size = ";
+    pp_print_string fmt "[size = ";
     pp_print_int fmt (String.length data);
     if List.length extensions > 0 then pp_print_string fmt "; ";
     pp_print_list ~pp_sep:pp_print_space

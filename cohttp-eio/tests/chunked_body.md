@@ -90,7 +90,7 @@ let test_reader body headers f =
     in
     f r
 
-let f chunk = Format.(fprintf std_formatter "\n%a" Chunked_body.pp chunk)
+let f chunk = Eio.traceln "%a" Chunked_body.pp chunk
 
 let body = "7;ext1=ext1_v;ext2=ext2_v;ext3\r\nMozilla\r\n9\r\nDeveloper\r\n7\r\nNetwork\r\n0\r\nHeader2: Header2 value text\r\nHeader1: Header1 value text\r\nExpires: Wed, 21 Oct 2015 07:28:00 GMT\r\n\r\n"
 ```
@@ -105,16 +105,20 @@ header list.
       body
       ["Trailer", "Expires, Header1"; "Transfer-Encoding", "chunked"]
       (Chunked_body.read_chunked f);;
-[ Chunk: size = 7; ext1="ext1_v" ext2="ext2_v" ext3
-Mozilla
-]
-[ Chunk: size = 9
-Developer
-]
-[ Chunk: size = 7
-Network
-]
-[ Chunk: size = 0 ]
++
++[size = 7; ext1="ext1_v" ext2="ext2_v" ext3
++Mozilla
++]
++
++[size = 9
++Developer
++]
++
++[size = 7
++Network
++]
++
++[size = 0 ]
 val headers : Http.Header.t option = Some <abstr>
 
 # Http.Header.pp_hum Format.std_formatter (Option.get headers) ;;
@@ -131,22 +135,26 @@ Returns `Header2` since it is specified in the request `Trailer` header.
       body
       ["Trailer", "Expires, Header1, Header2"; "Transfer-Encoding", "chunked"]
       (Chunked_body.read_chunked f);;
-[ Chunk: size = 7; ext1="ext1_v" ext2="ext2_v" ext3
-Mozilla
-]
-[ Chunk: size = 9
-Developer
-]
-[ Chunk: size = 7
-Network
-]
-[ Chunk: size = 0 ]
++
++[size = 7; ext1="ext1_v" ext2="ext2_v" ext3
++Mozilla
++]
++
++[size = 9
++Developer
++]
++
++[size = 7
++Network
++]
++
++[size = 0 ]
 val headers : Http.Header.t option = Some <abstr>
 
-# Http.Header.pp_hum Format.std_formatter (Option.get headers) ;;
-{ Content-Length = "23" ;
-  Header1 = "Header1 value text" ;
-  Header2 = "Header2 value text" }
+# Eio.traceln "%a" Http.Header.pp_hum (Option.get headers) ;;
++{ Content-Length = "23" ;
++  Header1 = "Header1 value text" ;
++  Header2 = "Header2 value text" }
 - : unit = ()
 ```
 
@@ -176,16 +184,20 @@ let body = "7;ext1=ext1_v;ext2=ext2_v;ext3\r\nMozilla\r\n9\r\nDeveloper\r\n7\r\n
       body
       ["Trailer", "Expires, Header1, Header2"; "Transfer-Encoding", "chunked"]
       (Chunked_body.read_chunked f);;
-[ Chunk: size = 7; ext1="ext1_v" ext2="ext2_v" ext3
-Mozilla
-]
-[ Chunk: size = 9
-Developer
-]
-[ Chunk: size = 7
-Network
-]
-[ Chunk: size = 0 ]
++
++[size = 7; ext1="ext1_v" ext2="ext2_v" ext3
++Mozilla
++]
++
++[size = 9
++Developer
++]
++
++[size = 7
++Network
++]
++
++[size = 0 ]
 val headers : Http.Header.t option = Some <abstr>
 
 # headers = None;;

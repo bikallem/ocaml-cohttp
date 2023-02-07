@@ -35,3 +35,5 @@ let of_string (type a) s : a t =
   | "PATCH" -> Obj.magic Patch
   | "CONNECT" -> Obj.magic Connect
   | _ -> raise @@ Invalid_argument ("Unsupported header: " ^ s)
+
+let pp fmt t = Format.fprintf fmt "%s" (to_string t)

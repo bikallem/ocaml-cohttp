@@ -41,3 +41,5 @@ val of_string : string -> 'a t
     case in-sensitive.
 
     @raise Invalid_argument if [s] is not one of the supported HTTP methods. *)
+
+val pp : Format.formatter -> 'a t -> unit

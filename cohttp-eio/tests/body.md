@@ -2,7 +2,11 @@
 
 ```ocaml
 open Cohttp_eio
+```
 
+A `Buffer.t` sink to test `Body.writer`.
+
+```ocaml
 let sink () = 
   let buf = Buffer.create 10 in
   let sink = Eio.Flow.buffer_sink buf in

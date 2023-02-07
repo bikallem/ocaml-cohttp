@@ -27,6 +27,7 @@ Writes both chunked body and trailer since `ua_supports_trailer:true`.
 # let write_chunk f =
     f (Chunked_body.Chunk {data="Hello, "; extensions = [{name="ext1"; value=Some "ext1_v"}]});
     f (Chunked_body.Chunk {data="world!" ; extensions = [{name="ext2"; value=None}]});
+    f (Chunked_body.Chunk {data="Again!" ; extensions = []});
     f (Chunked_body.Last_chunk []);;
 val write_chunk : (Chunked_body.t -> 'a) -> 'a = <fun>
 # let write_trailer f =
@@ -47,6 +48,8 @@ val write_trailer : (Http.Header.t -> 'a) -> 'a = <fun>
 +Hello, 
 +6;ext2
 +world!
++6
++Again!
 +0
 +Header2: Header2 value text
 +Header1: Header1 value text
@@ -65,6 +68,8 @@ Writes only chunked body and not the trailers since `ua_supports_trailer:false`.
 +Hello, 
 +6;ext2
 +world!
++6
++Again!
 +0
 +
 +

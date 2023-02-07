@@ -7,21 +7,16 @@ open Cohttp_eio
 A `Buffer.t` sink to test `Body.writer`.
 
 ```ocaml
-let sink () = 
-  let buf = Buffer.create 10 in
-  let sink = Eio.Flow.buffer_sink buf in
-  buf, sink
-
 let test_writer w =
   Eio_main.run @@ fun env ->
-  let b, s = sink () in
+  let b = Buffer.create 10 in
+  let s = Eio.Flow.buffer_sink b in
   let f ~name ~value = Buffer.add_string b (name ^ ": " ^ value ^ "\n") in
   Eio.Buf_write.with_flow s (fun bw ->
     w#write_header f;
     w#write_body bw;
   );
   Eio.traceln "%s" (Buffer.contents b);;
-
 ```
 
 ## Chunked_body.writer

@@ -65,21 +65,31 @@ val body : (#Body.writer as 'a) #client_request -> 'a
 val client_host_port : _ #client_request -> host_port
 (** [client_host_port r] is the [host] and [port] for client request [r]. *)
 
+type url = string
+(** [url] is a HTTP URI value with host information.
+
+    {[
+      "www.example.com/products"
+    ]} *)
+
 val get : string -> Body.none client_request
 (** [get url] is a client request [r] configured with HTTP request method
     {!val:Method.Get}.
 
     {[
-      let r = Request.get "/products/a/"
-    ]} *)
+      let r = Request.get "www.example.com/products/a/"
+    ]}
+    @raise Invalid_argument if [url] is invalid. *)
 
 val head : string -> Body.none client_request
 (** [head url] is a client request [r] configured with HTTP request method
-    {!val:Method.Head}.
+    {!val:Method.Head}. [url] is a full HTTP uri value, i.e. it must have host
+    information.
 
     {[
-      let r = Request.header "/products/"
-    ]} *)
+      let r = Request.head "www.example.com/products/"
+    ]}
+    @raise Invalid_argument if [url] is invalid. *)
 
 val post : (#Body.writer as 'a) -> string -> 'a client_request
 (** [post body url] is a client request [r] configured with HTTP request method
@@ -88,8 +98,9 @@ val post : (#Body.writer as 'a) -> string -> 'a client_request
 
     {[
       let body = Body.conten_writer ~content:"Hello, World!" ~content_type:"text/plain" in
-      let r = Request.post body "/product/purchase/123"
-    ]} *)
+      let r = Request.post body "www.example.com/product/purchase/123"
+    ]}
+    @raise Invalid_argument if [url] is invalid. *)
 
 val post_form_values :
   (string * string list) list -> string -> Body.writer client_request
@@ -100,9 +111,10 @@ val post_form_values :
     "Content-Type" with value "application/x-www-form-urlencoded".
 
     {[
-      let r =
-        Request.post_form_values [ ("field1", [ "a"; "b" ]) ] "/product/update"
-    ]} *)
+      let form_fields = [ ("field1", [ "a"; "b" ]) ] in
+      Request.post_form_values form_fields "www.example.com/product/update"
+    ]}
+    @raise Invalid_argument if [url] is invalid. *)
 
 val write : 'a #client_request -> Eio.Buf_write.t -> unit
 (** [write r buf_write] writes client request [r] using [buf_write]. *)

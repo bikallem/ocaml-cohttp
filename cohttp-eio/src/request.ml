@@ -64,9 +64,12 @@ let parse_url url =
   let host, port =
     match (Uri.host u, Uri.port u) with
     | None, _ -> raise @@ Invalid_argument "invalid url: host not defined"
-    | Some host, port -> (host, port)
+    | Some host, port when String.length host > 0 -> (host, port)
+    | _ -> raise @@ Invalid_argument "invalid url: host not defined"
   in
   (host, port, Uri.path_and_query u)
+
+type url = string
 
 let get url =
   let host, port, resource = parse_url url in

@@ -134,13 +134,15 @@ Mock the client addr.
 ```ocaml
 let client_addr = `Tcp (Eio.Net.Ipaddr.V4.loopback, 8081)
 
-let make_buf_read meth = Eio.Buf_read.of_string (meth ^ " /products HTTP/1.1\r\nHost: www.example.com\r\nConnection: TE\r\nTE: trailers\r\nUser-Agent: cohttp-eio\r\n\r\n");;
+let make_buf_read version meth connection = 
+  let s = Printf.sprintf "%s /products HTTP/%s\r\nHost: www.example.com\r\nConnection: %s\r\nTE: trailers\r\nUser-Agent: cohttp-eio\r\n\r\n" meth version connection in
+  Eio.Buf_read.of_string s
 ```
 
 Parse HTTP/1.1 GET request.
 
 ```ocaml
-# let r = Request.parse_server_request client_addr @@ make_buf_read "get" ;;
+# let r = Request.parse_server_request client_addr @@ make_buf_read "1.1" "get" "TE";;
 val r : Request.server_request = <obj>
 
 # Request.version r;;
@@ -172,10 +174,7 @@ val r : Request.server_request = <obj>
 Parse HTTP/1.0 GET request. Keep-alive should be `false`.
 
 ```ocaml
-# let br = Eio.Buf_read.of_string "GET /products HTTP/1.0\r\nHost: www.example.com\r\nConnection: TE\r\nTE: trailers\r\nUser-Agent: cohttp-eio\r\n\r\n";;
-val br : Eio.Buf_read.t = <abstr>
-
-# let r = Request.parse_server_request client_addr br ;;
+# let r = Request.parse_server_request client_addr @@ make_buf_read "1.0" "get" "TE" ;;
 val r : Request.server_request = <obj>
 
 # Request.version r;;
@@ -195,10 +194,7 @@ val r : Request.server_request = <obj>
 Parse HTTP/1.0 GET request. Keep-alive should be `true`.
 
 ```ocaml
-# let br = Eio.Buf_read.of_string "GET /products HTTP/1.0\r\nHost: www.example.com\r\nConnection: keep-alive, TE\r\nTE: trailers\r\nUser-Agent: cohttp-eio\r\n\r\n";;
-val br : Eio.Buf_read.t = <abstr>
-
-# let r = Request.parse_server_request client_addr br ;;
+# let r = Request.parse_server_request client_addr @@ make_buf_read "1.0" "get" "keep-alive, TE" ;;
 val r : Request.server_request = <obj>
 
 # Eio.traceln "%a" Http.Header.pp_hum @@ Request.headers r;;

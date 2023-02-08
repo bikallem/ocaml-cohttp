@@ -72,7 +72,7 @@ type url = string
       "www.example.com/products"
     ]} *)
 
-val get : string -> Body.none client_request
+val get : url -> Body.none client_request
 (** [get url] is a client request [r] configured with HTTP request method
     {!val:Method.Get}.
 
@@ -81,17 +81,16 @@ val get : string -> Body.none client_request
     ]}
     @raise Invalid_argument if [url] is invalid. *)
 
-val head : string -> Body.none client_request
+val head : url -> Body.none client_request
 (** [head url] is a client request [r] configured with HTTP request method
-    {!val:Method.Head}. [url] is a full HTTP uri value, i.e. it must have host
-    information.
+    {!val:Method.Head}.
 
     {[
       let r = Request.head "www.example.com/products/"
     ]}
     @raise Invalid_argument if [url] is invalid. *)
 
-val post : (#Body.writer as 'a) -> string -> 'a client_request
+val post : (#Body.writer as 'a) -> url -> 'a client_request
 (** [post body url] is a client request [r] configured with HTTP request method
     {!val:Method.Post} and with request body [body]. A header "Content-Length"
     is added with suitable value in the request header.
@@ -103,7 +102,7 @@ val post : (#Body.writer as 'a) -> string -> 'a client_request
     @raise Invalid_argument if [url] is invalid. *)
 
 val post_form_values :
-  (string * string list) list -> string -> Body.writer client_request
+  (string * string list) list -> url -> Body.writer client_request
 (** [post_form_values form_fields url] is a client request [r] configured with
     HTTP request method {!val:Method.Post}. The body [form_fields] is a list of
     form fields [(name, values)]. [form_fields] is percent encoded before being

@@ -44,19 +44,19 @@ val make :
 
     Common client use-cases optimized for convenience. *)
 
-val get : t -> string -> Response.client_response
+val get : t -> Request.url -> Response.client_response
 (** [get t url] is [response] after making a HTTP GET request call to [url].
 
     @raise Invalid_argument if [url] is invalid.
     @raise Eio.Exn.Io in cases of connection errors. *)
 
-val head : t -> string -> Response.client_response
+val head : t -> Request.url -> Response.client_response
 (** [head t url] is [response] after making a HTTP HEAD request call to [url].
 
     @raise Invalid_argument if [url] is invalid.
     @raise Eio.Exn.Io in cases of connection errors. *)
 
-val post : t -> #Body.writer -> string -> Response.client_response
+val post : t -> #Body.writer -> Request.url -> Response.client_response
 (** [post t body url] is [response] after making a HTTP POST request call with
     body [body] to [url].
 
@@ -64,7 +64,7 @@ val post : t -> #Body.writer -> string -> Response.client_response
     @raise Eio.Exn.Io in cases of connection errors. *)
 
 val post_form_values :
-  t -> (string * string list) list -> string -> Response.client_response
+  t -> (string * string list) list -> Request.url -> Response.client_response
 (** [post_form_values t form_values url] is [response] after making a HTTP POST
     request call to [url] with form values [form_values].
 

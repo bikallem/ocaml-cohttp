@@ -1,6 +1,3 @@
-module Buf_read = Eio.Buf_read
-module Buf_write = Eio.Buf_write
-
 (* TODO bikal implement redirect functionality
    TODO bikal implement cookie jar functionality
    TODO bikal allow user to override redirection

@@ -1,7 +1,3 @@
-module Buf_read = Eio.Buf_read
-module Buf_write = Eio.Buf_write
-module Switch = Eio.Switch
-
 type handler = Request.server_request -> Response.server_response
 (* type 'a middlware = 'a handler -> 'a handler *)
 
@@ -33,7 +29,7 @@ let run_domain clock ssock handler =
       (Printexc.to_string exn)
   in
   let handler = connection_handler handler clock in
-  Switch.run (fun sw ->
+  Eio.Switch.run (fun sw ->
       let rec loop () =
         Eio.Net.accept_fork ~sw ssock ~on_error handler;
         loop ()
@@ -42,7 +38,7 @@ let run_domain clock ssock handler =
 
 let run ?(socket_backlog = 128) ?(domains = 1) ~port ~domain_mgr ~net ~clock
     handler =
-  Switch.run @@ fun sw ->
+  Eio.Switch.run @@ fun sw ->
   let ssock =
     Eio.Net.listen net ~sw ~reuse_addr:true ~reuse_port:true
       ~backlog:socket_backlog

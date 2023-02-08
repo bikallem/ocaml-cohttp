@@ -9,6 +9,43 @@ let version (t : #t) = t#version
 let headers (t : #t) = t#headers
 let status (t : #t) = t#status
 
+class virtual client_response =
+  object
+    inherit t
+    method virtual buf_read : Eio.Buf_read.t
+  end
+
+let client_response version headers status buf_read =
+  object
+    method version = version
+    method headers = headers
+    method status = status
+    method buf_read = buf_read
+  end
+
+(* https://datatracker.ietf.org/doc/html/rfc7230#section-3.1.2 *)
+
+open Buf_read.Syntax
+
+let is_digit = function '0' .. '9' -> true | _ -> false
+
+let status_code =
+  let+ status = Buf_read.take_while1 is_digit in
+  Http.Status.of_int (int_of_string status)
+
+let reason_phrase =
+  Buf_read.take_while (function
+    | '\x21' .. '\x7E' | '\t' | ' ' -> true
+    | _ -> false)
+
+let parse_client_response buf_read =
+  let open Eio.Buf_read.Syntax in
+  let version = Buf_read.(version <* space) buf_read in
+  let status = Buf_read.(status_code <* space) buf_read in
+  Buf_read.(reason_phrase *> crlf *> return ()) buf_read;
+  let headers = Buf_read.http_headers buf_read in
+  client_response version headers status buf_read
+
 class virtual server_response =
   object
     inherit t
@@ -94,40 +131,3 @@ let none_body_response status =
 let not_found = none_body_response `Not_found
 let internal_server_error = none_body_response `Internal_server_error
 let bad_request = none_body_response `Bad_request
-
-class virtual client_response =
-  object
-    inherit t
-    method virtual buf_read : Eio.Buf_read.t
-  end
-
-let client_response version headers status buf_read =
-  object
-    method version = version
-    method headers = headers
-    method status = status
-    method buf_read = buf_read
-  end
-
-(* https://datatracker.ietf.org/doc/html/rfc7230#section-3.1.2 *)
-
-open Buf_read.Syntax
-
-let is_digit = function '0' .. '9' -> true | _ -> false
-
-let status_code =
-  let+ status = Buf_read.take_while1 is_digit in
-  Http.Status.of_int (int_of_string status)
-
-let reason_phrase =
-  Buf_read.take_while (function
-    | '\x21' .. '\x7E' | '\t' | ' ' -> true
-    | _ -> false)
-
-let parse_client_response buf_read =
-  let open Eio.Buf_read.Syntax in
-  let version = Buf_read.(version <* space) buf_read in
-  let status = Buf_read.(status_code <* space) buf_read in
-  Buf_read.(reason_phrase *> crlf *> return ()) buf_read;
-  let headers = Buf_read.http_headers buf_read in
-  client_response version headers status buf_read

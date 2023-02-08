@@ -123,12 +123,9 @@ let write (t : _ #client_request) w =
   Buf_write.string w "\r\n";
   body#write_body w
 
-type void = |
-
 class virtual server_request =
   object
-    inherit [void] t
-    method virtual meth : void Method.t
+    inherit [Body.none] t
     method virtual client_addr : Eio.Net.Sockaddr.stream
     method virtual buf_read : Eio.Buf_read.t
   end

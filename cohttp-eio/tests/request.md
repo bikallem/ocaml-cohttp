@@ -139,7 +139,7 @@ let make_buf_read version meth connection =
   Eio.Buf_read.of_string s
 ```
 
-Parse HTTP/1.1 GET request.
+### Parse HTTP/1.1 GET request.
 
 ```ocaml
 # let r = Request.parse_server_request client_addr @@ make_buf_read "1.1" "get" "TE";;
@@ -156,7 +156,7 @@ val r : Request.server_request = <obj>
 - : unit = ()
 
 # Request.meth r;;
-- : Request.void Method.t = Cohttp_eio__.Method.Get
+- : Method.none Method.t = Cohttp_eio__.Method.Get
 
 # Request.resource r ;;
 - : string = "/products"
@@ -171,7 +171,7 @@ val r : Request.server_request = <obj>
 - : bool = true
 ```
 
-Parse HTTP/1.0 GET request. Keep-alive should be `false`.
+### Parse HTTP/1.0 GET request. Keep-alive should be `false`.
 
 ```ocaml
 # let r = Request.parse_server_request client_addr @@ make_buf_read "1.0" "get" "TE" ;;
@@ -191,7 +191,7 @@ val r : Request.server_request = <obj>
 - : bool = false
 ```
 
-Parse HTTP/1.0 GET request. Keep-alive should be `true`.
+### Parse HTTP/1.0 GET request. Keep-alive should be `true`.
 
 ```ocaml
 # let r = Request.parse_server_request client_addr @@ make_buf_read "1.0" "get" "keep-alive, TE" ;;
@@ -204,7 +204,40 @@ val r : Request.server_request = <obj>
 +  Host = "www.example.com" }
 - : unit = ()
 
-
 # Request.keep_alive r ;;
+- : bool = true
+```
+
+### Parse request methods - Head, Delete, Options, Trace, Connect, Post, Put and Patch - correctly.
+
+```ocaml
+let parse_method m = 
+  let r = Request.parse_server_request client_addr @@ make_buf_read "1.1" m "TE" in
+  Request.meth r
+```
+
+```ocaml
+# parse_method "head" = Method.Head ;;
+- : bool = true
+
+# parse_method "delete" = Method.Delete ;;
+- : bool = true
+
+# parse_method "options" = Method.Options ;;
+- : bool = true
+
+# parse_method "trace" = Method.Trace ;;
+- : bool = true
+
+# parse_method "connect" = Method.Connect ;;
+- : bool = true
+
+# parse_method "post" = Method.Post ;;
+- : bool = true
+
+# parse_method "put" = Method.Put ;;
+- : bool = true
+
+# parse_method "patch" = Method.Patch ;;
 - : bool = true
 ```

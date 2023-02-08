@@ -121,16 +121,13 @@ val write : 'a #client_request -> Eio.Buf_write.t -> unit
 
 (** {1 Server Request} *)
 
-type void
-(** [void] represents no-op values. *)
-
 (** [server_request] is a request that is primarily constructed and used in
     {!module:Server}.
 
     A [server_request] is also a sub-type of {!class:Body.reader}.*)
 class virtual server_request :
   object
-    inherit [void] t
+    inherit [Body.none] t
     inherit Body.reader
     method virtual client_addr : Eio.Net.Sockaddr.stream
     method virtual buf_read : Eio.Buf_read.t
@@ -146,7 +143,7 @@ val server_request :
   ?version:Http.Version.t ->
   ?headers:Http.Header.t ->
   resource:string ->
-  void Method.t ->
+  Body.none Method.t ->
   Eio.Net.Sockaddr.stream ->
   Eio.Buf_read.t ->
   server_request

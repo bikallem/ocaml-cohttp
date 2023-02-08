@@ -133,15 +133,14 @@ Mock the client addr.
 
 ```ocaml
 let client_addr = `Tcp (Eio.Net.Ipaddr.V4.loopback, 8081)
+
+let make_buf_read meth = Eio.Buf_read.of_string (meth ^ " /products HTTP/1.1\r\nHost: www.example.com\r\nConnection: TE\r\nTE: trailers\r\nUser-Agent: cohttp-eio\r\n\r\n");;
 ```
 
 Parse HTTP/1.1 GET request.
 
 ```ocaml
-# let br = Eio.Buf_read.of_string "GET /products HTTP/1.1\r\nHost: www.example.com\r\nConnection: TE\r\nTE: trailers\r\nUser-Agent: cohttp-eio\r\n\r\n";;
-val br : Eio.Buf_read.t = <abstr>
-
-# let r = Request.parse_server_request client_addr br ;;
+# let r = Request.parse_server_request client_addr @@ make_buf_read "get" ;;
 val r : Request.server_request = <obj>
 
 # Request.version r;;

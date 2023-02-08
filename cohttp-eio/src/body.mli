@@ -12,7 +12,9 @@ class type writer =
 (** {2 none} *)
 
 (** [none] is a special type of reader and writer that represents the absence of
-    HTTP request or response body. It is a no-op. *)
+    HTTP request or response body. It is a no-op.
+
+    See {!type:Method.t} and {!class:Request.server_request}. *)
 class virtual none :
   object
     inherit writer

@@ -127,4 +127,89 @@ val r : Method.none Request.client_request = <obj>
 - : unit = ()
 ```
 
-## Request.
+## Request.parse_server_request
+
+Mock the client addr.
+
+```ocaml
+let client_addr = `Tcp (Eio.Net.Ipaddr.V4.loopback, 8081)
+```
+
+Parse HTTP/1.1 GET request.
+
+```ocaml
+# let br = Eio.Buf_read.of_string "GET /products HTTP/1.1\r\nHost: www.example.com\r\nConnection: TE\r\nTE: trailers\r\nUser-Agent: cohttp-eio\r\n\r\n";;
+val br : Eio.Buf_read.t = <abstr>
+
+# let r = Request.parse_server_request client_addr br ;;
+val r : Request.server_request = <obj>
+
+# Request.version r;;
+- : Http.Version.t = `HTTP_1_1
+
+# Eio.traceln "%a" Http.Header.pp_hum @@ Request.headers r;;
++{ User-Agent = "cohttp-eio" ;
++  TE = "trailers" ;
++  Connection = "TE" ;
++  Host = "www.example.com" }
+- : unit = ()
+
+# Request.meth r;;
+- : Request.void Method.t = Cohttp_eio__.Method.Get
+
+# Request.resource r ;;
+- : string = "/products"
+
+# Request.supports_chunked_trailers r ;;
+- : bool = true
+
+# Request.keep_alive r ;;
+- : bool = true
+
+# Request.client_addr r = client_addr ;;
+- : bool = true
+```
+
+Parse HTTP/1.0 GET request. Keep-alive should be `false`.
+
+```ocaml
+# let br = Eio.Buf_read.of_string "GET /products HTTP/1.0\r\nHost: www.example.com\r\nConnection: TE\r\nTE: trailers\r\nUser-Agent: cohttp-eio\r\n\r\n";;
+val br : Eio.Buf_read.t = <abstr>
+
+# let r = Request.parse_server_request client_addr br ;;
+val r : Request.server_request = <obj>
+
+# Request.version r;;
+- : Http.Version.t = `HTTP_1_0
+
+# Eio.traceln "%a" Http.Header.pp_hum @@ Request.headers r;;
++{ User-Agent = "cohttp-eio" ;
++  TE = "trailers" ;
++  Connection = "TE" ;
++  Host = "www.example.com" }
+- : unit = ()
+
+# Request.keep_alive r ;;
+- : bool = false
+```
+
+Parse HTTP/1.0 GET request. Keep-alive should be `true`.
+
+```ocaml
+# let br = Eio.Buf_read.of_string "GET /products HTTP/1.0\r\nHost: www.example.com\r\nConnection: keep-alive, TE\r\nTE: trailers\r\nUser-Agent: cohttp-eio\r\n\r\n";;
+val br : Eio.Buf_read.t = <abstr>
+
+# let r = Request.parse_server_request client_addr br ;;
+val r : Request.server_request = <obj>
+
+# Eio.traceln "%a" Http.Header.pp_hum @@ Request.headers r;;
++{ User-Agent = "cohttp-eio" ;
++  TE = "trailers" ;
++  Connection = "keep-alive, TE" ;
++  Host = "www.example.com" }
+- : unit = ()
+
+
+# Request.keep_alive r ;;
+- : bool = true
+```

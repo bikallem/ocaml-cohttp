@@ -18,11 +18,17 @@ let supports_chunked_trailers (t : _ #t) =
   Http.Header.get_multi t#headers "TE" |> List.mem "trailers"
 
 let keep_alive (t : _ #t) =
-  match Http.Header.connection t#headers with
-  | Some `Close -> false
-  | Some `Keep_alive -> true
-  | Some (`Unknown _) -> false
-  | None -> Http.Version.compare t#version `HTTP_1_1 = 0
+  match t#version with
+  | `Other _ -> false
+  | `HTTP_1_1 -> true
+  | `HTTP_1_0 -> (
+      match Http.Header.get t#headers "Connection" with
+      | Some v ->
+          String.split_on_char ',' v
+          |> List.exists (fun tok ->
+                 let tok = String.(trim tok |> lowercase_ascii) in
+                 String.equal tok "keep-alive")
+      | None -> false)
 
 class virtual ['a] client_request =
   object

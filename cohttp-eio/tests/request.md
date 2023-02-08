@@ -24,7 +24,7 @@ Attempt at creating a client request with invalid url results in `Invalid_argume
 Exception: Invalid_argument "invalid url: host not defined".
 ```
 
-## Request.get
+## Request.get - client_request
 
 Create a `GET` request and write it.
 
@@ -53,7 +53,7 @@ val r : Method.none Request.client_request = <obj>
 - : unit = ()
 ```
 
-## Request.head
+## Request.head - client_request
 
 ```ocaml
 # test_client_request @@ Request.head "www.example.com" ;;
@@ -67,7 +67,7 @@ val r : Method.none Request.client_request = <obj>
 - : unit = ()
 ```
 
-## Request.post
+## Request.post - client_request
 
 ```ocaml
 # let body = Body.content_writer ~content:"Hello World!" ~content_type:"text/plain" in
@@ -84,8 +84,7 @@ val r : Method.none Request.client_request = <obj>
 - : unit = ()
 ```
 
-## Request.post_form_values
-
+## Request.post_form_values - client_request
 
 ```ocaml
 # let form_values = ["field1", ["val 1"]; "field2", ["v2";"v3";"v4"]] in

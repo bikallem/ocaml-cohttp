@@ -39,8 +39,8 @@ class virtual ['a] client =
     method virtual port : int option
   end
 
-let client ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
-    ~host ~resource (meth : (#Body.writer as 'a) Method.t) body =
+let client ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port ~host
+    ~resource (meth : (#Body.writer as 'a) Method.t) body =
   object
     inherit [#Body.writer as 'a] client
     val headers = headers
@@ -123,20 +123,20 @@ let write (t : _ #client) w =
   Buf_write.string w "\r\n";
   body#write_body w
 
-class virtual server_request =
+class virtual server =
   object
     inherit [Body.none] t
     method virtual client_addr : Eio.Net.Sockaddr.stream
     method virtual buf_read : Eio.Buf_read.t
   end
 
-let buf_read (t : #server_request) = t#buf_read
-let client_addr (t : #server_request) = t#client_addr
+let buf_read (t : #server) = t#buf_read
+let client_addr (t : #server) = t#client_addr
 
-let server_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ())
-    ~resource meth client_addr buf_read : server_request =
+let server ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ~resource
+    meth client_addr buf_read : server =
   object
-    inherit server_request
+    inherit server
     method version = version
     method headers = headers
     method meth = meth
@@ -196,10 +196,10 @@ let http_headers r =
   in
   Http.Header.of_list (aux ())
 
-let parse_server_request client_addr (r : Eio.Buf_read.t) : server_request =
+let parse_server client_addr (r : Eio.Buf_read.t) : server =
   let open Eio.Buf_read.Syntax in
   let meth = http_meth r in
   let resource = http_resource r in
   let version = (http_version <* crlf) r in
   let headers = http_headers r in
-  server_request ~version ~headers ~resource meth client_addr r
+  server ~version ~headers ~resource meth client_addr r

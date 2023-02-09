@@ -30,7 +30,7 @@ let text =
 
 open Cohttp_eio
 
-let app : Request.server_request -> Response.server_response =
+let app : Request.server -> Response.server_response =
  fun req ->
   match Request.resource req with
   | "/" -> Response.text text

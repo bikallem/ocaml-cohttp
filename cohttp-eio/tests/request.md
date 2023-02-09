@@ -126,7 +126,7 @@ val r : Method.none Request.client = <obj>
 - : unit = ()
 ```
 
-## Request.parse_server_request
+## Request.parse_server
 
 Mock the client addr.
 
@@ -141,8 +141,8 @@ let make_buf_read version meth connection =
 ### Parse HTTP/1.1 GET request.
 
 ```ocaml
-# let r = Request.parse_server_request client_addr @@ make_buf_read "1.1" "get" "TE";;
-val r : Request.server_request = <obj>
+# let r = Request.parse_server client_addr @@ make_buf_read "1.1" "get" "TE";;
+val r : Request.server = <obj>
 
 # Request.version r;;
 - : Http.Version.t = `HTTP_1_1
@@ -173,8 +173,8 @@ val r : Request.server_request = <obj>
 ### Parse HTTP/1.0 GET request. Keep-alive should be `false`.
 
 ```ocaml
-# let r = Request.parse_server_request client_addr @@ make_buf_read "1.0" "get" "TE" ;;
-val r : Request.server_request = <obj>
+# let r = Request.parse_server client_addr @@ make_buf_read "1.0" "get" "TE" ;;
+val r : Request.server = <obj>
 
 # Request.version r;;
 - : Http.Version.t = `HTTP_1_0
@@ -193,8 +193,8 @@ val r : Request.server_request = <obj>
 ### Parse HTTP/1.0 GET request. Keep-alive should be `true`.
 
 ```ocaml
-# let r = Request.parse_server_request client_addr @@ make_buf_read "1.0" "get" "keep-alive, TE" ;;
-val r : Request.server_request = <obj>
+# let r = Request.parse_server client_addr @@ make_buf_read "1.0" "get" "keep-alive, TE" ;;
+val r : Request.server = <obj>
 
 # Eio.traceln "%a" Http.Header.pp_hum @@ Request.headers r;;
 +{ User-Agent = "cohttp-eio" ;
@@ -211,7 +211,7 @@ val r : Request.server_request = <obj>
 
 ```ocaml
 let parse_method m = 
-  let r = Request.parse_server_request client_addr @@ make_buf_read "1.1" m "TE" in
+  let r = Request.parse_server client_addr @@ make_buf_read "1.1" m "TE" in
   Request.meth r
 ```
 

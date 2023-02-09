@@ -1,6 +1,6 @@
 (** [Request] is a HTTP Request. *)
 
-(** [t] is a common request abstraction for {!type:server_request} and
+(** [t] is a common request abstraction for {!type:server} and
     {!type:client}. *)
 class virtual ['a] t :
   object
@@ -119,11 +119,11 @@ val write : 'a #client -> Eio.Buf_write.t -> unit
 
 (** {1 Server Request} *)
 
-(** [server_request] is a request that is primarily constructed and used in
+(** [server] is a request that is primarily constructed and used in
     {!module:Server}.
 
-    A [server_request] is also a sub-type of {!class:Body.reader}.*)
-class virtual server_request :
+    A [server] is also a sub-type of {!class:Body.reader}.*)
+class virtual server :
   object
     inherit [Body.none] t
     inherit Body.reader
@@ -131,24 +131,24 @@ class virtual server_request :
     method virtual buf_read : Eio.Buf_read.t
   end
 
-val buf_read : #server_request -> Eio.Buf_read.t
+val buf_read : #server -> Eio.Buf_read.t
 (** [buf_read r] is a buffered reader that can read request [r] body. *)
 
-val client_addr : #server_request -> Eio.Net.Sockaddr.stream
+val client_addr : #server -> Eio.Net.Sockaddr.stream
 (** [client_addr r] is the remove client address for request [r]. *)
 
-val server_request :
+val server :
   ?version:Http.Version.t ->
   ?headers:Http.Header.t ->
   resource:string ->
   Body.none Method.t ->
   Eio.Net.Sockaddr.stream ->
   Eio.Buf_read.t ->
-  server_request
-(** [server_request meth client_addr buf_read] is an instance of
-    {!class:server_request}. *)
+  server
+(** [server meth client_addr buf_read] is an instance of
+    {!class:server}. *)
 
-val parse_server_request :
-  Eio.Net.Sockaddr.stream -> Eio.Buf_read.t -> server_request
-(** [parse_server_request client_addr buf_read] parses a server request [r]
+val parse_server :
+  Eio.Net.Sockaddr.stream -> Eio.Buf_read.t -> server
+(** [parse_server client_addr buf_read] parses a server request [r]
     given a buffered reader [buf_read]. *)

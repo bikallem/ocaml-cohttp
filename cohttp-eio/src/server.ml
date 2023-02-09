@@ -1,8 +1,8 @@
-type handler = Request.server_request -> Response.server_response
+type handler = Request.server -> Response.server_response
 (* type 'a middlware = 'a handler -> 'a handler *)
 
 let rec handle_request clock client_addr reader writer flow handler =
-  match Request.parse_server_request client_addr reader with
+  match Request.parse_server client_addr reader with
   | request ->
       let response = handler request in
       Response.write response clock writer;

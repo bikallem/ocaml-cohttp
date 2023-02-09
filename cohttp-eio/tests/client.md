@@ -122,7 +122,7 @@ let () =
 # Eio_mock.Backend.run @@ fun () ->
   Eio.Switch.run @@ fun sw ->
   let t = Client.make sw net in
-  ignore (Client.head t "www.example.com");;
+  ignore (Client.head t "www.example.com" : Response.client_response);;
 +net: getaddrinfo ~service:80 www.example.com
 +net: connect to tcp:127.0.0.1:80
 +www.example.com: wrote "HEAD / HTTP/1.1\r\n"
@@ -169,6 +169,44 @@ let () =
 +                       "User-Agent: cohttp-eio\r\n"
 +                       "\r\n"
 +                       "hello world"
++www.example.com: read "HTTP/1.1 200 OK\r\n"
++www.example.com: read "content-length: 0\r\n"
++                      "\r\n"
++www.example.com: closed
+- : unit = ()
+```
+
+## Client.post_form_values
+
+```ocaml
+let () = Eio_mock.Net.on_getaddrinfo net [`Return [addr1;addr2]]
+let () = Eio_mock.Net.on_connect net [`Return example_com_conn]
+let () = 
+  Eio_mock.Flow.on_read
+    example_com_conn
+    [
+     `Yield_then (`Return "HTTP/1.1 200 OK\r\n");
+      `Return "content-length: 0\r\n\r\n";
+    ]
+```
+
+```ocaml
+# Eio_mock.Backend.run @@ fun () ->
+  Eio.Switch.run @@ fun sw ->
+  let t = Client.make sw net in
+  let form = [("name1", ["val a"; "val b"; "val c"]); ("name2", ["val c"; "val d"; "val e"])] in
+  ignore (Client.post_form_values t form "www.example.com/upload": Response.client_response);;
++net: getaddrinfo ~service:80 www.example.com
++net: connect to tcp:127.0.0.1:80
++www.example.com: wrote "POST /upload HTTP/1.1\r\n"
++                       "Host: www.example.com\r\n"
++                       "Content-Length: 59\r\n"
++                       "Content-Type: application/x-www-form-urlencoded\r\n"
++                       "Connection: TE\r\n"
++                       "TE: trailers\r\n"
++                       "User-Agent: cohttp-eio\r\n"
++                       "\r\n"
++                       "name1=val%20a,val%20b,val%20c&name2=val%20c,val%20d,val%20e"
 +www.example.com: read "HTTP/1.1 200 OK\r\n"
 +www.example.com: read "content-length: 0\r\n"
 +                      "\r\n"

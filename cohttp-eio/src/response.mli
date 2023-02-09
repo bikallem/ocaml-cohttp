@@ -34,6 +34,7 @@ val client :
     See {!val:parse_client}. *)
 
 val parse_client : Eio.Buf_read.t -> client
+(** [parse_client buf_read] parses {!class:client} from [buf_read]. *)
 
 (** {1 Server Response} *)
 

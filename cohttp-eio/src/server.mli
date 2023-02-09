@@ -3,18 +3,18 @@
 type handler = Request.server -> Response.server
 
 val run :
-  ?socket_backlog:int ->
+  ?backlog:int ->
   ?domains:int ->
   port:int ->
-  domain_mgr:Eio.Domain_manager.t ->
-  net:Eio.Net.t ->
-  clock:Eio.Time.clock ->
+  #Eio.Domain_manager.t ->
+  #Eio.Net.t ->
+  #Eio.Time.clock ->
   handler ->
   'c
-(** [run ~port ~domain_mgr ~net ~clock handler] runs a HTTP/1.1 server executing
+(** [run ~port domain_mgr net clock handler] runs a HTTP/1.1 server executing
     [handler] and listening on [port].
 
-    @param socket_backlog
+    @param backlog
       is the number of pending connections for tcp server socket. The default is
       [128].
     @param domains

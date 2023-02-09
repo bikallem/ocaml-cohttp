@@ -44,5 +44,4 @@ let () =
     ignore "An HTTP/1.1 server";
 
   Eio_main.run @@ fun env ->
-  Server.run ~port:!port ~domain_mgr:env#domain_mgr ~net:env#net
-    ~clock:env#clock app
+  Server.run ~port:!port env#domain_mgr env#net env#clock app

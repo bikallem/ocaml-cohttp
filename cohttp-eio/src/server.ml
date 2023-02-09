@@ -1,5 +1,5 @@
 type handler = Request.server -> Response.server
-(* type 'a middlware = 'a handler -> 'a handler *)
+(* type middleware = handler -> handler *)
 
 let rec handle_request clock client_addr reader writer flow handler =
   match Request.parse_server client_addr reader with
@@ -36,12 +36,12 @@ let run_domain clock ssock handler =
       in
       loop ())
 
-let run ?(socket_backlog = 128) ?(domains = 1) ~port ~domain_mgr ~net ~clock
-    handler =
+let run ?(backlog = 128) ?(domains = 1) ~port
+    (domain_mgr : #Eio.Domain_manager.t) (net : #Eio.Net.t)
+    (clock : #Eio.Time.clock) handler =
   Eio.Switch.run @@ fun sw ->
   let ssock =
-    Eio.Net.listen net ~sw ~reuse_addr:true ~reuse_port:true
-      ~backlog:socket_backlog
+    Eio.Net.listen net ~sw ~reuse_addr:true ~backlog
       (`Tcp (Eio.Net.Ipaddr.V4.loopback, port))
   in
   for _ = 2 to domains do
@@ -50,7 +50,5 @@ let run ?(socket_backlog = 128) ?(domains = 1) ~port ~domain_mgr ~net ~clock
             run_domain clock ssock handler))
   done;
   run_domain clock ssock handler
-
-(* Basic handlers *)
 
 let not_found_handler _ = Response.not_found

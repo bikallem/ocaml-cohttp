@@ -1,5 +1,9 @@
 # Client
 
+## Client.get and Connection caching
+
+Setup
+
 ```ocaml
 open Cohttp_eio
 
@@ -37,25 +41,26 @@ let test_client f =
   Eio_mock.Backend.run @@ fun () ->
   Eio.Switch.run @@ fun sw ->
   let t = Client.make sw net in
-  f t;
+  f t
 ```
-
-## Client.get
 
 The first call `Client.get "www.example.com"` establishes a connection to host "www.example.com".
 The second `Client.get t "www.example.com/products"` doesn't establish the connection since the connection 
 to host "www.example.com" is already established and is cached in `t`.
 
-The third call"Client.get t "www.mirage.org" establishes a new connection as it is a new host.
+The third call "Client.get t "www.mirage.org:8080" establishes a new connection as it is a new host. Additionally,
+note that we can specify port in the url.
 
 ```ocaml
-# test_client @@ fun t ->
-    let res1 = Client.get t "www.example.com" in
-    Eio.traceln "%s" (Body.read_content res1 |> Option.get);
-    let res2 = Client.get t "www.example.com/products" in
-    Eio.traceln "%s" (Body.read_content res2 |> Option.get);
-    let res3 = Client.get t "www.mirage.org" in
-    Eio.traceln "%s" (Body.read_content res3 |> Option.get) ;;
+# Eio_mock.Backend.run @@ fun () ->
+  Eio.Switch.run @@ fun sw ->
+  let t = Client.make sw net in
+  let res1 = Client.get t "www.example.com" in
+  Eio.traceln "%s" (Body.read_content res1 |> Option.get);
+  let res2 = Client.get t "www.example.com/products" in
+  Eio.traceln "%s" (Body.read_content res2 |> Option.get);
+  let res3 = Client.get t "www.mirage.org:8080" in
+  Eio.traceln "%s" (Body.read_content res3 |> Option.get) ;;
 +net: getaddrinfo ~service:80 www.example.com
 +net: connect to tcp:127.0.0.1:80
 +www.example.com: wrote "GET / HTTP/1.1\r\n"
@@ -80,10 +85,10 @@ The third call"Client.get t "www.mirage.org" establishes a new connection as it 
 +                      "\r\n"
 +www.example.com: read "world"
 +world
-+net: getaddrinfo ~service:80 www.mirage.org
++net: getaddrinfo ~service:8080 www.mirage.org
 +net: connect to tcp:127.0.0.1:80
 +www.mirage.org: wrote "GET / HTTP/1.1\r\n"
-+                      "Host: www.mirage.org\r\n"
++                      "Host: www.mirage.org:8080\r\n"
 +                      "Connection: TE\r\n"
 +                      "TE: trailers\r\n"
 +                      "User-Agent: cohttp-eio\r\n"
@@ -99,4 +104,74 @@ The third call"Client.get t "www.mirage.org" establishes a new connection as it 
 ```
 
 ## Client.head
- 
+
+```ocaml
+let () = Eio_mock.Net.on_getaddrinfo net [`Return [addr1;addr2]]
+let () = Eio_mock.Net.on_connect net [`Return example_com_conn]
+let () = 
+  Eio_mock.Flow.on_read
+    example_com_conn
+    [
+     `Yield_then (`Return "HTTP/1.1 200 OK\r\n");
+     `Return "content-length: 12\r\n\r\n";
+     `Raise End_of_file
+    ]
+```
+
+```ocaml
+# Eio_mock.Backend.run @@ fun () ->
+  Eio.Switch.run @@ fun sw ->
+  let t = Client.make sw net in
+  ignore (Client.head t "www.example.com");;
++net: getaddrinfo ~service:80 www.example.com
++net: connect to tcp:127.0.0.1:80
++www.example.com: wrote "HEAD / HTTP/1.1\r\n"
++                       "Host: www.example.com\r\n"
++                       "Connection: TE\r\n"
++                       "TE: trailers\r\n"
++                       "User-Agent: cohttp-eio\r\n"
++                       "\r\n"
++www.example.com: read "HTTP/1.1 200 OK\r\n"
++www.example.com: read "content-length: 12\r\n"
++                      "\r\n"
++www.example.com: closed
+- : unit = ()
+```
+
+## Client.post
+
+```ocaml
+let () = Eio_mock.Net.on_getaddrinfo net [`Return [addr1;addr2]]
+let () = Eio_mock.Net.on_connect net [`Return example_com_conn]
+let () = 
+  Eio_mock.Flow.on_read
+    example_com_conn
+    [
+     `Yield_then (`Return "HTTP/1.1 200 OK\r\n");
+      `Return "content-length: 0\r\n\r\n";
+    ]
+```
+
+```ocaml
+# Eio_mock.Backend.run @@ fun () ->
+  Eio.Switch.run @@ fun sw ->
+  let t = Client.make sw net in
+  let body = Body.content_writer ~content:"hello world" ~content_type:"text/plain" in
+  ignore (Client.post t body "www.example.com/upload": Response.client_response);;
++net: getaddrinfo ~service:80 www.example.com
++net: connect to tcp:127.0.0.1:80
++www.example.com: wrote "POST /upload HTTP/1.1\r\n"
++                       "Host: www.example.com\r\n"
++                       "Content-Length: 11\r\n"
++                       "Content-Type: text/plain\r\n"
++                       "Connection: TE\r\n"
++                       "TE: trailers\r\n"
++                       "User-Agent: cohttp-eio\r\n"
++                       "\r\n"
++                       "hello world"
++www.example.com: read "HTTP/1.1 200 OK\r\n"
++www.example.com: read "content-length: 0\r\n"
++                      "\r\n"
++www.example.com: closed
+- : unit = ()
+```

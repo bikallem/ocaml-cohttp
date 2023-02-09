@@ -20,9 +20,8 @@ val make :
   ?timeout:Eio.Time.Timeout.t ->
   ?buf_read_initial_size:int ->
   ?buf_write_initial_size:int ->
-  ?batch_requests:bool ->
   Eio.Switch.t ->
-  Eio.Net.t ->
+  #Eio.Net.t ->
   t
 (** [make sw net] is [t]. [net] is used to create/establish connections to
     server. [sw] is the client resource manager. All connections are
@@ -109,7 +108,3 @@ val timeout : t -> Eio.Time.Timeout.t
     a request and getting a response back.
 
     A client request is cancelled if the specified timeout limit is exceeded. *)
-
-val batch_requests : t -> bool
-(** [batch_requests t] returns [true] it [t] is configured to batch requests.
-    [false] otherwise. *)

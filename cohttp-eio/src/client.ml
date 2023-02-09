@@ -15,21 +15,19 @@ type t = {
   timeout : Eio.Time.Timeout.t;
   buf_read_initial_size : int;
   buf_write_initial_size : int;
-  batch_requests : bool;
   sw : Eio.Switch.t;
   net : Eio.Net.t;
   cache : conn Cache.t Atomic.t;
 }
 
 let make ?(timeout = Eio.Time.Timeout.none) ?(buf_read_initial_size = 0x1000)
-    ?(buf_write_initial_size = 0x1000) ?(batch_requests = true) sw net =
+    ?(buf_write_initial_size = 0x1000) sw (net : #Eio.Net.t) =
   {
     timeout;
     buf_read_initial_size;
     buf_write_initial_size;
-    batch_requests;
     sw;
-    net;
+    net = (net :> Eio.Net.t);
     cache = Atomic.make Cache.empty;
   }
 
@@ -71,11 +69,8 @@ let do_call t req =
   let conn = conn t req in
   Buf_write.with_flow ~initial_size:t.buf_write_initial_size conn (fun writer ->
       Request.write req writer;
-      if not t.batch_requests then Buf_write.flush writer;
-      let reader =
-        Buf_read.of_flow ~initial_size:t.buf_read_initial_size ~max_size:max_int
-          conn
-      in
+      let initial_size = t.buf_read_initial_size in
+      let reader = Buf_read.of_flow ~initial_size ~max_size:max_int conn in
       Response.parse_client_response reader)
 
 let get t url =
@@ -104,4 +99,3 @@ let call ~conn req =
 let buf_write_initial_size t = t.buf_write_initial_size
 let buf_read_initial_size t = t.buf_read_initial_size
 let timeout t = t.timeout
-let batch_requests t = t.batch_requests

@@ -71,7 +71,7 @@ let do_call t req =
       Request.write req writer;
       let initial_size = t.read_initial_size in
       let reader = Buf_read.of_flow ~initial_size ~max_size:max_int conn in
-      Response.parse_client_response reader)
+      Response.parse_client reader)
 
 let get t url =
   let req = Request.get url in
@@ -94,7 +94,7 @@ let call ~conn req =
   Buf_write.with_flow ~initial_size conn (fun writer ->
       Request.write req writer;
       let reader = Eio.Buf_read.of_flow ~initial_size ~max_size:max_int conn in
-      Response.parse_client_response reader)
+      Response.parse_client reader)
 
 let buf_write_initial_size t = t.write_initial_size
 let buf_read_initial_size t = t.read_initial_size

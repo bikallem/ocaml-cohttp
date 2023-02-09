@@ -4,7 +4,7 @@
 open Cohttp_eio
 ```
 
-## Response.parse_client_response
+## Response.parse_client
 
 ```ocaml
 let make_buf_read () =
@@ -26,8 +26,8 @@ let make_buf_read () =
 ```
 
 ```ocaml
-# let r = Response.parse_client_response @@ make_buf_read () ;;
-val r : Response.client_response = <obj>
+# let r = Response.parse_client @@ make_buf_read () ;;
+val r : Response.client = <obj>
 
 # Response.version r ;;
 - : Http.Version.t = `HTTP_1_1

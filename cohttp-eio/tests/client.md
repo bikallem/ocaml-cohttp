@@ -122,7 +122,7 @@ let () =
 # Eio_mock.Backend.run @@ fun () ->
   Eio.Switch.run @@ fun sw ->
   let t = Client.make sw net in
-  ignore (Client.head t "www.example.com" : Response.client_response);;
+  ignore (Client.head t "www.example.com" : Response.client);;
 +net: getaddrinfo ~service:80 www.example.com
 +net: connect to tcp:127.0.0.1:80
 +www.example.com: wrote "HEAD / HTTP/1.1\r\n"
@@ -157,7 +157,7 @@ let () =
   Eio.Switch.run @@ fun sw ->
   let t = Client.make sw net in
   let body = Body.content_writer ~content:"hello world" ~content_type:"text/plain" in
-  ignore (Client.post t body "www.example.com/upload": Response.client_response);;
+  ignore (Client.post t body "www.example.com/upload": Response.client);;
 +net: getaddrinfo ~service:80 www.example.com
 +net: connect to tcp:127.0.0.1:80
 +www.example.com: wrote "POST /upload HTTP/1.1\r\n"
@@ -195,7 +195,7 @@ let () =
   Eio.Switch.run @@ fun sw ->
   let t = Client.make sw net in
   let form = [("name1", ["val a"; "val b"; "val c"]); ("name2", ["val c"; "val d"; "val e"])] in
-  ignore (Client.post_form_values t form "www.example.com/upload": Response.client_response);;
+  ignore (Client.post_form_values t form "www.example.com/upload": Response.client);;
 +net: getaddrinfo ~service:80 www.example.com
 +net: connect to tcp:127.0.0.1:80
 +www.example.com: wrote "POST /upload HTTP/1.1\r\n"

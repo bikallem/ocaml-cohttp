@@ -1,4 +1,4 @@
-type handler = Request.server -> Response.server_response
+type handler = Request.server -> Response.server
 (* type 'a middlware = 'a handler -> 'a handler *)
 
 let rec handle_request clock client_addr reader writer flow handler =

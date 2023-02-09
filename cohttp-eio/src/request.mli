@@ -1,7 +1,6 @@
 (** [Request] is a HTTP Request. *)
 
-(** [t] is a common request abstraction for {!type:server} and
-    {!type:client}. *)
+(** [t] is a common request abstraction for {!type:server} and {!type:client}. *)
 class virtual ['a] t :
   object
     method virtual version : Http.Version.t
@@ -145,10 +144,8 @@ val server :
   Eio.Net.Sockaddr.stream ->
   Eio.Buf_read.t ->
   server
-(** [server meth client_addr buf_read] is an instance of
-    {!class:server}. *)
+(** [server meth client_addr buf_read] is an instance of {!class:server}. *)
 
-val parse_server :
-  Eio.Net.Sockaddr.stream -> Eio.Buf_read.t -> server
-(** [parse_server client_addr buf_read] parses a server request [r]
-    given a buffered reader [buf_read]. *)
+val parse_server : Eio.Net.Sockaddr.stream -> Eio.Buf_read.t -> server
+(** [parse_server client_addr buf_read] parses a server request [r] given a
+    buffered reader [buf_read]. *)

@@ -54,8 +54,8 @@ val writer :
 (** [writer ~ua_supports_trailer write_chunk write_trailer] is
     {!type:Body.writer} for HTTP [chunked] transfer encoding.
 
-    The writer is usually used as a body in HTTP {!type:Request.client}
-    and {!type:Response.server_response}.
+    The writer is usually used as a body in HTTP {!type:Request.client} and
+    {!type:Response.server_response}.
 
     @param ua_supports_trailer
       indicates whether an user-agent such as browsers or HTTP clients supports

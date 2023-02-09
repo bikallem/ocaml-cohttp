@@ -1,6 +1,6 @@
 (** [Server] is a HTTP 1.1 server. *)
 
-type handler = Request.server -> Response.server_response
+type handler = Request.server -> Response.server
 
 val run :
   ?socket_backlog:int ->

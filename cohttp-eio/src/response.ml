@@ -9,13 +9,13 @@ let version (t : #t) = t#version
 let headers (t : #t) = t#headers
 let status (t : #t) = t#status
 
-class virtual client_response =
+class virtual client =
   object
     inherit t
     method virtual buf_read : Eio.Buf_read.t
   end
 
-let client_response version headers status buf_read =
+let client version headers status buf_read =
   object
     method version = version
     method headers = headers
@@ -38,22 +38,22 @@ let reason_phrase =
     | '\x21' .. '\x7E' | '\t' | ' ' -> true
     | _ -> false)
 
-let parse_client_response buf_read =
+let parse_client buf_read =
   let open Eio.Buf_read.Syntax in
   let version = Buf_read.(version <* space) buf_read in
   let status = Buf_read.(status_code <* space) buf_read in
   Buf_read.(reason_phrase *> crlf *> return ()) buf_read;
   let headers = Buf_read.http_headers buf_read in
-  client_response version headers status buf_read
+  client version headers status buf_read
 
-class virtual server_response =
+class virtual server =
   object
     inherit t
     method virtual body : Body.writer
   end
 
-let server_response ?(version = `HTTP_1_1) ?(headers = Http.Header.init ())
-    ?(status = `OK) (body : Body.writer) : server_response =
+let server ?(version = `HTTP_1_1) ?(headers = Http.Header.init ())
+    ?(status = `OK) (body : Body.writer) : server =
   object
     method version = version
     method headers = headers
@@ -63,7 +63,7 @@ let server_response ?(version = `HTTP_1_1) ?(headers = Http.Header.init ())
 
 let chunked_response ~ua_supports_trailer write_chunk write_trailer =
   let w = Chunked_body.writer ~ua_supports_trailer write_chunk write_trailer in
-  server_response w
+  server w
 
 let http_date clock =
   let now = Eio.Time.now clock |> Ptime.of_float_s |> Option.get in
@@ -117,16 +117,15 @@ let write (t : #t) (clock : #Eio.Time.clock) w =
   t#body#write_body w
 
 let text content =
-  server_response
+  server
     (Body.content_writer ~content ~content_type:"text/plain; charset=UTF-8")
 
 let html content =
-  server_response
-    (Body.content_writer ~content ~content_type:"text/html; charset=UTF-8")
+  server (Body.content_writer ~content ~content_type:"text/html; charset=UTF-8")
 
 let none_body_response status =
   let headers = Http.Header.init_with "Content-Length" "0" in
-  server_response ~headers ~status (Body.none :> Body.writer)
+  server ~headers ~status (Body.none :> Body.writer)
 
 let not_found = none_body_response `Not_found
 let internal_server_error = none_body_response `Internal_server_error

@@ -1,15 +1,13 @@
-type none = Body.none
-
 type 'a t =
-  | Get : none t
-  | Head : none t
-  | Delete : none t
-  | Options : none t
-  | Trace : none t
+  | Get : Body.none t
+  | Head : Body.none t
+  | Delete : Body.none t
+  | Options : Body.none t
+  | Trace : Body.none t
   | Post : 'a t
   | Put : 'a t
   | Patch : 'a t
-  | Connect : none t
+  | Connect : Body.none t
 
 let to_string (type a) (m : a t) =
   match m with

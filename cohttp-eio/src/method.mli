@@ -19,19 +19,16 @@
     - {!val:Connect}
       https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/CONNECT *)
 
-type none = Body.none
-(** [none] denotes the absence of a request body. *)
-
 type 'a t =
-  | Get : none t
-  | Head : none t
-  | Delete : none t
-  | Options : none t
-  | Trace : none t
+  | Get : Body.none t
+  | Head : Body.none t
+  | Delete : Body.none t
+  | Options : Body.none t
+  | Trace : Body.none t
   | Post : 'a t
   | Put : 'a t
   | Patch : 'a t
-  | Connect : none t
+  | Connect : Body.none t
 
 val to_string : _ t -> string
 (** [to_string t] is [s] - a string representation of [t]. *)

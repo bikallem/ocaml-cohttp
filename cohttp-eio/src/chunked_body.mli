@@ -5,7 +5,7 @@ type t
 (** [t] is a HTTP chunk. *)
 
 val make : ?extensions:(string * string option) list -> string -> t
-(** [chunk data] is a chunk [t]. [t] encapsulates data [data]. If
+(** [make data] is a chunk [t]. [t] encapsulates data [data]. If
     [String.length data = 0], then the chunk [t] denotes an end of chunked
     transfer-encoding transmission.
 
@@ -54,7 +54,7 @@ val writer :
 (** [writer ~ua_supports_trailer write_chunk write_trailer] is
     {!type:Body.writer} for HTTP [chunked] transfer encoding.
 
-    The writer is usually used as a body in HTTP {!type:Request.client_request}
+    The writer is usually used as a body in HTTP {!type:Request.client}
     and {!type:Response.server_response}.
 
     @param ua_supports_trailer

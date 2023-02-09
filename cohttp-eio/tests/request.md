@@ -7,7 +7,7 @@ open Cohttp_eio
 A `Buffer.t` sink to test `Body.writer`.
 
 ```ocaml
-let test_client_request r =
+let test_client r =
   Eio_main.run @@ fun env ->
   let b = Buffer.create 10 in
   let s = Eio.Flow.buffer_sink b in
@@ -24,15 +24,15 @@ Attempt at creating a client request with invalid url results in `Invalid_argume
 Exception: Invalid_argument "invalid url: host not defined".
 ```
 
-## Request.get - client_request
+## Request.get - client
 
 Create a `GET` request and write it.
 
 ```ocaml
 # let r = Request.get "www.example.com/products" ;;
-val r : Method.none Request.client_request = <obj>
+val r : Method.none Request.client = <obj>
 
-# test_client_request r ;;
+# test_client r ;;
 +GET /products HTTP/1.1
 +Host: www.example.com
 +Connection: TE
@@ -42,7 +42,7 @@ val r : Method.none Request.client_request = <obj>
 +
 - : unit = ()
 
-# test_client_request @@ Request.get "www.example.com" ;;
+# test_client @@ Request.get "www.example.com" ;;
 +GET / HTTP/1.1
 +Host: www.example.com
 +Connection: TE
@@ -53,10 +53,10 @@ val r : Method.none Request.client_request = <obj>
 - : unit = ()
 ```
 
-## Request.head - client_request
+## Request.head - client
 
 ```ocaml
-# test_client_request @@ Request.head "www.example.com" ;;
+# test_client @@ Request.head "www.example.com" ;;
 +HEAD / HTTP/1.1
 +Host: www.example.com
 +Connection: TE
@@ -67,11 +67,11 @@ val r : Method.none Request.client_request = <obj>
 - : unit = ()
 ```
 
-## Request.post - client_request
+## Request.post - client
 
 ```ocaml
 # let body = Body.content_writer ~content:"Hello World!" ~content_type:"text/plain" in
-  test_client_request @@ Request.post body "www.example.com/say_hello";;
+  test_client @@ Request.post body "www.example.com/say_hello";;
 +POST /say_hello HTTP/1.1
 +Host: www.example.com
 +Content-Length: 12
@@ -84,11 +84,11 @@ val r : Method.none Request.client_request = <obj>
 - : unit = ()
 ```
 
-## Request.post_form_values - client_request
+## Request.post_form_values - client
 
 ```ocaml
 # let form_values = ["field1", ["val 1"]; "field2", ["v2";"v3";"v4"]] in
-  test_client_request @@ Request.post_form_values form_values "www.example.com/form_a" ;;
+  test_client @@ Request.post_form_values form_values "www.example.com/form_a" ;;
 +POST /form_a HTTP/1.1
 +Host: www.example.com
 +Content-Length: 30
@@ -101,11 +101,11 @@ val r : Method.none Request.client_request = <obj>
 - : unit = ()
 ```
 
-## Request.client_request
+## Request.client
 
 ```ocaml
 # let headers = Http.Header.of_list ["Header1", "val 1"; "Header2", "val 2"] in
-  Request.client_request 
+  Request.client 
     ~version:`HTTP_1_1 
     ~headers 
     ~port:8080 
@@ -113,7 +113,7 @@ val r : Method.none Request.client_request = <obj>
     ~resource:"/update" 
     Method.Get 
     Body.none
-  |> test_client_request ;;
+  |> test_client ;;
 +GET /update HTTP/1.1
 +Host: www.example.com:8080
 +Connection: TE

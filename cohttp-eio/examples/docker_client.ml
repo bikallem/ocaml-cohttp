@@ -6,8 +6,7 @@ let () =
   let addr = `Unix "/var/run/docker.sock" in
   let conn = Eio.Net.connect ~sw env#net addr in
   let req =
-    Request.client_request ~host:"docker" ~resource:"/version" Method.Get
-      Body.none
+    Request.client ~host:"docker" ~resource:"/version" Method.Get Body.none
   in
   let res = Client.call ~conn req in
   let code = Response.status res |> Http.Status.to_int in

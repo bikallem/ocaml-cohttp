@@ -74,7 +74,7 @@ val post_form_values :
 
 (** {1 Call} *)
 
-val do_call : t -> 'a Request.client_request -> Response.client_response
+val do_call : t -> 'a Request.client -> Response.client_response
 (** [do_call t req] makes a HTTP request using [req] and returns
     {!type:response}.
 
@@ -82,7 +82,7 @@ val do_call : t -> 'a Request.client_request -> Response.client_response
 
 val call :
   conn:#Eio.Flow.two_way ->
-  'a Request.client_request ->
+  'a Request.client ->
   Response.client_response
 (** [call conn req] makes a HTTP client call using connection [conn] and request
     [req]. It returns a {!type:response} upon a successfull call.

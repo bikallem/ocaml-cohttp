@@ -1,7 +1,7 @@
 (** [Request] is a HTTP Request. *)
 
 (** [t] is a common request abstraction for {!type:server_request} and
-    {!type:client_request}. *)
+    {!type:client}. *)
 class virtual ['a] t :
   object
     method virtual version : Http.Version.t
@@ -38,7 +38,7 @@ val keep_alive : _ #t -> bool
 
     A HTTP client request that is primarily constructed and used by
     {!module:Client}. *)
-class virtual ['a] client_request :
+class virtual ['a] client :
   object
     inherit ['a] t
     constraint 'a = #Body.writer
@@ -47,7 +47,7 @@ class virtual ['a] client_request :
     method virtual port : int option
   end
 
-val client_request :
+val client :
   ?version:Http.Version.t ->
   ?headers:Http.Header.t ->
   ?port:int ->
@@ -55,14 +55,14 @@ val client_request :
   resource:string ->
   'a Method.t ->
   'a ->
-  'a client_request
-(** [client_request ~host ~resource meth body] is an instance of
-    {!class:client_request} where [body] is a {!class:Body.writer}. *)
+  'a client
+(** [client ~host ~resource meth body] is an instance of {!class:client} where
+    [body] is a {!class:Body.writer}. *)
 
-val body : (#Body.writer as 'a) #client_request -> 'a
-(** [body r] is request body for client_request [r]. *)
+val body : (#Body.writer as 'a) #client -> 'a
+(** [body r] is request body for client [r]. *)
 
-val client_host_port : _ #client_request -> host_port
+val client_host_port : _ #client -> host_port
 (** [client_host_port r] is the [host] and [port] for client request [r]. *)
 
 type url = string
@@ -72,7 +72,7 @@ type url = string
       "www.example.com/products"
     ]} *)
 
-val get : url -> Body.none client_request
+val get : url -> Body.none client
 (** [get url] is a client request [r] configured with HTTP request method
     {!val:Method.Get}.
 
@@ -81,7 +81,7 @@ val get : url -> Body.none client_request
     ]}
     @raise Invalid_argument if [url] is invalid. *)
 
-val head : url -> Body.none client_request
+val head : url -> Body.none client
 (** [head url] is a client request [r] configured with HTTP request method
     {!val:Method.Head}.
 
@@ -90,7 +90,7 @@ val head : url -> Body.none client_request
     ]}
     @raise Invalid_argument if [url] is invalid. *)
 
-val post : (#Body.writer as 'a) -> url -> 'a client_request
+val post : (#Body.writer as 'a) -> url -> 'a client
 (** [post body url] is a client request [r] configured with HTTP request method
     {!val:Method.Post} and with request body [body]. A header "Content-Length"
     is added with suitable value in the request header.
@@ -101,8 +101,7 @@ val post : (#Body.writer as 'a) -> url -> 'a client_request
     ]}
     @raise Invalid_argument if [url] is invalid. *)
 
-val post_form_values :
-  (string * string list) list -> url -> Body.writer client_request
+val post_form_values : (string * string list) list -> url -> Body.writer client
 (** [post_form_values form_fields url] is a client request [r] configured with
     HTTP request method {!val:Method.Post}. The body [form_fields] is a list of
     form fields [(name, values)]. [form_fields] is percent encoded before being
@@ -115,7 +114,7 @@ val post_form_values :
     ]}
     @raise Invalid_argument if [url] is invalid. *)
 
-val write : 'a #client_request -> Eio.Buf_write.t -> unit
+val write : 'a #client -> Eio.Buf_write.t -> unit
 (** [write r buf_write] writes client request [r] using [buf_write]. *)
 
 (** {1 Server Request} *)

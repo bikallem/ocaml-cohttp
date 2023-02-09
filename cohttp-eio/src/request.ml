@@ -30,7 +30,7 @@ let keep_alive (t : _ #t) =
                  String.equal tok "keep-alive")
       | None -> false)
 
-class virtual ['a] client_request =
+class virtual ['a] client =
   object
     inherit ['a] t
     constraint 'a = #Body.writer
@@ -39,10 +39,10 @@ class virtual ['a] client_request =
     method virtual port : int option
   end
 
-let client_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
+let client ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
     ~host ~resource (meth : (#Body.writer as 'a) Method.t) body =
   object
-    inherit [#Body.writer as 'a] client_request
+    inherit [#Body.writer as 'a] client
     val headers = headers
     method version = version
     method headers = headers
@@ -53,8 +53,8 @@ let client_request ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port
     method body = body
   end
 
-let body (t : _ #client_request) = t#body
-let client_host_port (t : _ #client_request) = (t#host, t#port)
+let body (t : _ #client) = t#body
+let client_host_port (t : _ #client) = (t#host, t#port)
 
 let parse_url url =
   if String.starts_with ~prefix:"https" url then
@@ -79,15 +79,15 @@ type url = string
 
 let get url =
   let host, port, resource = parse_url url in
-  client_request ?port Method.Get ~host ~resource Body.none
+  client ?port Method.Get ~host ~resource Body.none
 
 let head url =
   let host, port, resource = parse_url url in
-  client_request ?port Method.Head ~host ~resource Body.none
+  client ?port Method.Head ~host ~resource Body.none
 
 let post body url =
   let host, port, resource = parse_url url in
-  client_request ?port Method.Post ~host ~resource body
+  client ?port Method.Post ~host ~resource body
 
 let post_form_values form_values url =
   let body = Body.form_values_writer form_values in
@@ -95,7 +95,7 @@ let post_form_values form_values url =
 
 let write_header w ~name ~value = Buf_write.write_header w name value
 
-let write (t : _ #client_request) w =
+let write (t : _ #client) w =
   let headers =
     Http.Header.add_unless_exists t#headers "User-Agent" "cohttp-eio"
   in

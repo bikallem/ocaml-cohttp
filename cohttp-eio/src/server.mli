@@ -11,16 +11,16 @@ val run :
   clock:Eio.Time.clock ->
   handler ->
   'c
-(** [run ~socket_backlog ~domains ~port env handler] runs a HTTP/1.1 server
-    executing [handler] and listening on [port]. [env] corresponds to
-    {!val:Eio.Stdenv.t}.
+(** [run ~port ~domain_mgr ~net ~clock handler] runs a HTTP/1.1 server executing
+    [handler] and listening on [port].
 
-    [socket_backlog] is the number of pending connections for tcp server socket.
-    The default is [128].
-
-    [domains] is the number of OCaml 5.0 domains the server will use. The
-    default is [1]. You may use {!val:Domain.recommended_domain_count} to
-    configure a multicore capable server. *)
+    @param socket_backlog
+      is the number of pending connections for tcp server socket. The default is
+      [128].
+    @param domains
+      is the number of OCaml 5.0 domains the server will use. The default is
+      [1]. You may use {!val:Domain.recommended_domain_count} to configure a
+      multicore capable server. *)
 
 val connection_handler :
   handler ->
@@ -28,8 +28,8 @@ val connection_handler :
   #Eio.Net.stream_socket ->
   Eio.Net.Sockaddr.stream ->
   unit
-(** [connection_handler request_handler] is a connection handler, suitable for
-    passing to {!Eio.Net.accept_fork}. *)
+(** [connection_handler request_handler client_addr conn] is a connection
+    handler, suitable for passing to {!Eio.Net.accept_fork}. *)
 
 (** {1 Basic Handlers} *)
 

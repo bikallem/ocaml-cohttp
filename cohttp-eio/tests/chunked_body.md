@@ -26,7 +26,11 @@ Writes both chunked body and trailer since `ua_supports_trailer:true`.
 ```ocaml
 # let write_chunk f =
     f @@ Chunked_body.make ~extensions:["ext1",Some "ext1_v"] "Hello, ";
+    Eio.Fiber.yield ();
+    Eio.traceln "Resuming ...";
     f @@ Chunked_body.make ~extensions:["ext2",None] "world!";
+    Eio.Fiber.yield ();
+    Eio.traceln "Resuming ...";
     f @@ Chunked_body.make "Again!";
     f @@ Chunked_body.make "";;
 val write_chunk : (Chunked_body.t -> 'a) -> 'a = <fun>
@@ -43,6 +47,8 @@ val write_chunk : (Chunked_body.t -> 'a) -> 'a = <fun>
 val write_trailer : (Http.Header.t -> 'a) -> 'a = <fun>
 
 # test_writer (Chunked_body.writer ~ua_supports_trailer:true write_chunk write_trailer) ;;
++Resuming ...
++Resuming ...
 +Transfer-Encoding: chunked
 +7;ext1=ext1_v
 +Hello, 
@@ -63,6 +69,8 @@ Writes only chunked body and not the trailers since `ua_supports_trailer:false`.
 
 ```ocaml
 # test_writer (Chunked_body.writer ~ua_supports_trailer:false write_chunk write_trailer) ;;
++Resuming ...
++Resuming ...
 +Transfer-Encoding: chunked
 +7;ext1=ext1_v
 +Hello, 

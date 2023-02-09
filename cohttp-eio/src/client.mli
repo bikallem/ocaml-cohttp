@@ -18,8 +18,8 @@ type t
 
 val make :
   ?timeout:Eio.Time.Timeout.t ->
-  ?buf_read_initial_size:int ->
-  ?buf_write_initial_size:int ->
+  ?read_initial_size:int ->
+  ?write_initial_size:int ->
   Eio.Switch.t ->
   #Eio.Net.t ->
   t
@@ -31,13 +31,10 @@ val make :
       total time limit for establishing connection, make a request and getting a
       response back from the server. However, this value doesn't include reading
       response body. Default is [Eio.Time.Timeout.none].
-    @param buf_read_initial_size
+    @param read_initial_size
       initial client buffered reader size. Default is [0x1000].
-    @param buf_write_initial_size
-      initial client buffered writer size. Default is [0x1000].
-    @param batch_requests
-      if [false] [Eio.Buf_write.flush] is called after writing every request to
-      connection. Default is [true]. *)
+    @param write_initial_size
+      initial client buffered writer size. Default is [0x1000]. *)
 
 (** {1:common Common}
 

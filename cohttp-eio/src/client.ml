@@ -13,19 +13,19 @@ type conn = < Eio.Net.stream_socket ; Eio.Flow.close >
 
 type t = {
   timeout : Eio.Time.Timeout.t;
-  buf_read_initial_size : int;
-  buf_write_initial_size : int;
+  read_initial_size : int;
+  write_initial_size : int;
   sw : Eio.Switch.t;
   net : Eio.Net.t;
   cache : conn Cache.t Atomic.t;
 }
 
-let make ?(timeout = Eio.Time.Timeout.none) ?(buf_read_initial_size = 0x1000)
-    ?(buf_write_initial_size = 0x1000) sw (net : #Eio.Net.t) =
+let make ?(timeout = Eio.Time.Timeout.none) ?(read_initial_size = 0x1000)
+    ?(write_initial_size = 0x1000) sw (net : #Eio.Net.t) =
   {
     timeout;
-    buf_read_initial_size;
-    buf_write_initial_size;
+    read_initial_size;
+    write_initial_size;
     sw;
     net = (net :> Eio.Net.t);
     cache = Atomic.make Cache.empty;
@@ -67,9 +67,9 @@ let conn t req =
 let do_call t req =
   Eio.Time.Timeout.run_exn t.timeout @@ fun () ->
   let conn = conn t req in
-  Buf_write.with_flow ~initial_size:t.buf_write_initial_size conn (fun writer ->
+  Buf_write.with_flow ~initial_size:t.write_initial_size conn (fun writer ->
       Request.write req writer;
-      let initial_size = t.buf_read_initial_size in
+      let initial_size = t.read_initial_size in
       let reader = Buf_read.of_flow ~initial_size ~max_size:max_int conn in
       Response.parse_client_response reader)
 
@@ -96,6 +96,6 @@ let call ~conn req =
       let reader = Eio.Buf_read.of_flow ~initial_size ~max_size:max_int conn in
       Response.parse_client_response reader)
 
-let buf_write_initial_size t = t.buf_write_initial_size
-let buf_read_initial_size t = t.buf_read_initial_size
+let buf_write_initial_size t = t.write_initial_size
+let buf_read_initial_size t = t.read_initial_size
 let timeout t = t.timeout

@@ -199,3 +199,17 @@ No chunked trailer headers.
 +
 - : unit = ()
 ```
+## Response.pp
+
+Pretty print `Response.server`
+
+```ocaml
+# Response.pp Format.std_formatter @@ Response.html "hello, world";;
+{
+  Version:  HTTP/1.1;
+  Status:  200 OK;
+  Headers :
+    { }
+}
+- : unit = ()
+```

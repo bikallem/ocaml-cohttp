@@ -130,4 +130,30 @@ let none_body_response status =
 let not_found = none_body_response `Not_found
 let internal_server_error = none_body_response `Internal_server_error
 let bad_request = none_body_response `Bad_request
-let pp _fmt (_t : #t) = failwith "x"
+
+let field lbl v =
+  let open Easy_format in
+  let lbl = Atom (lbl ^ ": ", atom) in
+  let v = Atom (v, atom) in
+  Label ((lbl, label), v)
+
+let pp fmt (t : #t) =
+  let open Easy_format in
+  let fields =
+    [
+      field "Version" (Http.Version.to_string t#version);
+      field "Status" (Http.Status.to_string t#status);
+      Label
+        ( (Atom ("Headers :", atom), { label with label_break = `Always }),
+          Header.fields t#headers );
+    ]
+  in
+  let list_p =
+    {
+      list with
+      align_closing = true;
+      indent_body = 2;
+      wrap_body = `Force_breaks_rec;
+    }
+  in
+  Pretty.to_formatter fmt (List (("{", ";", "}", list_p), fields))

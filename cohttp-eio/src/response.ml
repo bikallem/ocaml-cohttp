@@ -145,7 +145,7 @@ let pp fmt (t : #t) =
       field "Status" (Http.Status.to_string t#status);
       Label
         ( (Atom ("Headers :", atom), { label with label_break = `Always }),
-          Header.fields t#headers );
+          Header.fmt t#headers );
     ]
   in
   let list_p =

@@ -58,7 +58,7 @@ let fields (t : _ #t) (f : unit -> Easy_format.t list) =
       field "URI" t#resource;
       Label
         ( (Atom ("Headers :", atom), { label with label_break = `Always }),
-          Header.fields t#headers );
+          Header.fmt t#headers );
     ]
   in
   l @ f ()

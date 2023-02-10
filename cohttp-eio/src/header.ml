@@ -6,7 +6,7 @@ let field lbl v =
   let v = Atom (v, atom) in
   Label ((lbl, label), v)
 
-let fields t =
+let fmt t =
   let open Easy_format in
   let p =
     {
@@ -19,4 +19,4 @@ let fields t =
   in
   List (("{", ";", "}", p), to_list t |> List.map (fun (k, v) -> field k v))
 
-let pp fmt t = Easy_format.Pretty.to_formatter fmt (fields t)
+let pp fmt' t = Easy_format.Pretty.to_formatter fmt' (fmt t)

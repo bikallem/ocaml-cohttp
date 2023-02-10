@@ -62,21 +62,13 @@ module Header = struct
 
   type t = (string * string) list
 
-  let pp_hum fmt t =
-    let pp_sep fmt () =
-      Format.pp_print_string fmt " ;";
-      Format.pp_print_break fmt 0 0
-    in
-    let pp_kv fmt (k, v) = Format.fprintf fmt "%s = %S" k v in
-    let old = Format.pp_get_margin fmt () in
-    Format.pp_set_margin fmt 11;
-    Format.pp_open_vbox fmt 2;
-    Format.pp_print_string fmt "{ ";
-    Format.pp_print_list ~pp_sep pp_kv fmt t;
-    Format.pp_print_string fmt " }";
-    Format.pp_close_box fmt ();
-    Format.pp_print_flush fmt ();
-    Format.pp_set_margin fmt old
+  let pp_hum =
+    let pp_sep fmt () = Format.fprintf fmt ";@ " in
+    let pp_kv fmt (k, v) = Format.fprintf fmt "@[%s@ =@ %S@]" k v in
+    fun fmt t ->
+      Format.fprintf fmt "Header@ {@ @[%a@]@ }"
+        (Format.pp_print_list ~pp_sep pp_kv)
+        t
 
   let empty = []
   let compare = Stdlib.compare

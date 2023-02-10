@@ -129,9 +129,11 @@ header list.
 +[size = 0 ]
 val headers : Http.Header.t option = Some <abstr>
 
-# Http.Header.pp_hum Format.std_formatter (Option.get headers) ;;
-{ Content-Length = "23" ;
-  Header1 = "Header1 value text" }
+# Header.pp Format.std_formatter (Option.get headers) ;;
+{
+  Header1:  Header1 value text;
+  Content-Length:  23
+}
 - : unit = ()
 ```
 
@@ -157,12 +159,14 @@ Returns `Header2` since it is specified in the request `Trailer` header.
 +]
 +
 +[size = 0 ]
-val headers : Http.Header.t option = Some <abstr>
+val headers : Header.t option = Some <abstr>
 
-# Eio.traceln "%a" Http.Header.pp_hum (Option.get headers) ;;
-+{ Content-Length = "23" ;
-+  Header1 = "Header1 value text" ;
-+  Header2 = "Header2 value text" }
+# Eio.traceln "%a" Header.pp (Option.get headers) ;;
++{
++  Header2:  Header2 value text;
++  Header1:  Header1 value text;
++  Content-Length:  23
++}
 - : unit = ()
 ```
 
@@ -174,7 +178,7 @@ Nothing is read if `Transfer-Encoding: chunked` header is missing.
       body
       ["Trailer", "Expires, Header1, Header2"; "Transfer-Encoding", "gzip"]
       (Chunked_body.read_chunked f);;
-val headers : Http.Header.t option = None
+val headers : Header.t option = None
 
 # headers = None;;
 - : bool = true
@@ -206,7 +210,7 @@ let body = "7;ext1=ext1_v;ext2=ext2_v;ext3\r\nMozilla\r\n9\r\nDeveloper\r\n7\r\n
 +]
 +
 +[size = 0 ]
-val headers : Http.Header.t option = Some <abstr>
+val headers : Header.t option = Some <abstr>
 
 # headers = None;;
 - : bool = false

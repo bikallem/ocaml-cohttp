@@ -7,6 +7,7 @@ class virtual ['a] t :
     method virtual headers : Http.Header.t
     method virtual meth : 'a Method.t
     method virtual resource : string
+    method virtual pp : Format.formatter -> unit
   end
 
 type host_port = string * int option
@@ -149,3 +150,7 @@ val server :
 val parse_server : Eio.Net.Sockaddr.stream -> Eio.Buf_read.t -> server
 (** [parse_server client_addr buf_read] parses a server request [r] given a
     buffered reader [buf_read]. *)
+
+(** {1 Pretty Printer} *)
+
+val pp : Format.formatter -> _ #t -> unit

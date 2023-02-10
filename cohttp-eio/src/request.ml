@@ -1,10 +1,14 @@
 (** [request] is the common request object *)
+let host_port_to_string (host, port) =
+  match port with Some p -> Format.sprintf "%s:%d" host p | None -> host
+
 class virtual ['a] t =
   object
     method virtual version : Http.Version.t
     method virtual headers : Http.Header.t
     method virtual meth : 'a Method.t
     method virtual resource : string
+    method virtual pp : Format.formatter -> unit
   end
 
 type host_port = string * int option
@@ -39,10 +43,42 @@ class virtual ['a] client =
     method virtual port : int option
   end
 
+let field lbl v =
+  let open Easy_format in
+  let lbl = Atom (lbl ^ ": ", atom) in
+  let v = Atom (v, atom) in
+  Label ((lbl, label), v)
+
+let fields (t : _ #t) (f : unit -> Easy_format.t list) =
+  let open Easy_format in
+  let l =
+    [
+      field "Version" (Http.Version.to_string t#version);
+      field "Method" (Method.to_string t#meth);
+      field "URI" t#resource;
+      Label
+        ( (Atom ("Headers :", atom), { label with label_break = `Always }),
+          Header.fields t#headers );
+    ]
+  in
+  l @ f ()
+
+let pp_fields fmt fields =
+  let open Easy_format in
+  let list_p =
+    {
+      list with
+      align_closing = true;
+      indent_body = 2;
+      wrap_body = `Force_breaks_rec;
+    }
+  in
+  Pretty.to_formatter fmt (List (("{", ";", "}", list_p), fields))
+
 let client ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port ~host
     ~resource (meth : (#Body.writer as 'a) Method.t) body =
-  object
-    inherit [#Body.writer as 'a] client
+  object (self)
+    inherit [#Body.writer as 'a] client as _super
     val headers = headers
     method version = version
     method headers = headers
@@ -51,6 +87,13 @@ let client ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ?port ~host
     method host = host
     method port = port
     method body = body
+
+    method pp fmt =
+      let fields =
+        fields self @@ fun () ->
+        [ field "Host" (host_port_to_string (host, port)) ]
+      in
+      pp_fields fmt fields
   end
 
 let body (t : _ #client) = t#body
@@ -135,7 +178,7 @@ let client_addr (t : #server) = t#client_addr
 
 let server ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ~resource
     meth client_addr buf_read : server =
-  object
+  object (self)
     inherit server
     method version = version
     method headers = headers
@@ -143,6 +186,19 @@ let server ?(version = `HTTP_1_1) ?(headers = Http.Header.init ()) ~resource
     method resource = resource
     method client_addr = client_addr
     method buf_read = buf_read
+
+    method pp fmt =
+      let sock_addr =
+        let buf = Buffer.create 10 in
+        let fmt = Format.formatter_of_buffer buf in
+        Format.fprintf fmt "%a" Eio.Net.Sockaddr.pp client_addr;
+        Format.pp_print_flush fmt ();
+        Buffer.contents buf
+      in
+      let fields =
+        fields self @@ fun () -> [ field "Client Address" sock_addr ]
+      in
+      pp_fields fmt fields
   end
 
 open Eio.Buf_read.Syntax
@@ -203,3 +259,5 @@ let parse_server client_addr (r : Eio.Buf_read.t) : server =
   let version = (http_version <* crlf) r in
   let headers = http_headers r in
   server ~version ~headers ~resource meth client_addr r
+
+let pp fmt (t : _ #t) = t#pp fmt

@@ -32,17 +32,19 @@ val r : Response.client = <obj>
 # Response.version r ;;
 - : Http.Version.t = `HTTP_1_1
 
-# Eio.traceln "%a" Http.Header.pp_hum @@ Response.headers r ;;
-+{ X-Firefox-Spdy = "h2" ;
-+  content-encoding = "br" ;
-+  cf-ray = "7965ae27fa7c75bf-LHR" ;
-+  server = "cloudflare" ;
-+  cf-cache-status = "DYNAMIC" ;
-+  cache-control = "public, max-age=86400" ;
-+  x-powered-by = "Express" ;
-+  content-type = "text/html; charset=utf-8" ;
-+  date = "Wed, 08 Feb 2023 16:18:17 GMT" ;
-+  content-length = "13" }
+# Eio.traceln "%a" Header.pp @@ Response.headers r ;;
++{
++  content-length:  13;
++  date:  Wed, 08 Feb 2023 16:18:17 GMT;
++  content-type:  text/html; charset=utf-8;
++  x-powered-by:  Express;
++  cache-control:  public, max-age=86400;
++  cf-cache-status:  DYNAMIC;
++  server:  cloudflare;
++  cf-ray:  7965ae27fa7c75bf-LHR;
++  content-encoding:  br;
++  X-Firefox-Spdy:  h2
++}
 - : unit = ()
 
 # Response.status r ;;
@@ -153,7 +155,7 @@ val write_chunk : (Chunked_body.t -> 'a) -> 'a = <fun>
         ]
     in
     f trailer_headers;;
-val write_trailer : (Http.Header.t -> 'a) -> 'a = <fun>
+val write_trailer : (Header.t -> 'a) -> 'a = <fun>
 ```
 
 Writes chunked response trailer headers.

@@ -366,6 +366,7 @@ should also be fine under Windows too.
   (mdx :with-test)
   uri
   fmt
+  (easy-format (>= 1.3.4))
   ptime
   (http
    (= :version))))

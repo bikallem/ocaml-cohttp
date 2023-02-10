@@ -130,3 +130,4 @@ let none_body_response status =
 let not_found = none_body_response `Not_found
 let internal_server_error = none_body_response `Internal_server_error
 let bad_request = none_body_response `Bad_request
+let pp _fmt (_t : #t) = failwith "x"

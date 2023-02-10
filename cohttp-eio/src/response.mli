@@ -83,3 +83,7 @@ val internal_server_error : server
 
 val bad_request : server
 (* [bad_request] returns a HTTP/1.1, 400 status response. *)
+
+(** {1 Pretty Printer} *)
+
+val pp : Format.formatter -> #t -> unit

@@ -52,15 +52,15 @@ exception Graceful_shutdown
       )
   with Graceful_shutdown -> () ;;
 +Route: /
-+{ Content-Type = "text/plain; charset=UTF-8" ;
-+  Content-Length = "4" ;
-+  Date = "Thu, 17 Jun 2021 14:39:38 GMT" }
++Header {
++Content-Type = "text/plain; charset=UTF-8"; Content-Length = "4";
++Date = "Thu, 17 Jun 2021 14:39:38 GMT" }
 +root
 +
 +Route: /upload
-+{ Content-Type = "text/plain; charset=UTF-8" ;
-+  Content-Length = "11" ;
-+  Date = "Thu, 17 Jun 2021 14:39:38 GMT" }
++Header {
++Content-Type = "text/plain; charset=UTF-8"; Content-Length = "11";
++Date = "Thu, 17 Jun 2021 14:39:38 GMT" }
 +hello world
 - : unit = ()
 ```

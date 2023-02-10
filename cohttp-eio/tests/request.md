@@ -30,7 +30,7 @@ Create a `GET` request and write it.
 
 ```ocaml
 # let r = Request.get "www.example.com/products" ;;
-val r : Method.none Request.client = <obj>
+val r : Body.none Request.client = <obj>
 
 # test_client r ;;
 +GET /products HTTP/1.1
@@ -105,15 +105,14 @@ val r : Method.none Request.client = <obj>
 
 ```ocaml
 # let headers = Http.Header.of_list ["Header1", "val 1"; "Header2", "val 2"] in
-  Request.client 
+  test_client @@ Request.client 
     ~version:`HTTP_1_1 
     ~headers 
     ~port:8080 
     ~host:"www.example.com" 
     ~resource:"/update" 
     Method.Get 
-    Body.none
-  |> test_client ;;
+    Body.none ;;
 +GET /update HTTP/1.1
 +Host: www.example.com:8080
 +Connection: TE
@@ -147,15 +146,17 @@ val r : Request.server = <obj>
 # Request.version r;;
 - : Http.Version.t = `HTTP_1_1
 
-# Eio.traceln "%a" Http.Header.pp_hum @@ Request.headers r;;
-+{ User-Agent = "cohttp-eio" ;
-+  TE = "trailers" ;
-+  Connection = "TE" ;
-+  Host = "www.example.com" }
+# Eio.traceln "%a" Header.pp @@ Request.headers r;;
++{
++  Host:  www.example.com;
++  Connection:  TE;
++  TE:  trailers;
++  User-Agent:  cohttp-eio
++}
 - : unit = ()
 
 # Request.meth r;;
-- : Method.none Method.t = Cohttp_eio__.Method.Get
+- : Body.none Method.t = Cohttp_eio__.Method.Get
 
 # Request.resource r ;;
 - : string = "/products"
@@ -179,11 +180,13 @@ val r : Request.server = <obj>
 # Request.version r;;
 - : Http.Version.t = `HTTP_1_0
 
-# Eio.traceln "%a" Http.Header.pp_hum @@ Request.headers r;;
-+{ User-Agent = "cohttp-eio" ;
-+  TE = "trailers" ;
-+  Connection = "TE" ;
-+  Host = "www.example.com" }
+# Eio.traceln "%a" Header.pp @@ Request.headers r;;
++{
++  Host:  www.example.com;
++  Connection:  TE;
++  TE:  trailers;
++  User-Agent:  cohttp-eio
++}
 - : unit = ()
 
 # Request.keep_alive r ;;
@@ -196,11 +199,13 @@ val r : Request.server = <obj>
 # let r = Request.parse_server client_addr @@ make_buf_read "1.0" "get" "keep-alive, TE" ;;
 val r : Request.server = <obj>
 
-# Eio.traceln "%a" Http.Header.pp_hum @@ Request.headers r;;
-+{ User-Agent = "cohttp-eio" ;
-+  TE = "trailers" ;
-+  Connection = "keep-alive, TE" ;
-+  Host = "www.example.com" }
+# Eio.traceln "%a" Header.pp @@ Request.headers r;;
++{
++  Host:  www.example.com;
++  Connection:  keep-alive, TE;
++  TE:  trailers;
++  User-Agent:  cohttp-eio
++}
 - : unit = ()
 
 # Request.keep_alive r ;;
@@ -239,4 +244,68 @@ let parse_method m =
 
 # parse_method "patch" = Method.Patch ;;
 - : bool = true
+```
+
+## Request.pp
+
+Pretty-print `Request.client`.
+
+```ocaml
+# let headers = Http.Header.of_list ["Header1", "val 1"; "Header2", "val 2"] ;;
+val headers : Header.t = <abstr>
+# let req = 
+    Request.client 
+      ~version:`HTTP_1_1 
+      ~headers 
+      ~port:8080 
+      ~host:"www.example.com" 
+      ~resource:"/update" 
+      Method.Get 
+      Body.none ;;
+val req : Body.none Request.client = <obj>
+
+# Request.pp Format.std_formatter req ;;
+{
+  Version:  HTTP/1.1;
+  Method:  GET;
+  URI:  /update;
+  Headers :
+    {
+      Header1:  val 1;
+      Header2:  val 2
+    };
+  Host:  www.example.com:8080
+}
+- : unit = ()
+```
+
+Pretty-print `Request.server`.
+
+```ocaml
+# let headers = Http.Header.of_list ["Header1", "val 1"; "Header2", "val 2"] ;;
+val headers : Header.t = <abstr>
+# let req = 
+    Request.server
+      ~version:`HTTP_1_1 
+      ~headers 
+      ~resource:"/update" 
+      Method.Get
+      client_addr
+      (Eio.Buf_read.of_string "")
+       ;;
+val req : Request.server = <obj>
+
+# Request.pp Format.std_formatter req ;;
+{
+  Version:  HTTP/1.1;
+  Method:  GET;
+  URI:  /update;
+  Headers :
+    {
+      Header1:  val 1;
+      Header2:  val 2
+    };
+  Client Address:  tcp:127.0.0.1:8081
+}
+- : unit = ()
 ```

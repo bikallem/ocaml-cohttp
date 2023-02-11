@@ -104,7 +104,7 @@ let is_trailer_header_allowed h =
       false
   | _ -> true
 
-(* Request indiates which headers will be sent in chunk trailer part by
+(* Request indicates which headers will be sent in chunk trailer part by
    specifying the headers in comma separated value in 'Trailer' header. *)
 let request_trailer_headers headers =
   match Http.Header.get headers "Trailer" with

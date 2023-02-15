@@ -1,6 +1,28 @@
 type handler = Request.server_request -> Response.server_response
 (* type middleware = handler -> handler *)
 
+type t = {
+  clock : Eio.Time.clock;
+  net : Eio.Net.t;
+  handler : handler;
+  run : Eio.Net.listening_socket -> Eio.Net.connection_handler -> unit;
+  stop_r : unit Eio.Promise.u;
+}
+
+let make ?(max_connections = Int.max_int) ?additional_domains ~on_error
+    (clock : #Eio.Time.clock) (net : #Eio.Net.t) handler =
+  let stop, stop_r = Eio.Promise.create () in
+  let run =
+    Eio.Net.run_server ~max_connections ?additional_domains ~stop ~on_error
+  in
+  {
+    clock = (clock :> Eio.Time.clock);
+    net = (net :> Eio.Net.t);
+    handler;
+    run;
+    stop_r;
+  }
+
 let rec handle_request clock client_addr reader writer flow handler =
   match Request.parse client_addr reader with
   | request ->
@@ -23,28 +45,17 @@ let connection_handler handler clock flow client_addr =
   Buf_write.with_flow flow (fun writer ->
       handle_request clock client_addr reader writer flow handler)
 
-let run_domain clock ssock on_error handler =
-  let handler = connection_handler handler clock in
-  Eio.Switch.run (fun sw ->
-      let rec loop () =
-        Eio.Net.accept_fork ~sw ssock ~on_error handler;
-        loop ()
-      in
-      loop ())
+let run socket t =
+  let connection_handler = connection_handler t.handler t.clock in
+  t.run socket connection_handler
 
-let run ?(backlog = 128) ?(domains = 1) ~port ~on_error
-    (domain_mgr : #Eio.Domain_manager.t) (net : #Eio.Net.t)
-    (clock : #Eio.Time.clock) handler =
+let run_local ?(reuse_addr = true) ?(socket_backlog = 128) ?(port = 80) t =
   Eio.Switch.run @@ fun sw ->
-  let ssock =
-    Eio.Net.listen net ~sw ~reuse_addr:true ~backlog
-      (`Tcp (Eio.Net.Ipaddr.V4.loopback, port))
+  let addr = `Tcp (Eio.Net.Ipaddr.V4.loopback, port) in
+  let socket =
+    Eio.Net.listen ~reuse_addr ~backlog:socket_backlog ~sw t.net addr
   in
-  for _ = 2 to domains do
-    Eio.Std.Fiber.fork ~sw (fun () ->
-        Eio.Domain_manager.run domain_mgr (fun () ->
-            run_domain clock ssock on_error handler))
-  done;
-  run_domain clock ssock on_error handler
+  run socket t
 
+let shutdown t = Eio.Promise.resolve t.stop_r ()
 let not_found_handler _ = Response.not_found

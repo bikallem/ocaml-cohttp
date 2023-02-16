@@ -62,3 +62,36 @@ exception Graceful_shutdown
 +hello world
 - : unit = ()
 ```
+
+## Server.request_pipeline  
+
+A `router` request_pipeline is a simple `Request.resource` based request router. It only handles resource path "/" and delegates the rest to the builtin `Server.not_found_handler`. When a request is sent with "/" then we get a "hello, there" text response. However, if we try with any other resource path, we get `404 Not Found` response.
+
+```ocaml
+let router : Server.request_pipeline =
+  fun next req ->
+    match Request.resource req with
+    | "/" -> Response.text "hello, there"
+    | _ -> next req
+
+let final_handler : Server.handler = router @@ Server.not_found_handler
+```
+
+```ocaml
+# Eio_main.run @@ fun env ->
+  let server = Server.make ~on_error:raise (fake_clock env#clock) env#net final_handler in 
+  Eio.Fiber.both 
+    (fun () -> Server.run_local ~port:8081 server)
+    (fun () ->
+      Eio.Switch.run @@ fun sw ->
+      let client = Client.make sw env#net in
+      let res = Client.get client "localhost:8081" in
+      Eio.traceln "Resource (/): %s" (Body.read_content res |> Option.get);
+      let res = Client.get client "localhost:8081/products" in
+      Eio.traceln "Resource (/products) : %a" Http.Status.pp (Response.status res);
+      Server.shutdown server
+    );;
++Resource (/): hello, there
++Resource (/products) : 404 Not Found
+- : unit = ()
+```

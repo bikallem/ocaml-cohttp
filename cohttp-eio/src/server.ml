@@ -1,5 +1,5 @@
 type handler = Request.server_request -> Response.server_response
-(* type middleware = handler -> handler *)
+type request_pipeline = handler -> handler
 
 type t = {
   clock : Eio.Time.clock;

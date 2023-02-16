@@ -5,7 +5,45 @@ type t
     server parameters. *)
 
 type handler = Request.server_request -> Response.server_response
-(** [handler] is a request handler. *)
+(** [handler] is a HTTP request handler. *)
+
+type request_pipeline = handler -> handler
+(** [request_pipeline] is the HTTP request processsing pipeline. It is usually
+    used with OCaml infix function, [@@].
+
+    Below is an example [request_pipeline] that checks whether a request has a
+    valid "Host" header value or not. If a valid "Host" header value is not
+    found, then the request pipeline is aborted and [400 Bad Request] response
+    is returned. Otherwise the request is passed on to the [next] handler for
+    further request processing.
+
+    {[
+      let host_header_pipeline : request_pipeline =
+       fun (next : handler) (req : Request.server_request) ->
+        let headers = Request.headers req in
+        let hosts = Http.Header.get_multi headers "Host" in
+        if List.length hosts > 1 then Response.bad_request
+        else
+          let host = List.hd hosts in
+          match Uri.of_string ("//" ^ host) |> Uri.host with
+          | Some _ -> next req
+          | None -> Response.bad_request
+
+      let final : handler = host_header @@ Server.not_found_handler
+
+      let () =
+        Eio_main.run @@ fun env ->
+        let server = Server.make ~on_error:raise env#clock env#net final in
+        Server.run_local server
+    ]}
+
+    The [final] handler demonstrates how various [request_pipeline]s can be
+    constructed and used with {!val:make}. The handlers are executed in the
+    order they are combined, i.e. first the [host_header_pipeline] is executed
+    then the [Server.not_found_handler].
+
+    {b Note} [host_header_pipeline] is used internally in {!val:Server.run} and
+    {!val:Server.run_local} functions. *)
 
 val make :
   ?max_connections:int ->

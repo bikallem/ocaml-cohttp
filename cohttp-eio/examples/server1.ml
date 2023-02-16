@@ -30,11 +30,14 @@ let text =
 
 open Cohttp_eio
 
-let app req =
+let router : Server.request_pipeline =
+ fun next req ->
   match Request.resource req with
   | "/" -> Response.text text
   | "/html" -> Response.html text
-  | _ -> Response.not_found
+  | _ -> next req
+
+let app : Server.handler = router @@ Server.not_found_handler
 
 let () =
   let port = ref 8080 in

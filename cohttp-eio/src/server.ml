@@ -23,10 +23,29 @@ let make ?(max_connections = Int.max_int) ?additional_domains ~on_error
     stop_r;
   }
 
+(** RFC 9112 states that host is required in server requests and server MUST
+    send bad request if Host header value is not correct.
+
+    https://www.rfc-editor.org/rfc/rfc9112#section-3.2
+
+    TODO bikal add tests for IPv6 host parsing after
+    https://github.com/mirage/ocaml-uri/pull/169 if merged. *)
+let host_header_pipeline : request_pipeline =
+ fun (next : handler) (req : Request.server_request) ->
+  let headers = Request.headers req in
+  let hosts = Http.Header.get_multi headers "Host" in
+  let len = List.length hosts in
+  if len = 0 || len > 1 then Response.bad_request
+  else
+    let host = List.hd hosts in
+    match Uri.of_string ("//" ^ host) |> Uri.host with
+    | Some _ -> next req
+    | None -> Response.bad_request
+
 let rec handle_request clock client_addr reader writer flow handler =
   match Request.parse client_addr reader with
   | request ->
-      let response = handler request in
+      let response = (host_header_pipeline @@ handler) request in
       Response.write response clock writer;
       if Request.keep_alive request then
         handle_request clock client_addr reader writer flow handler

@@ -27,7 +27,7 @@ let handler req =
 exception Graceful_shutdown
 ```
 
-## Server.run
+## Server.run/Server.run_local
 
 ```ocaml
 # Eio_main.run @@ fun env ->
@@ -95,3 +95,69 @@ let final_handler : Server.handler = router @@ Server.not_found_handler
 +Resource (/products) : 404 Not Found
 - : unit = ()
 ```
+
+## Server.run/Server.run_local
+
+Check that "Host" header value is validated. See https://www.rfc-editor.org/rfc/rfc9112#section-3.2
+
+```ocaml
+# Eio_main.run @@ fun env ->
+  let server = Server.make ~on_error:raise (fake_clock env#clock) env#net handler in 
+  Eio.Fiber.both 
+    (fun () -> Server.run_local ~port:8081 server)
+    (fun () ->
+      Eio.Net.with_tcp_connect ~host:"localhost" ~service:"8081" env#net @@ fun conn ->
+      Eio.Flow.copy_string "GET / HTTP/1.1\r\n\r\n" conn;
+      let buf = Cstruct.create 1024 in
+      let got = Eio.Flow.single_read conn buf in
+      Eio.traceln "%s" (Cstruct.to_string ~len:got buf);
+
+      Eio.Flow.copy_string "GET / HTTP/1.1\r\nHost:example.com\r\nHost:example.com\r\n\r\n" conn;
+      let got = Eio.Flow.single_read conn buf in
+      Eio.traceln "%s" (Cstruct.to_string ~len:got buf);
+
+      Eio.Flow.copy_string "GET / HTTP/1.1\r\nHost:example.com\r\n\r\n" conn;
+      let got = Eio.Flow.single_read conn buf in
+      Eio.traceln "%s" (Cstruct.to_string ~len:got buf);
+
+      Eio.Flow.copy_string "GET / HTTP/1.1\r\nHost:192.168.1.16\r\n\r\n" conn;
+      let got = Eio.Flow.single_read conn buf in
+      Eio.traceln "%s" (Cstruct.to_string ~len:got buf);
+
+      Eio.Flow.copy_string "GET / HTTP/1.1\r\nHost:localhost:8081\r\n\r\n" conn;
+      let got = Eio.Flow.single_read conn buf in
+      Eio.traceln "%s" (Cstruct.to_string ~len:got buf);
+
+      Server.shutdown server
+    );;
++HTTP/1.1 400 Bad Request
++Date: Thu, 17 Jun 2021 14:39:38 GMT
++Content-Length: 0
++
++
++HTTP/1.1 400 Bad Request
++Date: Thu, 17 Jun 2021 14:39:38 GMT
++Content-Length: 0
++
++
++HTTP/1.1 200 OK
++Date: Thu, 17 Jun 2021 14:39:38 GMT
++Content-Length: 4
++Content-Type: text/plain; charset=UTF-8
++
++root
++HTTP/1.1 200 OK
++Date: Thu, 17 Jun 2021 14:39:38 GMT
++Content-Length: 4
++Content-Type: text/plain; charset=UTF-8
++
++root
++HTTP/1.1 200 OK
++Date: Thu, 17 Jun 2021 14:39:38 GMT
++Content-Length: 4
++Content-Type: text/plain; charset=UTF-8
++
++root
+- : unit = ()
+```
+

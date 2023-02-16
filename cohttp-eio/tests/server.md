@@ -51,14 +51,14 @@ exception Graceful_shutdown
     );;
 +Route: /
 +Header {
-+Content-Type = "text/plain; charset=UTF-8"; Content-Length = "4";
-+Date = "Thu, 17 Jun 2021 14:39:38 GMT" }
++Date = "Thu, 17 Jun 2021 14:39:38 GMT";
++Content-Type = "text/plain; charset=UTF-8"; Content-Length = "4" }
 +root
 +
 +Route: /upload
 +Header {
-+Content-Type = "text/plain; charset=UTF-8"; Content-Length = "11";
-+Date = "Thu, 17 Jun 2021 14:39:38 GMT" }
++Date = "Thu, 17 Jun 2021 14:39:38 GMT";
++Content-Type = "text/plain; charset=UTF-8"; Content-Length = "11" }
 +hello world
 - : unit = ()
 ```
@@ -141,21 +141,21 @@ Check that "Host" header value is validated. See https://www.rfc-editor.org/rfc/
 +
 +
 +HTTP/1.1 200 OK
-+Date: Thu, 17 Jun 2021 14:39:38 GMT
 +Content-Length: 4
 +Content-Type: text/plain; charset=UTF-8
++Date: Thu, 17 Jun 2021 14:39:38 GMT
 +
 +root
 +HTTP/1.1 200 OK
-+Date: Thu, 17 Jun 2021 14:39:38 GMT
 +Content-Length: 4
 +Content-Type: text/plain; charset=UTF-8
++Date: Thu, 17 Jun 2021 14:39:38 GMT
 +
 +root
 +HTTP/1.1 200 OK
-+Date: Thu, 17 Jun 2021 14:39:38 GMT
 +Content-Length: 4
 +Content-Type: text/plain; charset=UTF-8
++Date: Thu, 17 Jun 2021 14:39:38 GMT
 +
 +root
 - : unit = ()

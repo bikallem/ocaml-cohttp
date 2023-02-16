@@ -23,7 +23,7 @@ let make ?(max_connections = Int.max_int) ?additional_domains ~on_error
     stop_r;
   }
 
-(** RFC 9112 states that host is required in server requests and server MUST
+(* RFC 9112 states that host is required in server requests and server MUST
     send bad request if Host header value is not correct.
 
     https://www.rfc-editor.org/rfc/rfc9112#section-3.2
@@ -42,21 +42,42 @@ let host_header_pipeline : request_pipeline =
     | Some _ -> next req
     | None -> Response.bad_request
 
+(* A request pipeline that adds "Date" header if required.
+
+   https://www.rfc-editor.org/rfc/rfc9110#section-6.6.1 *)
+let add_date_header : #Eio.Time.clock -> request_pipeline =
+ fun clock next req ->
+  let res = next req in
+  let headers = Response.headers res |> Http.Header.clean_dup in
+  match Http.Header.get headers "Date" with
+  | Some _ -> res
+  | None -> (
+      match res#status with
+      | #Http.Status.informational | #Http.Status.server_error -> res
+      | _ ->
+          let date = Date.http_date clock in
+          let headers = Http.Header.add headers "Date" date in
+          Response.server_response ~version:res#version ~headers
+            ~status:res#status
+            (res :> Body.writer))
+
 let rec handle_request clock client_addr reader writer flow handler =
   match Request.parse client_addr reader with
   | request ->
-      let response = (host_header_pipeline @@ handler) request in
-      Response.write response clock writer;
+      let response =
+        (add_date_header clock @@ host_header_pipeline @@ handler) request
+      in
+      Response.write response writer;
       if Request.keep_alive request then
         handle_request clock client_addr reader writer flow handler
   | (exception End_of_file)
   | (exception Eio.Io (Eio.Net.E (Connection_reset _), _)) ->
       ()
   | exception (Failure _ as ex) ->
-      Response.(write bad_request clock writer);
+      Response.(write bad_request writer);
       raise ex
   | exception ex ->
-      Response.(write internal_server_error clock writer);
+      Response.(write internal_server_error writer);
       raise ex
 
 let connection_handler handler clock flow client_addr =
